@@ -4,7 +4,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 
 ## Estado actual
 - Análisis aprobado (`docs/analisis.md`) y constitución aprobada (`docs/constitution.md`).
-- Base del repo: Next.js 16 + Tailwind + Vitest, hooks de husky y CI/CD en GitHub Actions con deploy a Vercel.
+- Base del repo: Next.js 16 + Tailwind + Vitest, hooks de husky y CI/CD en GitHub Actions con deploy a Vercel. Repo `gcasas205/barber-colo-app`, `main` protegida.
 - Todavía no hay ninguna spec. Siguiente: `/sdd-spec 001-agenda-disponibilidad`.
 
 ## Decisiones (y por qué)
@@ -15,7 +15,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 
 ## Aprendizajes y errores a evitar
 - En los tests, ICU puede devolver la zona como `America/Buenos_Aires`: compará el desfase (180 min), no el nombre.
+- TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.
 
 ## Próximos pasos
-1. Crear el repo en GitHub y configurar Vercel (ver `docs/ci-cd.md`).
-2. Spec 001: agenda y disponibilidad.
+1. Spec 001: agenda y disponibilidad.
