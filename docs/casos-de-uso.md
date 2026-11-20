@@ -56,11 +56,15 @@ flowchart LR
         CU22[CU-22 Procesar plazos de turnos ★]
         CU23[CU-23 Entregar notificaciones]
         CU24[CU-24 Enviar resumen diario]
+        CU25[CU-25 Inicio del día]
+        CU26[CU-26 Indicadores]
+        CU27[CU-27 Ficha 360]
+        CU28[CU-28 Escribir a quien se enfría]
     end
 
     Cliente --- CU01 & CU02 & CU03 & CU04 & CU05 & CU06 & CU07 & CU08
     Invitado --- CU09
-    Barbero --- CU10 & CU11 & CU12 & CU13 & CU14 & CU15 & CU16 & CU17 & CU18 & CU19 & CU20 & CU21 & CU07
+    Barbero --- CU10 & CU11 & CU12 & CU13 & CU14 & CU15 & CU16 & CU17 & CU18 & CU19 & CU20 & CU21 & CU07 & CU25 & CU26 & CU27 & CU28
     Reloj --- CU22 & CU23 & CU24
 ```
 
@@ -92,6 +96,13 @@ flowchart LR
 | CU-22 ★ | Procesar plazos de turnos | Reloj | Turnos | RF-19, 21, 35, 36, P-04 | 006 |
 | CU-23 | Entregar notificaciones (con reintentos) | Reloj | Notificaciones | RNF-03, 10 | 005 |
 | CU-24 | Enviar resumen diario al barbero | Reloj | Notificaciones | RF-23 | 006 |
+| CU-25 | Ver el inicio del día | Barbero | Estadísticas | P-10 | 007 |
+| CU-26 | Ver indicadores por período | Barbero | Estadísticas | P-10 | 010 |
+| CU-27 | Ver ficha 360 del cliente y editar notas | Barbero | Estadísticas + Clientes | P-10 | 010 |
+| CU-28 | Escribirle a un cliente que se enfría | Barbero | Clientes | P-13 | 010 |
+| CU-29 | Configurar listas (cómo nos conoció, motivos de cancelación) | Barbero | Clientes + Turnos | P-10 | 010 |
+
+> CU-25 a CU-29 se detallan en [`estadisticas-crm.md`](estadisticas-crm.md).
 
 ## 3. Casos de uso detallados
 

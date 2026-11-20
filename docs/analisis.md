@@ -7,7 +7,7 @@ Fecha: 2026-11-20
 > negocio y los requisitos a nivel producto. De acá salen las specs `specs/NNN-*/` del flujo SDD.
 > La tecnología se decide después (en la constitución y en cada `plan.md`).
 >
-> Continúa en: [modelo de dominio](dominio.md) · [casos de uso](casos-de-uso.md) · [diagramas de secuencia](secuencias.md).
+> Continúa en: [modelo de dominio](dominio.md) · [casos de uso](casos-de-uso.md) · [diagramas de secuencia](secuencias.md) · [estadísticas y CRM](estadisticas-crm.md).
 
 ---
 
@@ -247,6 +247,7 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 | 007 | `asistencia-faltas` | Marcar asistencia, faltas seguidas, aprobación, bloqueo e historial | 24–28 | ✅ |
 | 008 | `fidelizacion` | Descuento del 4.º corte del mes y del corte 10, suma de descuentos y barras de progreso | 29–33 | v1.1 |
 | 009 | `sena-online` | Seña con Mercado Pago para clientes con 3 faltas seguidas | — | v2 |
+| 010 | `estadisticas-crm` | Indicadores por período, ficha 360, salud del cliente y "a quién escribirle hoy" (ver `docs/estadisticas-crm.md`) | P-10 a P-13 | v1.1 |
 
 > La 001 va primero porque toda la lógica de turnos depende de calcular bien los horarios libres, y es
 > la parte con más riesgo de errores de fechas (como pasaba con la racha en el Diario de Estudio).

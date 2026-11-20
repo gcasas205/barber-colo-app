@@ -37,6 +37,7 @@ publica eventos.
 | 5 | **Precios y beneficios** | Soporte | Cuánto cuesta un corte y qué descuento corresponde | Tarifa, Reglas de beneficio, Visitas computables |
 | 6 | **Notificaciones** | Genérico | Entregar avisos al celular y dentro de la app | Suscripciones, Notificaciones |
 | 7 | **Identidad** | Genérico | Quién inicia sesión y con qué rol | Usuario (lo resuelve el proveedor de login) |
+| 8 | **Estadísticas** | Modelo de lectura | Indicadores, inicio del día y ficha 360 del barbero. Solo lee; nadie depende de él | Nada (ver [`estadisticas-crm.md`](estadisticas-crm.md)) |
 
 El **reloj** no es un módulo del dominio: es un disparador externo que cada minuto le dice a Turnos
 "ahora son las HH:MM" para que procese sus plazos (sección 7).
@@ -130,6 +131,7 @@ classDiagram
             confirmationRequestedAt : Instant?
             reminderSentAt : Instant?
             settlement : Settlement?
+            cancellationReason?
             link : AppointmentLink?
             approve()
             reject()
@@ -169,6 +171,7 @@ classDiagram
             basePrice : Money
             discounts : AppliedDiscount[]
             finalPrice : Money
+            paymentMethod? (P-11)
         }
     }
 
@@ -202,6 +205,9 @@ classDiagram
             phone : Phone
             userId?
             linkedTo?
+            acquisitionSource?
+            notes?
+            birthDayMonth? (P-12)
             linkTo(customer)
             anonymize()
         }
@@ -386,6 +392,7 @@ Son el centro de los tests.
 | `applicableDiscounts` | Precios | visitas previas del cliente, fecha local del turno, reglas activas → descuentos |
 | `settle` | Precios | precio base, descuentos → liquidación (suma de porcentajes, redondeo a centavos) |
 | `benefitProgress` | Precios | visitas del cliente, hoy, reglas → progreso por beneficio |
+| `customerHealth` | Clientes | visitas del cliente, ¿turno futuro?, hoy, parámetros → al día / se enfría / perdido (P-13) |
 
 **Simplificación que surge del modelo:** el progreso mensual **no se reinicia con una tarea programada**
 (RF-31). Se calcula contando las visitas computables del mes en curso; el 1.º de cada mes el conteo da
