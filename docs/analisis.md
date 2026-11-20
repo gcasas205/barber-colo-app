@@ -240,12 +240,12 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 |---|---|---|---|---|
 | 001 | `agenda-disponibilidad` | Horario semanal, bloque fijo, bloqueos, precio, anticipación mínima y cálculo de horarios libres | 04–07, 37 | ✅ |
 | 002 | `login-perfil` | Google, alta de cliente, teléfono, rol barbero | 01–03 | ✅ |
-| 003 | `reserva-cancelacion` | Reservar, evitar doble reserva, cancelar en plazo, cancelación tarde, margen de 10 min y precio congelado | 08–13, 39–40 | ✅ |
+| 003 | `reserva-cancelacion` | Reservar, evitar doble reserva, cancelar y **reprogramar** en plazo o tarde, margen de 10 min, precio congelado, cancelación del barbero con motivo | 08–13, 39–40, P-05, P-07, P-14 | ✅ |
 | 004 | `turnos-manuales-enlace` | Carga manual, enlace secreto, mensaje para WhatsApp y vinculación de clientes | 14–18 | ✅ |
 | 005 | `pwa-notificaciones` | Manifest, instalación, permisos, Web Push con acciones y avisos dentro de la app | 34 + avisos de las demás | ✅ |
 | 006 | `confirmacion` | Recordatorio del día anterior, pedido 1 h antes, ventana de 30 min, SinConfirmar, reservas con poca anticipación y resumen diario | 19–23, 35–39 | ✅ |
 | 007 | `asistencia-faltas` | Marcar asistencia, faltas seguidas, aprobación, bloqueo e historial | 24–28 | ✅ |
-| 008 | `fidelizacion` | Descuento del 4.º corte del mes y del corte 10, suma de descuentos y barras de progreso | 29–33 | v1.1 |
+| 008 | `fidelizacion` | Descuento del 4.º corte del mes, del corte 10 y de cumpleaños, suma de descuentos y barras de progreso | 29–33, P-15 | v1.1 |
 | 009 | `sena-online` | Seña con Mercado Pago para clientes con 3 faltas seguidas | — | v2 |
 | 010 | `estadisticas-crm` | Indicadores por período, ficha 360, salud del cliente y "a quién escribirle hoy" (ver `docs/estadisticas-crm.md`) | P-10 a P-13 | v1.1 |
 

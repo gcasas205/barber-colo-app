@@ -1,6 +1,6 @@
 # Estadísticas y CRM del barbero — barber-colo
 
-Estado: borrador (pendiente de aprobación)
+Estado: aprobado (P-10 a P-13), 2026-11-20
 Modelo: [`docs/dominio.md`](dominio.md) · Referencia: Corralap ([app](https://corralap.vercel.app), repo `EloSanz/crm-web-app`)
 
 > El barbero no solo gestiona turnos: maneja un negocio. Este módulo le muestra cuánta plata entra,
@@ -125,7 +125,7 @@ Mide el objetivo principal del proyecto: **sacar los turnos de WhatsApp**.
 
 | Indicador | Definición |
 |---|---|
-| Descuentos otorgados | Cantidad y monto por regla (4.º corte del mes, corte N.º 10) |
+| Descuentos otorgados | Cantidad y monto por regla (4.º corte del mes, corte N.º 10, cumpleaños) |
 | Costo de fidelización | Descuentos / facturado bruto (p. p.) |
 | Clientes cerca de un beneficio | Les falta 1 corte (oportunidad de escribirles) |
 
@@ -207,9 +207,11 @@ Del sistema de diseño de Corralap (`frontend/.impeccable/`), para usar como ref
 - **Conteo animado** de cifras y variaciones con flecha y texto, respetando `prefers-reduced-motion`.
 - Barra inferior de navegación en el celular, como Corralap.
 
-## 9. Propuestas para aprobar
+## 9. Decisiones
 
-- **P-10. Módulo Estadísticas** como modelo de lectura con las 6 pestañas, el inicio del día, la ficha 360 y "a quién escribirle hoy".
-- **P-11. Medio de pago** al marcar Asistió (opcional, con el último usado preseleccionado).
-- **P-12. Fecha de nacimiento** opcional en el perfil (solo día y mes, para pedir el mínimo dato).
-- **P-13. Salud relativa a la frecuencia del cliente** (sección 4) en lugar de umbrales fijos.
+| Id | Decisión |
+|---|---|
+| P-10 ✅ | Módulo Estadísticas (solo lectura) con 6 pestañas, inicio del día, ficha 360 y "a quién escribirle hoy". Spec 010; el inicio del día se adelanta a la 007. |
+| P-11 ✅ | Medio de pago opcional al marcar Asistió, con el último usado preseleccionado. |
+| P-12 ✅ | Fecha de nacimiento opcional (día y mes) para el **descuento de cumpleaños** (regla en `dominio.md`, P-15). |
+| P-13 ✅ | Salud del cliente relativa a su propia frecuencia. |

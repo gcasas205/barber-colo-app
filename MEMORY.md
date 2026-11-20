@@ -19,6 +19,6 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - En los tests, ICU puede devolver la zona como `America/Buenos_Aires`: compará el desfase (180 min), no el nombre.
 
 ## Próximos pasos
-1. Aprobar el modelo de dominio y las propuestas P-04 a P-13.
+1. Confirmar P-14 (reprogramación) y P-15 (cumpleaños). P-04 a P-13 aprobadas.
 2. Diseño: base de datos, arquitectura de la aplicación y backend, con las skills de front, back e infra.
 3. Spec 001: agenda y disponibilidad.

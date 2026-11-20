@@ -1,6 +1,6 @@
 # Modelo de dominio — barber-colo
 
-Estado: borrador (pendiente de aprobación)
+Estado: borrador v2 (P-04 a P-13 aprobadas; P-14 y P-15 por confirmar)
 Origen: [`docs/analisis.md`](analisis.md) (RN-x, RF-x, RNF-x)
 
 > Modelo conceptual, independiente de la tecnología. Define **qué cosas existen en el negocio, qué reglas
@@ -130,6 +130,7 @@ classDiagram
             bookedAt : Instant
             confirmationRequestedAt : Instant?
             reminderSentAt : Instant?
+            rescheduleCount : int
             settlement : Settlement?
             cancellationReason?
             link : AppointmentLink?
@@ -142,6 +143,7 @@ classDiagram
             release()
             cancelByCustomer(now, policy)
             cancelByBarber(reason)
+            reschedule(newSlot, now, actor, reason?)
             markAttended(now, settlement)
             markNoShow(now)
         }
@@ -171,7 +173,7 @@ classDiagram
             basePrice : Money
             discounts : AppliedDiscount[]
             finalPrice : Money
-            paymentMethod? (P-11)
+            paymentMethod?
         }
     }
 
@@ -207,7 +209,7 @@ classDiagram
             linkedTo?
             acquisitionSource?
             notes?
-            birthDayMonth? (P-12)
+            birthDayMonth?
             linkTo(customer)
             anonymize()
         }
@@ -242,7 +244,7 @@ classDiagram
         class BenefitRule {
             <<aggregate root>>
             id
-            kind : NTH_IN_MONTH | EVERY_NTH
+            kind : NTH_IN_MONTH | EVERY_NTH | BIRTHDAY
             n : int
             discount : Percentage
             active : bool
@@ -303,11 +305,11 @@ se cumplen siempre. Entre agregados, la consistencia es eventual (vía eventos).
 
 | Agregado | Invariantes (siempre verdaderas) | Reglas |
 |---|---|---|
-| **Turno** | I-1. Solo se pasa de un estado a otro por las transiciones del diagrama 6. <br>I-2. **Un horario tiene como máximo un turno activo.** <br>I-3. Un cliente tiene como máximo **un turno futuro activo**. <br>I-4. El precio base no cambia después de reservar. <br>I-5. Asistencia o falta solo se marcan a partir del inicio del turno. <br>I-6. La liquidación existe si y solo si el estado es Asistió. <br>I-7. Todo cambio de estado deja un registro con actor y fecha. | RN-03, RN-05, RN-06b, RN-07 a RN-11, RN-31 a RN-33, RNF-13 |
+| **Turno** | I-1. Solo se pasa de un estado a otro por las transiciones del diagrama 6. <br>I-2. **Un horario tiene como máximo un turno activo.** <br>I-3. Un cliente tiene como máximo **un turno futuro activo**. <br>I-4. El precio base no cambia después de reservar. <br>I-5. Asistencia o falta solo se marcan a partir del inicio del turno. <br>I-6. La liquidación existe si y solo si el estado es Asistió. <br>I-7. Todo cambio de estado o de horario deja un registro con actor y fecha. <br>I-7b. Un turno se reprograma como máximo [2] veces por el cliente. | RN-03, RN-05, RN-06b, RN-07 a RN-11, RN-31 a RN-33, RNF-13 |
 | **Agenda** | I-8. Las franjas de un mismo día no se superponen. <br>I-9. La duración del bloque es mayor que cero y divide el día en horarios enteros dentro de cada franja. | RN-01, RN-02, RN-04, RN-30 |
 | **Cliente** | I-10. El teléfono está normalizado (formato internacional) y es único entre clientes no vinculados. <br>I-11. Un cliente vinculado no puede volver a vincularse. | RF-14, RF-18, RNF-07 |
 | **Ficha de conducta** | I-12. Las faltas seguidas nunca son negativas y vuelven a cero con una asistencia. <br>I-13. La habilitación se **calcula**, no se guarda: bloqueado manual > faltas ≥ umbral > normal. | RN-12 a RN-17 |
-| **Regla de beneficio** | I-14. N ≥ 1 y descuento entre 1 % y 100 %. <br>I-15. Desactivar una regla no altera liquidaciones pasadas. | RN-18 a RN-23, RF-33 |
+| **Regla de beneficio** | I-14. N ≥ 1 (salvo BIRTHDAY) y descuento entre 1 % y 100 %. <br>I-14b. BIRTHDAY se aplica como máximo una vez por cliente y año. <br>I-15. Desactivar una regla no altera liquidaciones pasadas. | RN-18 a RN-23, RF-33 |
 | **Tarifa** | I-16. Siempre hay exactamente una tarifa vigente. | RN-06 |
 
 ## 6. Ciclo de vida del Turno (actualizado)
@@ -329,6 +331,8 @@ stateDiagram-v2
     SinConfirmar --> Confirmado: el barbero lo mantiene
     SinConfirmar --> Liberado: el barbero lo libera
 
+    Reservado --> Reservado: reprogramar (P-14)
+    Confirmado --> Reservado: reprogramar con 1 h o más (P-14)
     Reservado --> Cancelado: cliente a tiempo / barbero
     Confirmado --> Cancelado: cliente a tiempo / barbero
     PendienteAprobación --> Cancelado: el cliente desiste
@@ -366,7 +370,8 @@ stateDiagram-v2
 | `AppointmentConfirmed` | Turnos | turno | Notificaciones: aviso al barbero |
 | `ConfirmationExpired` | Turnos | turno | Notificaciones: pedir decisión al barbero (Mantener/Liberar) |
 | `AppointmentReleased` | Turnos | turno | Notificaciones: aviso al cliente |
-| `AppointmentCancelled` | Turnos | turno, por quién, ¿tarde? | Conducta: si es tarde, lo registra. Notificaciones: aviso a la otra parte |
+| `AppointmentCancelled` | Turnos | turno, por quién, ¿tarde?, motivo | Conducta: si es tarde, lo registra. Notificaciones: aviso a la otra parte (con el motivo si canceló el barbero) |
+| `AppointmentRescheduled` | Turnos | turno, horario anterior y nuevo, por quién, ¿tarde?, motivo | Conducta: si es tarde, lo registra. Notificaciones: aviso a la otra parte |
 | `AttendanceRegistered` | Turnos | turno, cliente, fecha local, ¿asistió?, liquidación | Conducta: suma o resetea faltas. Precios: registra la visita computable |
 | `NoShowThresholdReached` | Conducta | cliente | Notificaciones: aviso al cliente de la política |
 | `BenefitReached` | Precios | cliente, beneficio | Notificaciones: "tu próximo corte tiene X % off" |
@@ -386,11 +391,12 @@ Son el centro de los tests.
 | `offeredSlots` | Agenda | agenda, rango de días, ahora → horarios ofrecidos |
 | `freeSlots` | Turnos | horarios ofrecidos, turnos activos → horarios libres |
 | `initialStatus` | Turnos | horario, ahora, habilitación, política → PendienteAprobación / Reservado / Confirmado |
-| `cancellationKind` | Turnos | turno, ahora, política → a tiempo / tarde |
+| `cancellationKind` | Turnos | turno, ahora, política → a tiempo / tarde (vale también para reprogramar) |
 | `dueActions` | Turnos | turnos activos, ahora, política → recordatorios, pedidos y vencimientos que corresponden ahora |
 | `eligibility` | Conducta | ficha, política → normal / requiere aprobación / bloqueado |
 | `applicableDiscounts` | Precios | visitas previas del cliente, fecha local del turno, reglas activas → descuentos |
 | `settle` | Precios | precio base, descuentos → liquidación (suma de porcentajes, redondeo a centavos) |
+| `isBirthdayWeek` | Precios | fecha de nacimiento (día y mes), fecha local del turno, parámetros → sí / no (cuidado con fin de año y 29/2) |
 | `benefitProgress` | Precios | visitas del cliente, hoy, reglas → progreso por beneficio |
 | `customerHealth` | Clientes | visitas del cliente, ¿turno futuro?, hoy, parámetros → al día / se enfría / perdido (P-13) |
 
@@ -398,19 +404,43 @@ Son el centro de los tests.
 (RF-31). Se calcula contando las visitas computables del mes en curso; el 1.º de cada mes el conteo da
 cero solo.
 
-## 9. Propuestas que surgen del modelado (para aprobar)
+## 9. Decisiones del modelado
 
-- **P-04. Reserva pendiente sin respuesta.** Si el barbero no aprueba ni rechaza una reserva pendiente
-  antes del momento del pedido de confirmación (1 h antes), se rechaza automáticamente y se avisa al cliente.
-  Para que el barbero tenga tiempo de decidir, a un cliente que requiere aprobación solo se le ofrecen
-  horarios que empiezan dentro de [2 h] o más.
-- **P-05. El barbero puede cancelar un turno** (por ejemplo, por una urgencia). No tiene consecuencias
-  para el cliente y se le avisa. No estaba en el análisis y es necesario para los bloqueos (RF-05).
-- **P-06. Corrección de asistencia.** El barbero puede corregir una marca equivocada (Asistió ↔ Faltó)
-  hasta [24 h] después. La corrección recalcula faltas seguidas y visitas computables, y queda en el historial.
-- **P-07. Sin reprogramación en v1.** Para cambiar de horario, el cliente cancela y vuelve a reservar
-  (aplican las reglas de cancelación).
-- **P-08. Turno manual a un cliente existente.** Al cargar un turno a mano, el barbero busca primero
-  entre los clientes (por nombre o teléfono) y solo crea uno nuevo si no existe.
-- **P-09. Asistencia de un turno sin confirmar.** Si el turno quedó SinConfirmar y el cliente vino
-  igual, el barbero puede marcar Asistió directamente.
+| Id | Decisión |
+|---|---|
+| P-04 ✅ | Si el barbero no aprueba ni rechaza una reserva pendiente antes del pedido de confirmación (1 h antes), se rechaza sola y se avisa al cliente. A un cliente que requiere aprobación solo se le ofrecen horarios a [2 h] o más. |
+| P-05 ✅ | El barbero puede cancelar un turno sin consecuencias para el cliente. **Escribe obligatoriamente el motivo**, que le llega al cliente en la notificación. |
+| P-06 ✅ | El barbero puede corregir una marca de asistencia (Asistió ↔ Faltó) hasta **[48 h]** después. Se recalculan faltas seguidas y visitas computables, y queda en el historial. |
+| P-07 ✅ | **Hay reprogramación desde la primera versión** (reglas en P-14). |
+| P-08 ✅ | Al cargar un turno a mano, el barbero busca al cliente por **nombre o teléfono** y solo crea uno nuevo si no existe. |
+| P-09 ✅ | Si un turno quedó SinConfirmar y el cliente vino igual, el barbero puede marcar Asistió directamente. |
+
+## 10. Reglas nuevas para confirmar
+
+### P-14. Reprogramación
+
+Reprogramar es **mover el mismo turno** a otro horario libre: conserva su historial, su precio base y su
+enlace. No es cancelar y reservar de nuevo.
+
+- **Quién**: el cliente (desde la app o el enlace) y el barbero.
+- **Cuándo**: mientras el turno esté activo y no haya empezado.
+- **Plazo**: con [4 h] o más de anticipación (o dentro del margen de 10 min posterior a reservar) no
+  queda registro. Con menos de 4 h queda registrado como **reprogramación tarde**, igual que una
+  cancelación tarde: se ve en la ficha y no suma faltas.
+- **Límite**: hasta [2] reprogramaciones por turno; después hay que cancelar y reservar.
+- **Estado después de mover**: se recalcula como si fuera una reserva nueva (`initialStatus`). Un turno
+  Confirmado vuelve a Reservado y recibe otra vez el recordatorio y el pedido de confirmación; si el
+  nuevo horario es en menos de 1 h, queda Confirmado. Un turno PendienteAprobación sigue pendiente.
+- **Precio**: se mantiene el precio base original.
+- **Reprogramación del barbero**: como en P-05, escribe el motivo y al cliente le llega una
+  notificación con el nuevo horario. No cuenta como reprogramación tarde ni consume el límite del cliente.
+- Evento: `AppointmentRescheduled` (horario anterior, horario nuevo, por quién, ¿tarde?). Conducta
+  registra las tardías; Notificaciones avisa a la otra parte.
+
+### P-15. Descuento de cumpleaños
+
+- Nuevo tipo de beneficio **BIRTHDAY**: [15 %] en un corte cuya fecha caiga en la **semana del
+  cumpleaños** (de [3] días antes a [3] días después), **una vez por año**.
+- Requiere que el cliente haya cargado día y mes de nacimiento (P-12).
+- Se suma a los otros descuentos (D-05).
+- El cliente recibe una notificación al empezar esa semana con el enlace para reservar.
