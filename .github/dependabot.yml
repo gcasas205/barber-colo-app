@@ -5,6 +5,14 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # Los tipos de Node siguen la versión que usamos (.nvmrc = 22), no la última.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7 todavía no es compatible con typescript-eslint (lo usa eslint-config-next).
+      # Se revisa a mano cuando typescript-eslint lo soporte.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       dependencias:
         patterns: ["*"]
