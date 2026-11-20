@@ -18,5 +18,6 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - En los tests, ICU puede devolver la zona como `America/Buenos_Aires`: compará el desfase (180 min), no el nombre.
 
 ## Próximos pasos
-1. Crear el repo en GitHub y configurar Vercel (ver `docs/ci-cd.md`).
-2. Spec 001: agenda y disponibilidad.
+1. Aprobar el modelo de dominio y las propuestas P-04 a P-09.
+2. Diseño: base de datos, arquitectura de la aplicación y backend, con las skills de front, back e infra.
+3. Spec 001: agenda y disponibilidad.
