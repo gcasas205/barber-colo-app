@@ -1,0 +1,409 @@
+# Modelo de dominio — barber-colo
+
+Estado: borrador (pendiente de aprobación)
+Origen: [`docs/analisis.md`](analisis.md) (RN-x, RF-x, RNF-x)
+
+> Modelo conceptual, independiente de la tecnología. Define **qué cosas existen en el negocio, qué reglas
+> las protegen y cómo se comunican**. El diseño (base de datos, backend, interfaz) se hace a partir de
+> este documento y no puede contradecirlo.
+
+---
+
+## 1. Criterio de modularización
+
+**Alta cohesión.** Cada módulo agrupa un solo tema del negocio, es dueño de sus datos y de sus reglas,
+y es el único que puede modificarlos. Si una regla cambia (por ejemplo, el umbral de faltas), cambia un
+solo módulo.
+
+**Bajo acoplamiento.** Los módulos se comunican de dos formas, y nunca leyendo ni escribiendo los datos
+de otro:
+
+| Forma | Cuándo | Ejemplo |
+|---|---|---|
+| **Consulta** (pregunta síncrona a través de una interfaz que define el que pregunta) | El que pregunta necesita la respuesta para decidir **ahora** | Turnos pregunta a Conducta: "¿este cliente puede reservar?" |
+| **Evento de dominio** (aviso de algo que ya pasó) | Otros módulos tienen que **reaccionar**, pero el emisor no depende de ellos | Turnos publica `AsistenciaRegistrada`; Conducta y Precios reaccionan |
+
+Regla: **un módulo no conoce a sus suscriptores**. Turnos no sabe que existe Notificaciones; solo
+publica eventos.
+
+## 2. Módulos (contextos)
+
+| # | Módulo | Tipo | Responsabilidad (una sola) | Dueño de |
+|---|---|---|---|---|
+| 1 | **Turnos** | Núcleo | El ciclo de vida de un turno y sus plazos | Turno, Política de turnos |
+| 2 | **Agenda** | Soporte | Cuándo atiende el barbero y qué horarios se ofrecen | Agenda, Franjas, Bloqueos |
+| 3 | **Clientes** | Soporte | Quién es cada cliente y cómo se lo contacta | Cliente |
+| 4 | **Conducta** | Soporte | Faltas seguidas y si un cliente puede reservar | Ficha de conducta, Política de faltas |
+| 5 | **Precios y beneficios** | Soporte | Cuánto cuesta un corte y qué descuento corresponde | Tarifa, Reglas de beneficio, Visitas computables |
+| 6 | **Notificaciones** | Genérico | Entregar avisos al celular y dentro de la app | Suscripciones, Notificaciones |
+| 7 | **Identidad** | Genérico | Quién inicia sesión y con qué rol | Usuario (lo resuelve el proveedor de login) |
+
+El **reloj** no es un módulo del dominio: es un disparador externo que cada minuto le dice a Turnos
+"ahora son las HH:MM" para que procese sus plazos (sección 7).
+
+### Mapa de contextos
+
+```mermaid
+flowchart LR
+    subgraph Núcleo
+        T[Turnos]
+    end
+    subgraph Soporte
+        A[Agenda]
+        C[Clientes]
+        K[Conducta]
+        P[Precios y beneficios]
+    end
+    subgraph Genérico
+        N[Notificaciones]
+        I[Identidad]
+    end
+    R((Reloj))
+
+    T -- "consulta: horarios ofrecidos" --> A
+    T -- "consulta: ¿existe? contacto" --> C
+    T -- "consulta: habilitación" --> K
+    T -- "consulta: tarifa y descuento" --> P
+    C -- "consulta: usuario" --> I
+    R -- "cada minuto: procesar plazos" --> T
+
+    T -. "eventos de turnos" .-> K
+    T -. "eventos de turnos" .-> P
+    T -. "eventos de turnos" .-> N
+    K -. "eventos de conducta" .-> N
+    P -. "BeneficioAlcanzado" .-> N
+    A -. "HorarioBloqueado" .-> T
+```
+
+Líneas llenas: consultas (el que pregunta depende de una interfaz que él mismo define).
+Líneas punteadas: eventos (el emisor no conoce al receptor).
+
+## 3. Lenguaje ubicuo (glosario)
+
+Estos términos se usan igual en la interfaz, en las specs y en el código (en inglés entre paréntesis).
+
+| Término | Definición |
+|---|---|
+| **Turno** (`Appointment`) | Reserva de un horario concreto para un cliente. Tiene un estado y un historial. |
+| **Horario** (`Slot`) | Bloque de tiempo de duración fija con un inicio y un fin. Es un valor, no una entidad. |
+| **Agenda** (`Schedule`) | Configuración de cuándo atiende el barbero: franjas semanales, duración del bloque y bloqueos. |
+| **Franja** (`WeeklyRange`) | Día de la semana con hora de inicio y fin de atención (puede haber varias por día). |
+| **Bloqueo** (`Block`) | Rango de fecha y hora en el que no se atiende, aunque caiga dentro de una franja. |
+| **Horario ofrecido** | Horario que surge de la agenda, no está bloqueado y respeta la anticipación mínima y máxima. |
+| **Horario libre** | Horario ofrecido que no tiene un turno activo. |
+| **Turno activo** | Turno en estado PendienteAprobación, Reservado, Confirmado o SinConfirmar. Ocupa el horario. |
+| **Pedido de confirmación** | Aviso que se envía 1 h antes del turno pidiendo confirmar. |
+| **Ventana de confirmación** | Los 30 min posteriores al pedido de confirmación. |
+| **Turno sin confirmar** | Turno cuya ventana venció sin respuesta. Espera la decisión del barbero. |
+| **Liberar** | Decisión del barbero de dejar libre el horario de un turno sin confirmar. |
+| **Cancelación a tiempo / tarde** | Cancelación del cliente con 4 h o más / con menos de 4 h de anticipación. |
+| **Margen de arrepentimiento** | Los 10 min posteriores a reservar, en los que cancelar nunca cuenta como tarde. |
+| **Falta** | Turno marcado por el barbero como "no asistió". |
+| **Faltas seguidas** | Faltas sin ninguna asistencia en el medio. Vuelven a cero con una asistencia. |
+| **Habilitación** (`BookingEligibility`) | Si un cliente puede reservar: `normal`, `requiere aprobación` o `bloqueado`. |
+| **Tarifa** (`Rate`) | Precio vigente del corte. |
+| **Precio base** | Tarifa congelada en el turno al momento de reservar. |
+| **Beneficio** (`Benefit`) | Regla de descuento: "el N.º corte del mes" o "cada N cortes". |
+| **Visita computable** | Turno marcado como Asistió. Es lo único que cuenta para beneficios. |
+| **Liquidación** (`Settlement`) | Foto del precio de un turno asistido: precio base, descuentos aplicados y precio final. |
+| **Progreso** | Cuánto le falta a un cliente para cada beneficio (por ejemplo, "7 de 10"). |
+| **Enlace de turno** (`AppointmentLink`) | Dirección secreta para que alguien sin cuenta vea, confirme o cancele un turno. |
+| **Cliente con cuenta / sin cuenta** | Cliente que ingresó con Google / que solo cargó el barbero (nombre y teléfono). |
+| **Vincular** | Unir el historial de un cliente sin cuenta con el de un cliente con cuenta. |
+
+## 4. Diagrama de clases del dominio
+
+```mermaid
+classDiagram
+    direction LR
+
+    namespace Turnos {
+        class Appointment {
+            <<aggregate root>>
+            id
+            customerId
+            slot : Slot
+            status : AppointmentStatus
+            origin : app | manual
+            basePrice : Money
+            bookedAt : Instant
+            confirmationRequestedAt : Instant?
+            reminderSentAt : Instant?
+            settlement : Settlement?
+            link : AppointmentLink?
+            approve()
+            reject()
+            requestConfirmation(now)
+            confirm(now)
+            expireConfirmation(now)
+            keep()
+            release()
+            cancelByCustomer(now, policy)
+            cancelByBarber(reason)
+            markAttended(now, settlement)
+            markNoShow(now)
+        }
+        class StatusChange {
+            <<entity>>
+            from
+            to
+            actor
+            at : Instant
+            reason?
+        }
+        class AppointmentPolicy {
+            <<value object>>
+            cancelNotice : 4h
+            confirmationLead : 1h
+            confirmationWindow : 30m
+            undoWindow : 10m
+            reminderTime : 20:00
+        }
+        class AppointmentLink {
+            <<value object>>
+            token
+            expiresAt
+        }
+        class Settlement {
+            <<value object>>
+            basePrice : Money
+            discounts : AppliedDiscount[]
+            finalPrice : Money
+        }
+    }
+
+    namespace Agenda {
+        class Schedule {
+            <<aggregate root>>
+            slotDuration : Duration
+            minNotice : 30m
+            maxAdvance : 30d
+            offeredSlots(range, now) Slot[]
+        }
+        class WeeklyRange {
+            <<value object>>
+            weekday
+            from : LocalTime
+            to : LocalTime
+        }
+        class Block {
+            <<entity>>
+            from : Instant
+            to : Instant
+            reason
+        }
+    }
+
+    namespace Clientes {
+        class Customer {
+            <<aggregate root>>
+            id
+            name
+            phone : Phone
+            userId?
+            linkedTo?
+            linkTo(customer)
+            anonymize()
+        }
+    }
+
+    namespace Conducta {
+        class ConductRecord {
+            <<aggregate root>>
+            customerId
+            consecutiveNoShows : int
+            manuallyBlocked : bool
+            lateCancellations : int
+            eligibility(policy) BookingEligibility
+            registerAttendance()
+            registerNoShow()
+            registerLateCancellation()
+            block()
+            unblock()
+        }
+        class NoShowPolicy {
+            <<value object>>
+            approvalThreshold : 3
+        }
+    }
+
+    namespace PreciosYBeneficios {
+        class Rate {
+            <<aggregate root>>
+            price : Money
+            validFrom : Instant
+        }
+        class BenefitRule {
+            <<aggregate root>>
+            id
+            kind : NTH_IN_MONTH | EVERY_NTH
+            n : int
+            discount : Percentage
+            active : bool
+        }
+        class CountableVisit {
+            <<entity>>
+            customerId
+            appointmentId
+            localDate
+        }
+    }
+
+    namespace Notificaciones {
+        class PushSubscription {
+            <<entity>>
+            userId
+            endpoint
+            keys
+        }
+        class Notification {
+            <<aggregate root>>
+            recipient
+            kind
+            payload
+            status : pending | sent | failed | read
+            attempts : int
+        }
+    }
+
+    class Slot {
+        <<value object>>
+        start : Instant
+        end : Instant
+    }
+    class Money {
+        <<value object>>
+        cents : int
+    }
+
+    Appointment "1" *-- "many" StatusChange : historial
+    Appointment *-- Settlement
+    Appointment *-- AppointmentLink
+    Appointment --> Slot
+    Appointment ..> AppointmentPolicy : aplica
+    Schedule "1" *-- "many" WeeklyRange
+    Schedule "1" *-- "many" Block
+    Schedule ..> Slot : genera
+    ConductRecord ..> NoShowPolicy : aplica
+```
+
+> Las flechas entre módulos son **por identificador** (`customerId`, `appointmentId`), nunca por
+> referencia directa: así cada módulo puede cambiar su modelo interno sin romper a los demás.
+
+## 5. Agregados e invariantes
+
+Un **agregado** es el límite de consistencia: todo lo que está adentro se modifica junto y sus reglas
+se cumplen siempre. Entre agregados, la consistencia es eventual (vía eventos).
+
+| Agregado | Invariantes (siempre verdaderas) | Reglas |
+|---|---|---|
+| **Turno** | I-1. Solo se pasa de un estado a otro por las transiciones del diagrama 6. <br>I-2. **Un horario tiene como máximo un turno activo.** <br>I-3. Un cliente tiene como máximo **un turno futuro activo**. <br>I-4. El precio base no cambia después de reservar. <br>I-5. Asistencia o falta solo se marcan a partir del inicio del turno. <br>I-6. La liquidación existe si y solo si el estado es Asistió. <br>I-7. Todo cambio de estado deja un registro con actor y fecha. | RN-03, RN-05, RN-06b, RN-07 a RN-11, RN-31 a RN-33, RNF-13 |
+| **Agenda** | I-8. Las franjas de un mismo día no se superponen. <br>I-9. La duración del bloque es mayor que cero y divide el día en horarios enteros dentro de cada franja. | RN-01, RN-02, RN-04, RN-30 |
+| **Cliente** | I-10. El teléfono está normalizado (formato internacional) y es único entre clientes no vinculados. <br>I-11. Un cliente vinculado no puede volver a vincularse. | RF-14, RF-18, RNF-07 |
+| **Ficha de conducta** | I-12. Las faltas seguidas nunca son negativas y vuelven a cero con una asistencia. <br>I-13. La habilitación se **calcula**, no se guarda: bloqueado manual > faltas ≥ umbral > normal. | RN-12 a RN-17 |
+| **Regla de beneficio** | I-14. N ≥ 1 y descuento entre 1 % y 100 %. <br>I-15. Desactivar una regla no altera liquidaciones pasadas. | RN-18 a RN-23, RF-33 |
+| **Tarifa** | I-16. Siempre hay exactamente una tarifa vigente. | RN-06 |
+
+## 6. Ciclo de vida del Turno (actualizado)
+
+El modelado mostró un estado que faltaba en el análisis: la reserva de un cliente con 3 faltas seguidas
+**espera la aprobación del barbero** (RN-16), y mientras tanto ocupa el horario.
+
+```mermaid
+stateDiagram-v2
+    [*] --> PendienteAprobación: reserva de cliente con 3+ faltas seguidas
+    [*] --> Reservado: reserva normal (falta 1 h o más)
+    [*] --> Confirmado: reserva con menos de 1 h (RN-31)
+
+    PendienteAprobación --> Reservado: el barbero aprueba
+    PendienteAprobación --> Rechazado: el barbero rechaza / vence sin respuesta (P-04)
+
+    Reservado --> Confirmado: confirma en la ventana de 30 min
+    Reservado --> SinConfirmar: vence la ventana sin respuesta
+    SinConfirmar --> Confirmado: el barbero lo mantiene
+    SinConfirmar --> Liberado: el barbero lo libera
+
+    Reservado --> Cancelado: cliente a tiempo / barbero
+    Confirmado --> Cancelado: cliente a tiempo / barbero
+    PendienteAprobación --> Cancelado: el cliente desiste
+    Reservado --> CanceladoTarde: cliente con menos de 4 h
+    Confirmado --> CanceladoTarde: cliente con menos de 4 h
+    SinConfirmar --> CanceladoTarde: cliente con menos de 4 h
+
+    Confirmado --> Asistió: el barbero marca asistencia
+    Confirmado --> Faltó: el barbero marca falta
+    SinConfirmar --> Faltó: el barbero marca falta
+    SinConfirmar --> Asistió: el cliente vino igual (P-09)
+
+    Rechazado --> [*]
+    Cancelado --> [*]
+    CanceladoTarde --> [*]
+    Liberado --> [*]
+    Asistió --> [*]
+    Faltó --> [*]
+```
+
+| Grupo | Estados | ¿Ocupa el horario? |
+|---|---|---|
+| Activos | PendienteAprobación, Reservado, Confirmado, SinConfirmar | Sí |
+| Finales | Rechazado, Cancelado, CanceladoTarde, Liberado, Asistió, Faltó | No (Asistió y Faltó quedan en el pasado) |
+
+## 7. Eventos de dominio
+
+| Evento | Emisor | Datos | Quién reacciona y para qué |
+|---|---|---|---|
+| `AppointmentBooked` | Turnos | turno, cliente, horario, estado inicial | Notificaciones: aviso al barbero (y al cliente si nace Confirmado) |
+| `AppointmentApprovalRequested` | Turnos | turno, cliente | Notificaciones: pedir decisión al barbero |
+| `AppointmentApproved` / `AppointmentRejected` | Turnos | turno, motivo | Notificaciones: aviso al cliente |
+| `DayBeforeReminderDue` | Turnos | turno | Notificaciones: recordatorio simple al cliente |
+| `ConfirmationRequested` | Turnos | turno, vence a las | Notificaciones: pedido con acciones Confirmar/Cancelar |
+| `AppointmentConfirmed` | Turnos | turno | Notificaciones: aviso al barbero |
+| `ConfirmationExpired` | Turnos | turno | Notificaciones: pedir decisión al barbero (Mantener/Liberar) |
+| `AppointmentReleased` | Turnos | turno | Notificaciones: aviso al cliente |
+| `AppointmentCancelled` | Turnos | turno, por quién, ¿tarde? | Conducta: si es tarde, lo registra. Notificaciones: aviso a la otra parte |
+| `AttendanceRegistered` | Turnos | turno, cliente, fecha local, ¿asistió?, liquidación | Conducta: suma o resetea faltas. Precios: registra la visita computable |
+| `NoShowThresholdReached` | Conducta | cliente | Notificaciones: aviso al cliente de la política |
+| `BenefitReached` | Precios | cliente, beneficio | Notificaciones: "tu próximo corte tiene X % off" |
+| `SlotBlocked` | Agenda | rango | Turnos: cancela por barbero los turnos activos del rango |
+
+**Garantía de entrega.** Un evento se registra en la misma operación que el cambio que lo produce
+(si el cambio se guarda, el evento también) y se procesa después, con reintentos. Así un fallo en las
+notificaciones nunca deja un turno a medio cambiar (RNF-10).
+
+## 8. Servicios de dominio (lógica pura)
+
+Funciones sin estado ni acceso a datos, que reciben todo por parámetro (constitución, principio 3).
+Son el centro de los tests.
+
+| Servicio | Módulo | Entrada → salida |
+|---|---|---|
+| `offeredSlots` | Agenda | agenda, rango de días, ahora → horarios ofrecidos |
+| `freeSlots` | Turnos | horarios ofrecidos, turnos activos → horarios libres |
+| `initialStatus` | Turnos | horario, ahora, habilitación, política → PendienteAprobación / Reservado / Confirmado |
+| `cancellationKind` | Turnos | turno, ahora, política → a tiempo / tarde |
+| `dueActions` | Turnos | turnos activos, ahora, política → recordatorios, pedidos y vencimientos que corresponden ahora |
+| `eligibility` | Conducta | ficha, política → normal / requiere aprobación / bloqueado |
+| `applicableDiscounts` | Precios | visitas previas del cliente, fecha local del turno, reglas activas → descuentos |
+| `settle` | Precios | precio base, descuentos → liquidación (suma de porcentajes, redondeo a centavos) |
+| `benefitProgress` | Precios | visitas del cliente, hoy, reglas → progreso por beneficio |
+
+**Simplificación que surge del modelo:** el progreso mensual **no se reinicia con una tarea programada**
+(RF-31). Se calcula contando las visitas computables del mes en curso; el 1.º de cada mes el conteo da
+cero solo.
+
+## 9. Propuestas que surgen del modelado (para aprobar)
+
+- **P-04. Reserva pendiente sin respuesta.** Si el barbero no aprueba ni rechaza una reserva pendiente
+  antes del momento del pedido de confirmación (1 h antes), se rechaza automáticamente y se avisa al cliente.
+  Para que el barbero tenga tiempo de decidir, a un cliente que requiere aprobación solo se le ofrecen
+  horarios que empiezan dentro de [2 h] o más.
+- **P-05. El barbero puede cancelar un turno** (por ejemplo, por una urgencia). No tiene consecuencias
+  para el cliente y se le avisa. No estaba en el análisis y es necesario para los bloqueos (RF-05).
+- **P-06. Corrección de asistencia.** El barbero puede corregir una marca equivocada (Asistió ↔ Faltó)
+  hasta [24 h] después. La corrección recalcula faltas seguidas y visitas computables, y queda en el historial.
+- **P-07. Sin reprogramación en v1.** Para cambiar de horario, el cliente cancela y vuelve a reservar
+  (aplican las reglas de cancelación).
+- **P-08. Turno manual a un cliente existente.** Al cargar un turno a mano, el barbero busca primero
+  entre los clientes (por nombre o teléfono) y solo crea uno nuevo si no existe.
+- **P-09. Asistencia de un turno sin confirmar.** Si el turno quedó SinConfirmar y el cliente vino
+  igual, el barbero puede marcar Asistió directamente.

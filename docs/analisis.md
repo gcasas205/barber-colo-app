@@ -6,6 +6,8 @@ Fecha: 2026-11-20
 > Documento previo a la constitución y a las specs. Define el problema, los actores, las reglas de
 > negocio y los requisitos a nivel producto. De acá salen las specs `specs/NNN-*/` del flujo SDD.
 > La tecnología se decide después (en la constitución y en cada `plan.md`).
+>
+> Continúa en: [modelo de dominio](dominio.md) · [casos de uso](casos-de-uso.md) · [diagramas de secuencia](secuencias.md).
 
 ---
 
@@ -50,6 +52,9 @@ Una aplicación web instalable en el celular (PWA, con manifest y notificaciones
 | **Sistema** (procesos automáticos) | Envía los pedidos de confirmación, avisa al barbero de los turnos sin confirmar y recalcula faltas y beneficios. |
 
 ## 5. Ciclo de vida de un turno
+
+> **Versión vigente:** el diagrama actualizado (con PendienteAprobación y Rechazado) está en
+> [`docs/dominio.md`](dominio.md#6-ciclo-de-vida-del-turno-actualizado). Este queda como referencia del análisis inicial.
 
 ```mermaid
 stateDiagram-v2

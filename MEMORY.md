@@ -5,7 +5,8 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 ## Estado actual
 - Análisis aprobado (`docs/analisis.md`) y constitución aprobada (`docs/constitution.md`).
 - Base del repo: Next.js 16 + Tailwind + Vitest, hooks de husky y CI/CD en GitHub Actions con deploy a Vercel.
-- Todavía no hay ninguna spec. Siguiente: `/sdd-spec 001-agenda-disponibilidad`.
+- Camino acordado: Análisis → Diseño → Implementación (specs SDD con TDD) → Tests de integración/e2e → App terminada.
+- Análisis extendido en revisión: `docs/dominio.md`, `docs/casos-de-uso.md`, `docs/secuencias.md` (propuestas P-04 a P-09).
 
 ## Decisiones (y por qué)
 - Supabase Cron para las tareas cada minuto: la ventana de confirmación es de 30 min y el cron gratis de Vercel no alcanza.
