@@ -1,0 +1,4 @@
+# Antes de cada commit: chequeos rápidos (lint, tipos y tests).
+npm run lint
+npm run typecheck
+npm test

@@ -1,0 +1,2 @@
+# Antes de cada push: la misma verificación completa que corre en GitHub Actions.
+npm run check
