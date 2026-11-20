@@ -1,6 +1,6 @@
 # Casos de uso — barber-colo
 
-Estado: borrador v2 (decisiones P-04 a P-13 incorporadas)
+Estado: aprobado (2026-11-20)
 Origen: [`docs/analisis.md`](analisis.md) · Modelo: [`docs/dominio.md`](dominio.md)
 
 > Cada caso de uso es algo que un actor quiere lograr con el sistema. Se agrupan por módulo dueño para
@@ -276,7 +276,7 @@ CU-22, que decide qué corresponde según la hora:
 2. El sistema le muestra los horarios libres (mismas reglas que CU-02) e indica si el cambio quedará como tarde.
 3. El cliente elige el nuevo horario y confirma.
 4. El sistema verifica que siga libre, mueve el turno y recalcula su estado (`initialStatus`): si estaba Confirmado, vuelve a Reservado y se reprograman el recordatorio y el pedido de confirmación.
-5. El sistema avisa al barbero.
+5. El sistema le envía una notificación al barbero con el horario anterior, el nuevo y si fue tarde.
 
 **Flujos alternativos**
 - 2a. **Faltan menos de 4 h** (y pasaron más de 10 min desde la reserva): se advierte que quedará registrado como reprogramación tarde.

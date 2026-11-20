@@ -1,6 +1,6 @@
 # Diagramas de secuencia — barber-colo
 
-Estado: borrador (pendiente de aprobación)
+Estado: aprobado (2026-11-20)
 Modelo: [`docs/dominio.md`](dominio.md) · Casos de uso: [`docs/casos-de-uso.md`](casos-de-uso.md)
 
 > Muestran cómo colaboran los **módulos del dominio** en los cuatro flujos más delicados. Son

@@ -1,6 +1,6 @@
 # Modelo de dominio — barber-colo
 
-Estado: borrador v2 (P-04 a P-13 aprobadas; P-14 y P-15 por confirmar)
+Estado: aprobado (2026-11-20)
 Origen: [`docs/analisis.md`](analisis.md) (RN-x, RF-x, RNF-x)
 
 > Modelo conceptual, independiente de la tecnología. Define **qué cosas existen en el negocio, qué reglas
@@ -415,9 +415,9 @@ cero solo.
 | P-08 ✅ | Al cargar un turno a mano, el barbero busca al cliente por **nombre o teléfono** y solo crea uno nuevo si no existe. |
 | P-09 ✅ | Si un turno quedó SinConfirmar y el cliente vino igual, el barbero puede marcar Asistió directamente. |
 
-## 10. Reglas nuevas para confirmar
+## 10. Reglas nuevas (aprobadas)
 
-### P-14. Reprogramación
+### P-14 ✅ Reprogramación
 
 Reprogramar es **mover el mismo turno** a otro horario libre: conserva su historial, su precio base y su
 enlace. No es cancelar y reservar de nuevo.
@@ -434,10 +434,13 @@ enlace. No es cancelar y reservar de nuevo.
 - **Precio**: se mantiene el precio base original.
 - **Reprogramación del barbero**: como en P-05, escribe el motivo y al cliente le llega una
   notificación con el nuevo horario. No cuenta como reprogramación tarde ni consume el límite del cliente.
+- **Aviso al barbero**: toda reprogramación del cliente le envía una notificación al barbero con el
+  cliente, el horario anterior, el nuevo y si fue tarde (por ejemplo: "Juan pasó su turno del jueves
+  16:00 al viernes 11:00").
 - Evento: `AppointmentRescheduled` (horario anterior, horario nuevo, por quién, ¿tarde?). Conducta
   registra las tardías; Notificaciones avisa a la otra parte.
 
-### P-15. Descuento de cumpleaños
+### P-15 ✅ Descuento de cumpleaños
 
 - Nuevo tipo de beneficio **BIRTHDAY**: [15 %] en un corte cuya fecha caiga en la **semana del
   cumpleaños** (de [3] días antes a [3] días después), **una vez por año**.
