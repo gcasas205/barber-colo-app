@@ -11,6 +11,8 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 ## Decisiones (y por qué)
 - D-10: servicios Corte $18.000, Completo (corte, barba y cejas) $20.000, Claritos $70.000, con duración propia; agenda con paso de 15 min; beneficios solo Corte y Completo; ceras = producto, fuera. P-17 aprobada (cambiar servicio al marcar asistencia, precio del servicio nuevo). Duraciones: Corte 30, Completo 30, Claritos 120 (editables en Ajustes → Servicios).
 - P-16: titular + hasta 5 personas a cargo (hijos); cada persona es un cliente con su historial; notificaciones al titular.
+- D-11: usuarios de prueba temporales en el mismo entorno (Colo demo + 2 clientes), con botones en el login (spec 002). Se apagan solos al existir el primer cliente real; quitarlos antes del lanzamiento.
+- Seguridad 001: sin token de Supabase en GitHub (migraciones con `--db-url` en el entorno `production`), TLS verificado, `app_server` con permisos mínimos, cabeceras CSP/HSTS.
 - Supabase Cron para las tareas cada minuto: la ventana de confirmación es de 30 min y el cron gratis de Vercel no alcanza.
 - Vercel no despliega solo (`vercel.json`): despliega GitHub Actions después de que pasan los checks.
 - Fuentes del sistema en lugar de `next/font/google`: el build no depende de la red.

@@ -169,17 +169,31 @@ suite con `TZ=UTC` y `TZ=Asia/Tokyo`. Corre en CI.
    los tipos y verifica que no cambien (`git diff --exit-code src/shared/db/types.ts`), y corre
    `tests/integration` y `supabase db advisors`. El job `deploy` pasa a esperar a `checks` **y** a
    `integration`.
-2. **Job `migrate`** (solo en `main`, antes de `deploy`): `supabase db push` contra el proyecto de
-   producción con `SUPABASE_ACCESS_TOKEN` (token con permisos acotados) y `SUPABASE_DB_PASSWORD`. Si
-   faltan esos secretos, se saltea con un aviso, igual que el deploy.
+2. **Job `migrate`** (solo en `main`, antes de `deploy`, en el entorno `production` de GitHub):
+   `supabase db push --db-url` con `SUPABASE_DB_URL` (conexión directa, con el rol `postgres`). No
+   usa token de acceso (S-1). Si falta el secreto, se saltea con un aviso, igual que el deploy.
+
+## 10b. Seguridad
+
+| # | Riesgo | Medida | Se verifica con |
+|---|---|---|---|
+| S-1 | Un token de Supabase con acceso a toda la cuenta guardado en GitHub | No se usa token de acceso. Las migraciones se aplican con `supabase db push --db-url`, con la contraseña de la base guardada en el **entorno `production` de GitHub**, que solo usa `main` y pide tu aprobación antes de correr | Configuración del entorno en GitHub (T1) |
+| S-2 | Conexión a la base sin verificar el certificado (suplantación) | `pg` con `ssl: { ca: <certificado de Supabase>, rejectUnauthorized: true }`. Prohibido `rejectUnauthorized: false`: hay un test que busca ese texto en el código | Test + conexión real en T10 |
+| S-3 | Permisos de más en el rol de la app | En la 001, `app_server` solo tiene `SELECT` en las tablas de agenda y servicios. Cada spec agrega los permisos que necesita | Test de integración: un `INSERT` como `app_server` falla |
+| S-4 | Base expuesta a la API pública de Supabase | Los esquemas `app` y `stats` no se publican; se revocan los permisos de `anon` y `authenticated` (también los predeterminados para tablas futuras); RLS activado en todas las tablas | Tests de integración + `supabase db advisors` |
+| S-5 | Ataques desde el navegador (embeber la app, scripts ajenos) | Cabeceras en `next.config.ts`: CSP, `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` y HSTS | Test que verifica las cabeceras de la respuesta |
+| S-6 | Parámetros de la URL manipulados | Validados con Zod. Si un valor es inválido o la fecha está fuera de la ventana, se usan los valores por defecto. Las consultas van siempre con parámetros (Kysely) | Tests de la página |
+| S-7 | Datos de más en la página pública | Solo se muestran los horarios libres, nunca quién ocupa un horario ni el motivo de un bloqueo | Revisión del caso de uso: devuelve solo inicios |
+
+Los usuarios de prueba (D-11) no entran en esta spec: llegan con el login, en la 002.
 
 ## 11. Pasos de una persona (Supabase y secretos)
 
 | Paso | Quién | Cómo se verifica | Cómo se vuelve atrás |
 |---|---|---|---|
 | Crear el proyecto `barber-colo` en Supabase (región São Paulo, plan gratuito) | Vos | Me pasás el *project ref* | Borrar el proyecto |
-| Crear un token de acceso con permisos acotados al proyecto | Vos | Existe el secreto `SUPABASE_ACCESS_TOKEN` en GitHub | Revocar el token |
-| Cargar `SUPABASE_DB_PASSWORD` y `SUPABASE_PROJECT_REF` en GitHub | Vos | El job `migrate` corre en verde | Borrar los secretos |
+| Crear el entorno `production` en GitHub, limitado a `main` y con tu aprobación obligatoria | Vos | Aparece en Settings → Environments | Borrar el entorno |
+| Cargar `SUPABASE_DB_URL` como secreto de ese entorno | Vos | El job `migrate` corre en verde | Borrar el secreto |
 | Después del primer `migrate`: poner contraseña a `app_server` (SQL que te paso) y cargar `DATABASE_URL` (pooler, modo transacción) en Vercel | Vos | La página `/` del deploy muestra los servicios | Quitar la variable |
 
 ## 12. Cobertura
@@ -196,3 +210,4 @@ suite con `TZ=UTC` y `TZ=Asia/Tokyo`. Corre en CI.
 | RNF-1, RNF-2 | kernel, tests con tres zonas |
 | RNF-3, RNF-4 | página, verificación manual |
 | RNF-5 | migración de configuración inicial |
+| Seguridad (constitución) | sección 10b |
