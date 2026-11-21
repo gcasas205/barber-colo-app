@@ -14,9 +14,16 @@ import { SessionScreen } from "../_sesion/SessionScreen";
 import { signOut, signOutEverywhere } from "../ingresar/actions";
 import { CustomerList } from "./CustomerList";
 
+/**
+ * RNF-4: ruta bloqueante, renderizada entera en cada pedido. La CSP con nonce no es compatible con el
+ * prerenderizado parcial (los scripts del armazón prerenderizado no tendrían el nonce).
+ */
+export const instant = false;
+
 export const metadata: Metadata = { title: "Panel de Colo · El Colo", robots: { index: false } };
 
-export default function ColoPage() {
+export default async function ColoPage() {
+  await connection(); // RNF-4: ver `instant` arriba
   return (
     <Suspense
       fallback={

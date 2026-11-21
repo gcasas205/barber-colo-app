@@ -2,27 +2,17 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
+import { publicCsp, SESSION_ROUTES } from "./src/shared/security/csp";
+
 /**
- * CSP fija (S-5). Solo recursos propios; nadie puede embeber la app ni mandar formularios afuera.
- * 'unsafe-inline' en scripts lo necesita Next para sus scripts de arranque sin nonce. La CSP con nonce
- * obliga a renderizar todo en cada pedido y no es compatible con el prerenderizado parcial: se
- * revisa en la spec 002, cuando haya sesión y datos personales.
+ * CSP fija para la página pública (prerenderizada). Las pantallas con sesión reciben otra, con un nonce
+ * por pedido, desde src/proxy.ts (RNF-4 de la 002). Ver src/shared/security/csp.ts.
  */
-const csp = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join("; ");
+const csp = publicCsp(isDev);
+/** Todo lo que no es una pantalla con sesión. */
+const PUBLIC_ROUTES = `/((?!${SESSION_ROUTES.join("|")}).*)`;
 
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: csp },
   // Dos años, como pide la lista de precarga de HSTS. Vercel sirve todo por HTTPS.
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -45,7 +35,10 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      { source: PUBLIC_ROUTES, headers: [{ key: "Content-Security-Policy", value: csp }] },
+    ];
   },
 };
 

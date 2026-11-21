@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import nextConfig from "../next.config";
 
+/** Junta las cabeceras de todas las reglas de next.config que aplican a la ruta (como hace Next). */
 async function headersFor(path: string) {
   const rules = (await nextConfig.headers?.()) ?? [];
-  const rule = rules.find((r) => new RegExp(`^${r.source.replace("(.*)", ".*")}$`).test(path));
-  return Object.fromEntries((rule?.headers ?? []).map((h) => [h.key.toLowerCase(), h.value]));
+  const matching = rules.filter((r) => new RegExp(`^${r.source.replace("(.*)", ".*")}$`).test(path));
+  return Object.fromEntries(matching.flatMap((r) => r.headers).map((h) => [h.key.toLowerCase(), h.value]));
 }
 
 describe("cabeceras de seguridad (S-5)", () => {
@@ -16,6 +17,14 @@ describe("cabeceras de seguridad (S-5)", () => {
     expect(h["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(h["permissions-policy"]).toMatch(/camera=\(\)/);
     expect(await headersFor("/prototipo/reservar")).toEqual(h);
+  });
+
+  it("las pantallas con sesión no reciben la CSP fija: la suya, con nonce, la pone el proxy (RNF-4 de la 002)", async () => {
+    for (const path of ["/ingresar", "/perfil", "/colo", "/auth/callback"]) {
+      const h = await headersFor(path);
+      expect(h["content-security-policy"]).toBeUndefined();
+      expect(h["x-frame-options"]).toBe("DENY");
+    }
   });
 
   it("la CSP solo permite recursos propios y nadie puede embeber la app", async () => {

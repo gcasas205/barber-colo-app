@@ -20,7 +20,7 @@ Estado: aprobado (2026-11-21), con el cambio 01 (sin Google) · Plan: [`plan.md`
   - Hecho cuando: tests de los componentes; capturas en 360 px y web, claro y oscuro; detector de impeccable sin hallazgos.
 - [x] **T7. [agente] Pantalla de Colo: lista, sobrenombre y salir de todos los dispositivos.** RF-5b, RF-19 a RF-21
   - Hecho cuando: tests y capturas; un cliente que abre `/colo` ve RF-8.
-- [ ] **T8. [agente] Seguridad del navegador: CSP con nonce en las pantallas con sesión y hash del script del tema.** RNF-4
+- [x] **T8. [agente] Seguridad del navegador: CSP con nonce en las pantallas con sesión y hash del script del tema.** RNF-4
   - Hecho cuando: test de cabeceras por ruta; e2e sin errores de CSP; la página pública sigue prerenderizada.
 - [ ] **T9. [agente] Pruebas de punta a punta, velocidad y comando de borrado de la demo.** RF-25, RNF-6
   - Hecho cuando: `tests/e2e/login.py` y `speed.py` en verde en local; `npm run demo:purge` probado

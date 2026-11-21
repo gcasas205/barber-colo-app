@@ -9,9 +9,16 @@ import { SessionScreen } from "../_sesion/SessionScreen";
 import { GuestForm } from "./GuestForm";
 import { LoginForm } from "./LoginForm";
 
+/**
+ * RNF-4: ruta bloqueante, renderizada entera en cada pedido. La CSP con nonce no es compatible con el
+ * prerenderizado parcial (los scripts del armazón prerenderizado no tendrían el nonce).
+ */
+export const instant = false;
+
 export const metadata: Metadata = { title: "Ingresar · El Colo", robots: { index: false } };
 
-export default function IngresarPage() {
+export default async function IngresarPage() {
+  await connection(); // RNF-4: ver `instant` arriba
   return (
     <SessionScreen>
       <h1 className="text-[28px] font-bold leading-tight">Ingresar</h1>
