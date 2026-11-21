@@ -1,5 +1,5 @@
 import "server-only";
-import { getAvailability, type AvailabilityQuery } from "@/modules/schedule";
+import { getAvailability, getScheduleSnapshot, type AvailabilityQuery } from "@/modules/schedule";
 import { listServices } from "@/modules/pricing";
 import { createServiceCatalog } from "@/modules/pricing/infrastructure/service-repository";
 import {
@@ -17,5 +17,6 @@ export function queries(db: Database = database()) {
     listServices: () => listServices({ catalog }),
     contactWhatsapp: async () => (await schedule.settings()).contactWhatsapp,
     getAvailability: (query: AvailabilityQuery) => getAvailability({ schedule, occupations }, query),
+    getScheduleSnapshot: (now: Date) => getScheduleSnapshot({ schedule, occupations }, now),
   };
 }

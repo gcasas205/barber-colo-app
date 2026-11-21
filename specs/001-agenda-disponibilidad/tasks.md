@@ -22,3 +22,19 @@ Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
   - Hecho cuando: el PR de la spec muestra el job `integration` en verde y `deploy` espera a ambos; las migraciones corren en el entorno `production` antes del deploy y se saltean con aviso si falta el secreto (S-1).
 - [ ] **T10. [persona] Primer despliegue con base real.** RF-1
   - Hecho cuando: el job `migrate` corrió en `main`; `app_server` tiene contraseña y `DATABASE_URL` está en Vercel; la página `/` de producción muestra los tres servicios. Evidencia: captura o URL.
+
+
+## Cambio 01
+
+- [x] **T11. [agente] Kernel y servicios: `addDays` con `Date.UTC` y precios sin centavos (dominio + migración).** RF-3, RF-13, constitución 6
+  - Hecho cuando: tests de fechas sin cambios en verde en las tres zonas; `validateService` y la base rechazan centavos.
+- [x] **T12. [agente] Foto de la agenda y reloj del servidor.** RF-15, RF-16, caso 14, S-7
+  - Hecho cuando: el caso de uso devuelve todo lo necesario para el mes en una consulta por tabla, sin motivos de bloqueos; `serverClock` corrige el desfase del dispositivo (tests).
+- [x] **T13. [agente] Página con cálculo en el dispositivo: dirección fija, días sin lugar no elegibles, refresco cada minuto y loader en las esperas.** RF-4, RF-5, RF-15, RF-16, RF-19
+  - Hecho cuando: tests del componente en verde; en el navegador, elegir servicio, día o semana no cambia la dirección ni pide nada al servidor.
+- [x] **T14. [agente] Tema claro/oscuro/automático, pie con WhatsApp e Instagram e ícono de la app.** RF-17, RF-18, RF-20
+  - Hecho cuando: el tema elegido se recuerda y abre sin parpadeo (captura); el detector de impeccable sin hallazgos en los tres temas; el ícono aparece en la pestaña.
+- [x] **T15. [agente] Región São Paulo y test de velocidad.** RNF-3
+  - Hecho cuando: `vercel.json` con `gru1`; el test de velocidad local da < 2 s la carga y < 200 ms los cambios.
+- [ ] **T16. [persona] Verificación en producción.** RNF-3, RF-15, RF-17
+  - Hecho cuando: después del deploy, el test de velocidad contra producción cumple RNF-3 y Gonzalo confirma en su celular que se siente rápida y que el tema se recuerda.

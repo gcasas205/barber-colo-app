@@ -46,23 +46,16 @@ function within(date: LocalDate, w: { first: LocalDate; last: LocalDate }): bool
   return compareLocalDate(date, w.first) >= 0 && compareLocalDate(date, w.last) <= 0;
 }
 
-/** Caso de uso de consulta: horarios libres de un servicio para un día y su semana. */
-export async function getAvailability(
-  deps: { schedule: ScheduleRepository; occupations: OccupationSource },
-  query: AvailabilityQuery,
-): Promise<Availability> {
-  const [{ config, contactWhatsapp }, ranges] = await Promise.all([
-    deps.schedule.settings(),
-    deps.schedule.weeklyRanges(),
-  ]);
-  const window = bookingWindow(query.now, config.maxAdvanceDays);
-  // Una sola consulta para toda la ventana: de las 00:00 del primer día a las 00:00 del día siguiente al último.
-  const occupations = await deps.occupations.occupations({
-    start: instantAt(window.first, 0),
-    end: instantAt(addDays(window.last, 1), 0),
-  });
-  const input: AvailabilityInput = { ranges, config, serviceMinutes: query.serviceMinutes, occupations, now: query.now };
+/** Lo que elige el visitante. */
+export type Selection = { day?: LocalDate | null; weekOf?: LocalDate | null };
 
+/**
+ * Cálculo puro de lo que muestra la página: día elegido, sus horarios, la semana y la navegación.
+ * No lee nada: corre igual en el servidor y en el navegador (RF-15).
+ */
+export function computeAvailability(input: AvailabilityInput, selection: Selection, contactWhatsapp: string): Availability {
+  const window = bookingWindow(input.now, input.config.maxAdvanceDays);
+  const query = { ...selection };
   const first = firstDayWithRoom(input);
   const chosenDay = query.day && within(query.day, window) ? query.day : null;
 
@@ -92,4 +85,23 @@ export async function getAvailability(
     previousWeek: compareLocalDate(shownWeek, firstWeek) > 0 ? addDays(shownWeek, -7) : null,
     nextWeek: compareLocalDate(shownWeek, lastWeek) < 0 ? addDays(shownWeek, 7) : null,
   };
+}
+
+/** Caso de uso de consulta: horarios libres de un servicio para un día y su semana (lee la base). */
+export async function getAvailability(
+  deps: { schedule: ScheduleRepository; occupations: OccupationSource },
+  query: AvailabilityQuery,
+): Promise<Availability> {
+  const [{ config, contactWhatsapp }, ranges] = await Promise.all([
+    deps.schedule.settings(),
+    deps.schedule.weeklyRanges(),
+  ]);
+  const window = bookingWindow(query.now, config.maxAdvanceDays);
+  // Una sola consulta para toda la ventana: de las 00:00 del primer día a las 00:00 del día siguiente al último.
+  const occupations = await deps.occupations.occupations({
+    start: instantAt(window.first, 0),
+    end: instantAt(addDays(window.last, 1), 0),
+  });
+  const input: AvailabilityInput = { ranges, config, serviceMinutes: query.serviceMinutes, occupations, now: query.now };
+  return computeAvailability(input, { day: query.day, weekOf: query.weekOf }, contactWhatsapp);
 }

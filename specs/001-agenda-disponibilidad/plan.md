@@ -214,3 +214,35 @@ Los usuarios de prueba (D-11) no entran en esta spec: llegan con el login, en la
 | RNF-3, RNF-4 | página, verificación manual |
 | RNF-5 | migración de configuración inicial |
 | Seguridad (constitución) | sección 10b |
+
+
+## Cambio 01 (aprobado el 2026-11-21)
+
+Spec: sección "Cambio 01". Reemplaza a la sección 7 en lo que se contradiga (el estado ya no va en la URL).
+
+### Qué cambia y por qué
+
+| Antes | Ahora | Por qué |
+|---|---|---|
+| Cada elección pedía la página al servidor (`?servicio=…`) | El servidor manda una sola vez una **foto de la agenda** del mes (franjas, paso, anticipación, bloqueos de la ventana, servicios, contacto y la hora del servidor) y el navegador calcula con el **mismo dominio puro** de T4 | Cambiar servicio, día o semana pasa de un viaje al servidor (~1 s) a un cálculo local (< 200 ms); la dirección queda fija (RF-15, RNF-3) |
+| Funciones de Vercel en Washington (`iad1`, por defecto) | `vercel.json` → `"regions": ["gru1"]` (São Paulo) | La base está en São Paulo: cada consulta deja de cruzar el continente |
+| "Ahora" del pedido | Hora del servidor al cargar + tiempo transcurrido (`performance.now()`), recalculado cada minuto | Un celular con la hora mal no ve horarios falsos (caso 14); la página abierta se mantiene al día (RF-16) |
+| Días sin lugar tocables | Días sin lugar no se pueden elegir (RF-5) | Validación |
+| `addDays` sumando milisegundos en UTC | `Date.UTC(año, mes, día + n)` | Letra del principio 6 |
+| Precio con centavos permitido | Dominio y base rechazan centavos (`price_cents % 100 = 0`, migración nueva) | RF-3, RF-13 |
+
+### Seguridad de la foto de la agenda
+- Solo lleva horarios de ocupación (inicio y fin), nunca quién ocupa ni el motivo de un bloqueo (S-7). Desde la spec 003, los turnos entran igual: solo como lapsos ocupados.
+- Es una vista para mirar: cuando exista la reserva (spec 003), el servidor vuelve a validar el horario contra la base. El cálculo del navegador nunca es la autoridad.
+
+### Tema (RF-17)
+- Control de tres opciones en la chapa superior (Claro, Oscuro, Automático). Se guarda en `localStorage` (si falla, se usa Automático).
+- Un script mínimo en el `<head>` aplica `data-theme` antes de dibujar, para que no parpadee. Tailwind pasa de la variante `dark:` por media query a una variante que mira `data-theme` y, en Automático, la preferencia del sistema. Los tokens de `globals.css` se reescriben igual.
+
+### Ícono (RF-20)
+- `src/app/icon.svg` = `loader-el-colo.svg` sin la hoja de estilos de animación; `src/app/apple-icon.png` (180 px) y `src/app/favicon.ico` (16, 32 y 48 px) generados desde ese SVG con `rsvg-convert`.
+
+### Tests
+- Unidad: `addDays` (sin cambios de resultado), `validateService` con centavos, reloj con desfase (`serverClock`), hook de minutos (RF-16) con tiempo simulado, componente cliente renderizado: días sin lugar sin enlace, cambio de servicio sin navegación.
+- Integración: el check de centavos en la base; la foto de la agenda desde la base (sin motivos de bloqueos).
+- Velocidad (RNF-3): `tests/e2e/speed.py` con Playwright, 4G lento simulado y CPU 4×; corre contra local y contra producción para la evidencia.

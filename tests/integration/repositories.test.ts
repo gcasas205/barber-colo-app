@@ -108,3 +108,15 @@ describe("composición completa", () => {
     expect(result.week.find((d) => d.date === "2026-11-26")?.count).toBe(34 - 4);
   });
 });
+
+describe("foto de la agenda desde la base (cambio 01)", () => {
+  it("trae configuración, franjas y bloqueos como lapsos, sin el motivo", async () => {
+    await admin.query("delete from app.schedule_blocks");
+    await admin.query("insert into app.schedule_blocks (period, reason) values ('[2026-11-26 10:00-03, 2026-11-26 11:00-03)', 'Turno con el médico')");
+    const snapshot = await queries(db).getScheduleSnapshot(instantAt(localDate("2026-11-24"), 9 * 60));
+    expect(snapshot.ranges).toHaveLength(12);
+    expect(snapshot.config.stepMinutes).toBe(15);
+    expect(snapshot.occupations).toEqual([[Date.parse("2026-11-26T13:00:00Z"), Date.parse("2026-11-26T14:00:00Z")]]);
+    expect(JSON.stringify(snapshot)).not.toContain("médico");
+  });
+});

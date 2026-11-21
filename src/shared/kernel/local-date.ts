@@ -35,8 +35,10 @@ export function localDate(raw: string): LocalDate {
   return parsed;
 }
 
+/** Suma días de calendario. Date.UTC normaliza el desborde (31 + 1 → 1 del mes siguiente) sin sumar milisegundos. */
 export function addDays(d: LocalDate, days: number): LocalDate {
-  return fromUtcMs(toUtcMs(d) + days * DAY_MS);
+  const [y, m, day] = d.split("-").map(Number) as [number, number, number];
+  return fromUtcMs(Date.UTC(y, m - 1, day + days));
 }
 
 export function isoWeekday(d: LocalDate): IsoWeekday {

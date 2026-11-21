@@ -41,8 +41,37 @@
   --neutro-fondo: #eceff3;
 }
 
+/*
+ * Tema (RF-17): Claro, Oscuro o Automático. Con data-theme en <html> manda la elección del visitante;
+ * sin data-theme (Automático, o si no hay JavaScript) se sigue la configuración del dispositivo.
+ * El script del <head> pone data-theme antes de dibujar, así no hay parpadeo.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --porcelana: #0b1220;
+  --chapa-blanca: #131d31;
+  --linea: #26344f;
+  --esmalte-800: #1d2f52;
+  --esmalte-100: #1a2740;
+  --esmalte-200: #2f4268;
+  --tinta: #eef1f6;
+  --tinta-suave: #a7b2c7;
+  --poste: #c03a43;
+  --poste-oscuro: #a8323a;
+  --poste-claro: #3a1a20;
+  --ok: #6fcf9b;
+  --ok-fondo: #12301f;
+  --espera: #f0b64d;
+  --espera-fondo: #352708;
+  --alerta: #f07a80;
+  --alerta-fondo: #3a1a20;
+  --neutro: #a7b2c7;
+  --neutro-fondo: #1a2438;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
+    color-scheme: dark;
     --porcelana: #0b1220;
     --chapa-blanca: #131d31;
     --linea: #26344f;
@@ -62,6 +91,18 @@
     --alerta-fondo: #3a1a20;
     --neutro: #a7b2c7;
     --neutro-fondo: #1a2438;
+  }
+}
+
+/* La variante dark: de Tailwind sigue la misma regla que los tokens. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
   }
 }
 

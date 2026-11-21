@@ -30,6 +30,10 @@ describe("validateService (RF-13)", () => {
     });
   });
 
+  it("rechaza un precio con centavos (RF-3: los precios se muestran sin decimales)", () => {
+    expect(validateService({ ...corte, priceCents: 1_800_050 }, 15, [])).toEqual({ ok: false, error: ["PRICE_HAS_CENTS"] });
+  });
+
   it("acepta 20 minutos si el paso es de 10", () => {
     expect(validateService({ ...corte, durationMinutes: 20 }, 10, []).ok).toBe(true);
   });

@@ -20,13 +20,13 @@ export type Service = {
 /** Lo que hace falta para validar un servicio nuevo o editado. */
 export type ServiceDraft = Pick<Service, "name" | "priceCents" | "durationMinutes">;
 
-export type ServiceError = "PRICE_NOT_POSITIVE" | "DURATION_NOT_MULTIPLE_OF_STEP" | "NAME_TAKEN";
+export type ServiceError = "PRICE_NOT_POSITIVE" | "PRICE_HAS_CENTS" | "DURATION_NOT_MULTIPLE_OF_STEP" | "NAME_TAKEN";
 
 /** Forma de comparar nombres: igual que el índice único de la base, `lower(trim(name))`. */
 export const normalizeServiceName = (name: string) => name.trim().toLowerCase();
 
 /**
- * RF-13: precio positivo, duración múltiplo del paso y nombre distinto de los demás servicios activos.
+ * RF-13: precio positivo y en pesos enteros, duración múltiplo del paso y nombre distinto de los demás servicios activos.
  * `otherActiveNames` no incluye al servicio que se está editando.
  */
 export function validateService(
@@ -36,6 +36,7 @@ export function validateService(
 ): Result<void, ServiceError[]> {
   const errors: ServiceError[] = [];
   if (!Number.isInteger(draft.priceCents) || draft.priceCents <= 0) errors.push("PRICE_NOT_POSITIVE");
+  else if (draft.priceCents % 100 !== 0) errors.push("PRICE_HAS_CENTS"); // pesos enteros (RF-3)
   if (!Number.isInteger(draft.durationMinutes) || draft.durationMinutes <= 0 || draft.durationMinutes % stepMinutes !== 0) {
     errors.push("DURATION_NOT_MULTIPLE_OF_STEP");
   }

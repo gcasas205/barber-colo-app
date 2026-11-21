@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Service } from "@/modules/pricing";
 import type { Availability, Start } from "@/modules/schedule";
@@ -15,7 +14,6 @@ import {
 import { Plate } from "@/ui/Plate";
 import { cx } from "@/ui/cx";
 import { ContactLink } from "./ContactLink";
-import { bookingHref } from "./search";
 
 // En oscuro el esmalte queda cerca del fondo de las chapas: lo elegido suma un borde interior claro.
 const SELECTED =
@@ -23,15 +21,23 @@ const SELECTED =
 const IDLE = "bg-chapa text-tinta shadow-[var(--shadow-chapa-clara)] hover:shadow-[inset_0_0_0_2px_var(--esmalte-200)]";
 const FOCUS = "focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-poste";
 
+/** Lo que puede hacer el visitante. El estado vive en BookingClient (RF-15: la dirección no cambia). */
+export type BookingActions = {
+  onService: (serviceId: string) => void;
+  onDay: (day: LocalDate) => void;
+  onWeek: (weekOf: LocalDate) => void;
+};
+
 export type BookingViewProps = {
   services: Service[];
   service: Service;
   availability: Availability;
   today: LocalDate;
+  actions: BookingActions;
 };
 
-/** Página pública de horarios libres (spec 001). Sin estado propio: todo viene de la dirección. */
-export function BookingView({ services, service, availability, today }: BookingViewProps) {
+/** Página pública de horarios libres (spec 001). Presentación pura: recibe todo calculado. */
+export function BookingView({ services, service, availability, today, actions }: BookingViewProps) {
   const a = availability;
   return (
     <>
@@ -44,12 +50,12 @@ export function BookingView({ services, service, availability, today }: BookingV
             const selected = s.id === service.id;
             return (
               <li key={s.id} className="flex">
-                <Link
-                  href={bookingHref({ servicio: s.slug, dia: a.day })}
-                  aria-current={selected ? "true" : undefined}
-                  scroll={false}
+                <button
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => actions.onService(s.id)}
                   className={cx(
-                    "flex min-h-[64px] w-full items-center justify-between gap-3 rounded-[var(--radius-control)] px-4 py-3 sm:flex-col sm:items-start",
+                    "flex min-h-[64px] w-full items-center justify-between gap-3 rounded-[var(--radius-control)] px-4 py-3 text-left sm:flex-col sm:items-start",
                     selected ? SELECTED : IDLE,
                     FOCUS,
                   )}
@@ -61,7 +67,7 @@ export function BookingView({ services, service, availability, today }: BookingV
                     </span>
                   </span>
                   <span className="cifra shrink-0 text-[19px]">{formatPesos(s.priceCents)}</span>
-                </Link>
+                </button>
               </li>
             );
           })}
@@ -78,15 +84,15 @@ export function BookingView({ services, service, availability, today }: BookingV
         </Plate>
       ) : (
         <>
-          <WeekPicker availability={a} service={service} />
-          <DaySlots availability={a} service={service} today={today} />
+          <WeekPicker availability={a} actions={actions} />
+          <DaySlots availability={a} service={service} today={today} actions={actions} />
         </>
       )}
     </>
   );
 }
 
-function WeekPicker({ availability: a, service }: { availability: Availability; service: Service }) {
+function WeekPicker({ availability: a, actions }: { availability: Availability; actions: BookingActions }) {
   const arrow = cx(
     "grid h-12 w-12 place-items-center rounded-[var(--radius-control)] bg-chapa text-tinta shadow-[var(--shadow-chapa-clara)]",
     FOCUS,
@@ -100,18 +106,18 @@ function WeekPicker({ availability: a, service }: { availability: Availability; 
         </h2>
         <div className="flex gap-2">
           {a.previousWeek ? (
-            <Link href={bookingHref({ servicio: service.slug, semana: a.previousWeek })} scroll={false} aria-label="Semana anterior" className={arrow}>
+            <button type="button" onClick={() => actions.onWeek(a.previousWeek!)} aria-label="Semana anterior" className={arrow}>
               <ChevronLeft aria-hidden size={24} strokeWidth={2.5} />
-            </Link>
+            </button>
           ) : (
             <span aria-hidden className={disabledArrow}>
               <ChevronLeft size={24} strokeWidth={2.5} />
             </span>
           )}
           {a.nextWeek ? (
-            <Link href={bookingHref({ servicio: service.slug, semana: a.nextWeek })} scroll={false} aria-label="Semana siguiente" className={arrow}>
+            <button type="button" onClick={() => actions.onWeek(a.nextWeek!)} aria-label="Semana siguiente" className={arrow}>
               <ChevronRight aria-hidden size={24} strokeWidth={2.5} />
-            </Link>
+            </button>
           ) : (
             <span aria-hidden className={disabledArrow}>
               <ChevronRight size={24} strokeWidth={2.5} />
@@ -136,18 +142,23 @@ function WeekPicker({ availability: a, service }: { availability: Availability; 
           const box = "flex min-h-[88px] flex-col items-center justify-center gap-1.5 rounded-[var(--radius-chapa)] px-1 py-3 text-center";
           return (
             <li key={d.date} className="flex">
-              {d.inWindow ? (
-                <Link
-                  href={bookingHref({ servicio: service.slug, dia: d.date })}
-                  scroll={false}
-                  aria-current={selected ? "date" : undefined}
+              {d.inWindow && (!full || selected) ? (
+                <button
+                  type="button"
+                  onClick={() => actions.onDay(d.date)}
+                  aria-pressed={selected}
                   aria-label={`${formatDayLong(d.date)}, ${status}`}
-                  className={cx(box, "w-full", selected ? SELECTED : IDLE, full && !selected && "opacity-70", FOCUS)}
+                  className={cx(box, "w-full", selected ? SELECTED : IDLE, FOCUS)}
                 >
                   {body}
-                </Link>
+                </button>
               ) : (
-                <span aria-label={`${formatDayLong(d.date)}, ${status}`} className={cx(box, "w-full text-tinta-suave")}>
+                // RF-5: fuera de la ventana o sin lugar, no se puede elegir.
+                <span
+                  role="img"
+                  aria-label={`${formatDayLong(d.date)}, ${status}`}
+                  className={cx(box, "w-full text-tinta-suave", d.inWindow && "shadow-[inset_0_0_0_2px_var(--linea)]")}
+                >
                   {body}
                 </span>
               )}
@@ -170,7 +181,17 @@ function byRange(starts: Start[]) {
   return groups;
 }
 
-function DaySlots({ availability: a, service, today }: { availability: Availability; service: Service; today: LocalDate }) {
+function DaySlots({
+  availability: a,
+  service,
+  today,
+  actions,
+}: {
+  availability: Availability;
+  service: Service;
+  today: LocalDate;
+  actions: BookingActions;
+}) {
   const dayName = a.day === today ? `Hoy, ${formatDayLong(a.day)}` : capitalize(formatDayLong(a.day));
   return (
     <section aria-labelledby="titulo-horarios" className="flex flex-col gap-4" aria-live="polite">
@@ -181,13 +202,13 @@ function DaySlots({ availability: a, service, today }: { availability: Availabil
         <div className="flex flex-col items-start gap-3">
           <p className="text-tinta-suave">Ese día no hay lugar para {service.name.toLowerCase()}.</p>
           {a.nextDayWithRoom && (
-            <Link
-              href={bookingHref({ servicio: service.slug, dia: a.nextDayWithRoom })}
-              scroll={false}
+            <button
+              type="button"
+              onClick={() => actions.onDay(a.nextDayWithRoom!)}
               className={cx("inline-flex min-h-[52px] items-center rounded-[var(--radius-control)] px-5 font-bold", SELECTED, FOCUS)}
             >
               Ver el {formatDayLong(a.nextDayWithRoom)}
-            </Link>
+            </button>
           )}
         </div>
       ) : (
