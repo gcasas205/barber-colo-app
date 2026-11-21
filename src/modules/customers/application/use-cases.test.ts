@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Actor } from "@/modules/identity";
 import { memoryStore } from "./memory-store";
-import { enterAsDemo, enterAsGuest, listCustomers, saveProfile, setNickname } from "./use-cases";
+import { enterAsDemo, enterAsGuest, getOwnProfile, listCustomers, saveProfile, setNickname } from "./use-cases";
 
 const now = new Date("2026-11-21T21:00:00Z");
 const barber: Actor = { kind: "barber", userId: "colo", demo: true };
@@ -168,5 +168,18 @@ describe("lista y sobrenombre de Colo (RF-19 a RF-21)", () => {
     expect(await setNickname({ store: m.store }, barber, id, "x".repeat(41))).toEqual({ ok: false, error: "NICKNAME_LENGTH" });
     expect(await setNickname({ store: m.store }, { kind: "guest", userId: "d", customerId: id }, id, "yo")).toEqual({ ok: false, error: "NOT_ALLOWED" });
     expect(await setNickname({ store: m.store }, barber, "no-existe", "x")).toEqual({ ok: false, error: "NOT_FOUND" });
+  });
+});
+
+describe("getOwnProfile", () => {
+  it("devuelve el propio perfil sin el sobrenombre (RF-21)", async () => {
+    const m = memoryStore();
+    const g = await guestEntry(m, "Lucas", "1138163491", "ip", "dev");
+    const id = g.ok ? g.value.customerId : "";
+    await setNickname({ store: m.store }, barber, id, "el de la moto");
+    const profile = await getOwnProfile({ store: m.store }, { kind: "guest", userId: "dev", customerId: id });
+    expect(profile).toEqual({ kind: "guest", fullName: "Lucas", phone: "+5491138163491", birthday: null, isDemo: false });
+    expect(JSON.stringify(profile)).not.toContain("moto");
+    expect(await getOwnProfile({ store: m.store }, barber)).toBeNull();
   });
 });

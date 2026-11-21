@@ -142,3 +142,20 @@ export async function setNickname(
   const found = await deps.store.transaction((tx) => tx.setNickname(customerId, nickname || null));
   return found ? ok(undefined) : err("NOT_FOUND");
 }
+
+export type OwnProfile = {
+  kind: "customer" | "guest";
+  fullName: string;
+  phone: string | null;
+  birthday: Birthday | null;
+  isDemo: boolean;
+};
+
+/** Datos del propio perfil, para la pantalla de perfil (RF-9, RF-13). Nunca incluye el sobrenombre (RF-21). */
+export async function getOwnProfile(deps: { store: CustomersStore }, actor: Actor): Promise<OwnProfile | null> {
+  if ((actor.kind !== "customer" && actor.kind !== "guest") || !actor.customerId) return null;
+  const id = actor.customerId;
+  const c = await deps.store.transaction((tx) => tx.getCustomer(id));
+  if (!c) return null;
+  return { kind: actor.kind, fullName: c.fullName, phone: c.phone, birthday: c.birthday, isDemo: c.isDemo };
+}

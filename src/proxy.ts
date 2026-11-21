@@ -12,6 +12,8 @@ export async function proxy(request: NextRequest) {
   if (!url || !key) return response;
 
   const supabase = createServerClient(url, key, {
+    // Igual que SESSION_COOKIE en src/server/auth/supabase.ts (el proxy no puede importar "server-only").
+    cookieOptions: { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/" },
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (toSet) => {

@@ -115,7 +115,8 @@ la reserva, la política de faltas y los descuentos.
   visitas para los descuentos. Podés crear tu cuenta con Google cuando quieras" y le pide nombre y
   teléfono.
 - RF-16. SI el teléfono pertenece a una cuenta con Google, ENTONCES EL SISTEMA no lo deja entrar como
-  invitado y le dice "Ese teléfono tiene una cuenta. Entrá con Google". *(Protege al titular: nadie
+  invitado y le dice "Ese teléfono ya tiene una cuenta. Entrá con ella" *(con Google, en la spec de
+  publicación: "Entrá con Google")*. *(Protege al titular: nadie
   puede sacar turnos a su nombre poniendo su número.)*
 - RF-17. SI el teléfono ya pertenece a un invitado, ENTONCES EL SISTEMA lo reconoce como el mismo
   cliente para la política de faltas y no cambia el nombre guardado. En ese dispositivo, el invitado

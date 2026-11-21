@@ -6,6 +6,7 @@ import { BrandLoader } from "@/ui/brand/BrandLoader";
 import { BookingClient } from "./_reservar/BookingClient";
 import { NoServices, SoonNotice } from "./_reservar/Notices";
 import { PublicHeader } from "./_reservar/PublicHeader";
+import { LoginLink, SessionLink } from "./_sesion/SessionLink";
 import { SiteFooter } from "./_reservar/SiteFooter";
 
 export const metadata: Metadata = {
@@ -23,7 +24,14 @@ const MAIN = "mx-auto flex w-full max-w-3xl flex-1 flex-col gap-7 px-4 pb-12 pt-
 export default function Home() {
   return (
     <div className="flex min-h-dvh flex-col">
-      <PublicHeader />
+      <PublicHeader
+        session={
+          // La sesión se lee en el pedido, en una isla chica: el resto de la cabecera sigue prerenderizado.
+          <Suspense fallback={<LoginLink />}>
+            <SessionLink />
+          </Suspense>
+        }
+      />
       <Suspense
         fallback={
           <main className={MAIN}>
