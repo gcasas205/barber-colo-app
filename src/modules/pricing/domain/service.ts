@@ -3,6 +3,8 @@ import { err, ok, type Result } from "@/shared/kernel";
 /** Servicio con turno (D-10): Corte, Completo, Claritos… */
 export type Service = {
   id: string;
+  /** Para la dirección de la página: "corte", "completo", "claritos". */
+  slug: string;
   name: string;
   /** Qué incluye, en palabras del cliente ("Corte, barba y cejas"). */
   description: string;
@@ -40,4 +42,14 @@ export function validateService(
   const name = normalizeServiceName(draft.name);
   if (otherActiveNames.some((other) => normalizeServiceName(other) === name)) errors.push("NAME_TAKEN");
   return errors.length === 0 ? ok(undefined) : err(errors);
+}
+
+/** "Corte de pelo" → "corte-de-pelo"; sin tildes ni símbolos, para usar en la dirección. */
+export function serviceSlug(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }

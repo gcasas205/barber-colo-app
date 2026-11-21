@@ -37,6 +37,7 @@ describe("reglas de arquitectura", () => {
     expect(rules("src/modules/schedule/application/q.ts", "../infrastructure/repo")).toHaveLength(1);
     expect(rules("src/modules/schedule/index.ts", "./infrastructure/repo")).toHaveLength(1);
     expect(rules("src/app/page.tsx", "@/shared/db/client")).toHaveLength(1);
+    expect(rules("src/shared/db/client.ts", "./types", "./pool-config", "kysely", "pg")).toEqual([]);
   });
 
   it("la aplicación no conoce la base ni el framework", () => {

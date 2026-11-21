@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateService, type ServiceDraft } from "./service";
+import { serviceSlug, validateService, type ServiceDraft } from "./service";
 
 const corte: ServiceDraft = { name: "Corte", priceCents: 1_800_000, durationMinutes: 30 };
 
@@ -48,5 +48,17 @@ describe("validateService (RF-13)", () => {
       "NAME_TAKEN",
       "PRICE_NOT_POSITIVE",
     ]);
+  });
+});
+
+describe("serviceSlug", () => {
+  it.each([
+    ["Corte", "corte"],
+    ["Completo", "completo"],
+    ["Corte de pelo", "corte-de-pelo"],
+    ["  Barba & Cejas ", "barba-cejas"],
+    ["Peinado niño", "peinado-nino"],
+  ])("%j → %s", (name, slug) => {
+    expect(serviceSlug(name)).toBe(slug);
   });
 });

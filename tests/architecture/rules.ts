@@ -77,7 +77,7 @@ export function checkFile({ file, imports }: SourceFile): Violation[] {
         flag(spec, "solo src/server arma la infraestructura");
     }
 
-    if (to.area === "db" && !(from.area === "server" || (from.area === "module" && from.layer === "infrastructure")))
+    if (to.area === "db" && !(from.area === "db" || from.area === "server" || (from.area === "module" && from.layer === "infrastructure")))
       flag(spec, "solo la infraestructura y src/server usan la base");
 
     if (from.area === "ui" && (to.area === "server" || to.area === "module"))
