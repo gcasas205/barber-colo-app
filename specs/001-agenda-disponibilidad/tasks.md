@@ -28,7 +28,7 @@ Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
 
 - [x] **T11. [agente] Kernel y servicios: `addDays` con `Date.UTC` y precios sin centavos (dominio + migración).** RF-3, RF-13, constitución 6
   - Hecho cuando: tests de fechas sin cambios en verde en las tres zonas; `validateService` y la base rechazan centavos.
-- [ ] **T12. [agente] Foto de la agenda y reloj del servidor.** RF-15, RF-16, caso 14, S-7
+- [x] **T12. [agente] Foto de la agenda y reloj del servidor.** RF-15, RF-16, caso 14, S-7
   - Hecho cuando: el caso de uso devuelve todo lo necesario para el mes en una consulta por tabla, sin motivos de bloqueos; `serverClock` corrige el desfase del dispositivo (tests).
 - [ ] **T13. [agente] Página con cálculo en el dispositivo: dirección fija, días sin lugar no elegibles, refresco cada minuto y loader en las esperas.** RF-4, RF-5, RF-15, RF-16, RF-19
   - Hecho cuando: tests del componente en verde; en el navegador, elegir servicio, día o semana no cambia la dirección ni pide nada al servidor.

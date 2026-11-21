@@ -1,4 +1,5 @@
 // Kernel compartido: tipos y funciones puras que usan todos los módulos.
+export * from "./clock";
 export * from "./duration";
 export * from "./labels";
 export * from "./local-date";
