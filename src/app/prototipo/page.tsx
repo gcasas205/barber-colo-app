@@ -6,6 +6,7 @@ const SCREENS = [
   { href: "/prototipo/cliente", title: "Inicio del cliente", text: "Próximo turno, personas a cargo y beneficios." },
   { href: "/prototipo/reservar", title: "Reservar turno", text: "Para quién, día, horario y confirmación." },
   { href: "/prototipo/barbero", title: "Hoy del barbero", text: "Quién está ahora, qué decidir y la fila del día." },
+  { href: "/prototipo/ajustes", title: "Ajustes · Servicios", text: "El barbero edita precio, duración y beneficios de cada servicio." },
 ];
 
 export default function PrototypeIndex() {

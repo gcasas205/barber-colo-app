@@ -136,7 +136,7 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 
 ### 6.5b Servicios
 - RN-35. Los servicios con turno son **Corte**, **Completo** (corte, barba y cejas) y **Claritos**. El barbero puede agregar, editar o desactivar servicios.
-- RN-36. Cada servicio tiene su **duración** (múltiplo del paso de la agenda) y su **precio**, que define el barbero. Valores iniciales propuestos, a confirmar: Corte [30 min], Completo [45 min], Claritos [120 min].
+- RN-36. Cada servicio tiene su **duración** (múltiplo del paso de la agenda) y su **precio**, que define el barbero. Valores iniciales confirmados por el dueño: Corte [30 min], Completo [30 min], Claritos [120 min]. El barbero los edita desde Ajustes → Servicios.
 - RN-37. Un turno es de **un** servicio. El horario de fin del turno es su inicio más la duración del servicio.
 - RN-38. Un horario se ofrece para un servicio solo si ese servicio entra completo dentro de una franja de atención, sin bloqueos ni otros turnos en el medio.
 - RN-39. Cada servicio indica si **suma para beneficios**: Corte y Completo sí; Claritos no.

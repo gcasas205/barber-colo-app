@@ -270,6 +270,8 @@ Esquinas redondeadas de cartel: 14 px en chapas, 12 px en controles y pastillas 
 - **Internal Padding:** 20 px; filas de lista de 72 px de alto con 20 px a los lados, separadas por una línea.
 
 ### Inputs / selección
+- **Campos de texto, monto y lista:** chapa blanca de 52 px, borde interior de 2 px en línea, 12 px de radio y texto de 17 px; con foco, el borde pasa a esmalte y aparece el anillo rojo poste. Etiqueta en negrita de 15 px arriba y ayuda de 14 px abajo. Los montos llevan "$" fijo a la izquierda y cifras tabulares.
+- **Interruptores:** checkbox nativo con forma de interruptor de 56 × 32 px; encendido en esmalte azul, apagado en esmalte velo con borde. Siempre con su texto y, si hace falta, una línea que explica qué pasa al apagarlo.
 - Radios estándar ocultos visualmente dentro de etiquetas grandes: días (78 px de ancho con barra de ocupación y "N libres"), horarios (56 px, cifra de 21 px) y persona (control segmentado sobre esmalte velo). Lo elegido pasa a esmalte azul. Foco visible en rojo poste.
 
 ### Navigation

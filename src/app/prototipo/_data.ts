@@ -1,6 +1,6 @@
 /**
  * Datos de ejemplo del prototipo de diseño. Los nombres y turnos son ficticios.
- * Servicios y precios: pizarra del local (20/11/2026). Duraciones: propuesta inicial, a confirmar.
+ * Servicios y precios: pizarra del local (20/11/2026). Duraciones: confirmadas por el dueño (Claritos, a ajustar).
  */
 import type { AppointmentStatus } from "@/ui/StatusMark";
 
@@ -15,7 +15,7 @@ export type Service = {
 
 export const SERVICES: Service[] = [
   { id: "corte", name: "Corte", description: "Corte de pelo", minutes: 30, price: 18000, countsForBenefits: true },
-  { id: "completo", name: "Completo", description: "Corte, barba y cejas", minutes: 45, price: 20000, countsForBenefits: true },
+  { id: "completo", name: "Completo", description: "Corte, barba y cejas", minutes: 30, price: 20000, countsForBenefits: true },
   { id: "claritos", name: "Claritos", description: "Reflejos", minutes: 120, price: 70000, countsForBenefits: false },
 ];
 

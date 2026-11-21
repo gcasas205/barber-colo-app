@@ -13,7 +13,7 @@ const NAV = [
   { href: "#agenda", label: "Agenda", icon: CalendarDays },
   { href: "#clientes", label: "Clientes", icon: UsersRound },
   { href: "#numeros", label: "Números", icon: BarChart3 },
-  { href: "#ajustes", label: "Ajustes", icon: Settings },
+  { href: "/prototipo/ajustes", label: "Ajustes", icon: Settings },
 ];
 
 const NOW = "16:00";

@@ -43,6 +43,10 @@ suma para beneficios. En la vista del barbero, cada turno muestra su servicio (n
 
 ![Reservar con servicios y hoy del barbero](assets/prototipo-servicios.png)
 
+**Ajustes → Servicios** (`/prototipo/ajustes`): el barbero edita nombre, qué incluye, duración (en pasos de 15 min), precio, si suma para beneficios y si se puede reservar, y agrega servicios nuevos. Los cambios valen para reservas nuevas.
+
+![Ajustes de servicios en web](assets/prototipo-ajustes.png)
+
 **Dependencias nuevas:** `@fontsource-variable/archivo` y `@fontsource-variable/atkinson-hyperlegible-next`
 (fuentes autoalojadas: el build no depende de la red) y `lucide-react` (un solo sistema de íconos).
 

@@ -492,7 +492,7 @@ producto del local y no entran en los turnos.
   Un Claritos no suma ni se descuenta.
 - **Estadísticas:** se suma la vista por servicio (facturación y cantidad), como el catálogo de Corralap.
 
-### P-17 Cambio de servicio al marcar asistencia (por confirmar)
+### P-17 ✅ Cambio de servicio al marcar asistencia
 
 Si el cliente reservó Corte y en el sillón pide Completo, el barbero puede **cambiar el servicio al
 marcar Asistió**. El precio base pasa a ser el del servicio nuevo en ese momento (excepción a D-09,
