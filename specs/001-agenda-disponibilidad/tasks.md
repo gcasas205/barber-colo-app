@@ -16,7 +16,7 @@ Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
   - Hecho cuando: `supabase db reset` aplica todo desde cero; los tests de integración de restricciones, RLS y datos iniciales pasan; `supabase db advisors` sin hallazgos de seguridad; `app_server` solo puede leer y `anon` no ve `app` (S-3, S-4).
 - [x] **T7. [agente] Acceso a datos y casos de uso de consulta.** RF-1, RF-2, RF-2b, RF-6b
   - Hecho cuando: tipos generados con `kysely-codegen`; `listServices` y `getAvailability` pasan con repositorios en memoria y contra la base local; la conexión verifica el certificado y un test impide `rejectUnauthorized: false` (S-2).
-- [ ] **T8. [agente] Página pública `/` con servicios, semana, día y horarios por franja.** RF-1 a RF-7, RF-2b, RF-6b, RNF-3, RNF-4
+- [x] **T8. [agente] Página pública `/` con servicios, semana, día y horarios por franja.** RF-1 a RF-7, RF-2b, RF-6b, RNF-3, RNF-4
   - Hecho cuando: los tests de la página pasan; capturas en 360 px y web, en claro y oscuro, con recorrido por teclado verificado; el detector de impeccable no reporta problemas; un test verifica las cabeceras de seguridad y que los parámetros inválidos caen en los valores por defecto (S-5, S-6).
 - [ ] **T9. [agente] CI: job de integración con Supabase y job de migraciones en `main`.** RNF-5
   - Hecho cuando: el PR de la spec muestra el job `integration` en verde y `deploy` espera a ambos; `migrate` corre en el entorno `production` y se saltea con aviso si falta el secreto (S-1).

@@ -13,7 +13,7 @@ export default defineConfig({
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
   test: {
-    include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.ts"],
     // Los de integración necesitan la base local: corren con `npm run test:integration`.
     exclude: ["tests/integration/**", "node_modules/**"],
     environment: "node",

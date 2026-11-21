@@ -15,6 +15,7 @@ export function queries(db: Database = database()) {
   const occupations = createBlockOccupations(db);
   return {
     listServices: () => listServices({ catalog }),
+    contactWhatsapp: async () => (await schedule.settings()).contactWhatsapp,
     getAvailability: (query: AvailabilityQuery) => getAvailability({ schedule, occupations }, query),
   };
 }
