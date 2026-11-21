@@ -32,7 +32,7 @@ publica eventos.
 |---|---|---|---|---|
 | 1 | **Turnos** | Núcleo | El ciclo de vida de un turno y sus plazos | Turno, Política de turnos |
 | 2 | **Agenda** | Soporte | Cuándo atiende el barbero y qué horarios se ofrecen | Agenda, Franjas, Bloqueos |
-| 3 | **Clientes** | Soporte | Quién es cada cliente y cómo se lo contacta | Cliente |
+| 3 | **Clientes** | Soporte | Quién se atiende, de qué cuenta depende y cómo se lo contacta | Cliente (persona atendida) |
 | 4 | **Conducta** | Soporte | Faltas seguidas y si un cliente puede reservar | Ficha de conducta, Política de faltas |
 | 5 | **Precios y beneficios** | Soporte | Cuánto cuesta un corte y qué descuento corresponde | Tarifa, Reglas de beneficio, Visitas computables |
 | 6 | **Notificaciones** | Genérico | Entregar avisos al celular y dentro de la app | Suscripciones, Notificaciones |
@@ -109,7 +109,10 @@ Estos términos se usan igual en la interfaz, en las specs y en el código (en i
 | **Liquidación** (`Settlement`) | Foto del precio de un turno asistido: precio base, descuentos aplicados y precio final. |
 | **Progreso** | Cuánto le falta a un cliente para cada beneficio (por ejemplo, "7 de 10"). |
 | **Enlace de turno** (`AppointmentLink`) | Dirección secreta para que alguien sin cuenta vea, confirme o cancele un turno. |
-| **Cliente con cuenta / sin cuenta** | Cliente que ingresó con Google / que solo cargó el barbero (nombre y teléfono). |
+| **Cliente** (`Customer`) | **Persona que se atiende** (la que se corta el pelo). Tiene su propio historial, faltas y beneficios. |
+| **Titular** (`AccountHolder`) | Cliente dueño de una cuenta de Google. Reserva para sí y para sus personas a cargo, y recibe todas las notificaciones. |
+| **Persona a cargo** (`Dependent`) | Cliente sin cuenta propia que pertenece a la cuenta de un titular (por ejemplo, un hijo). Solo tiene nombre y, opcionalmente, cumpleaños. |
+| **Cliente con cuenta / sin cuenta** | Cliente que pertenece a una cuenta (titular o persona a cargo) / que solo cargó el barbero (nombre y teléfono). |
 | **Vincular** | Unir el historial de un cliente sin cuenta con el de un cliente con cuenta. |
 
 ## 4. Diagrama de clases del dominio
@@ -205,12 +208,14 @@ classDiagram
             id
             name
             phone : Phone
-            userId?
+            accountUserId?
+            role : holder | dependent | manual
             linkedTo?
             acquisitionSource?
             notes?
             birthDayMonth?
             linkTo(customer)
+            addDependent(name)
             anonymize()
         }
     }
@@ -305,7 +310,7 @@ se cumplen siempre. Entre agregados, la consistencia es eventual (vía eventos).
 |---|---|---|
 | **Turno** | I-1. Solo se pasa de un estado a otro por las transiciones del diagrama 6. <br>I-2. **Un horario tiene como máximo un turno activo.** <br>I-3. Un cliente tiene como máximo **un turno futuro activo**. <br>I-4. El precio base no cambia después de reservar. <br>I-5. Asistencia o falta solo se marcan a partir del inicio del turno. <br>I-6. La liquidación existe si y solo si el estado es Asistió. <br>I-7. Todo cambio de estado o de horario deja un registro con actor y fecha. <br>I-7b. Un turno se reprograma como máximo [2] veces por el cliente. | RN-03, RN-05, RN-06b, RN-07 a RN-11, RN-31 a RN-33, RNF-13 |
 | **Agenda** | I-8. Las franjas de un mismo día no se superponen. <br>I-9. La duración del bloque es mayor que cero y divide el día en horarios enteros dentro de cada franja. | RN-01, RN-02, RN-04, RN-30 |
-| **Cliente** | I-10. El teléfono está normalizado (formato internacional) y es único entre clientes no vinculados. <br>I-11. Un cliente vinculado no puede volver a vincularse. | RF-14, RF-18, RNF-07 |
+| **Cliente** | I-10. El teléfono está normalizado (formato internacional) y es único entre clientes no vinculados. Lo tienen el titular y los clientes manuales; las personas a cargo usan el del titular. <br>I-11. Un cliente vinculado no puede volver a vincularse. <br>I-17. Una cuenta tiene exactamente un titular y hasta [5] personas a cargo. <br>I-18. Una persona a cargo no tiene cuenta, email ni teléfono propios. | RF-14, RF-18, RNF-07, P-16 |
 | **Ficha de conducta** | I-12. Las faltas seguidas nunca son negativas y vuelven a cero con una asistencia. <br>I-13. La habilitación se **calcula**, no se guarda: bloqueado manual > faltas ≥ umbral > normal. | RN-12 a RN-17 |
 | **Regla de beneficio** | I-14. N ≥ 1 (salvo BIRTHDAY) y descuento entre 1 % y 100 %. <br>I-14b. BIRTHDAY se aplica como máximo una vez por cliente y año. <br>I-15. Desactivar una regla no altera liquidaciones pasadas. | RN-18 a RN-23, RF-33 |
 | **Tarifa** | I-16. Siempre hay exactamente una tarifa vigente. | RN-06 |
@@ -445,3 +450,23 @@ enlace. No es cancelar y reservar de nuevo.
 - Requiere que el cliente haya cargado día y mes de nacimiento (P-12).
 - Se suma a los otros descuentos (D-05).
 - El cliente recibe una notificación al empezar esa semana con el enlace para reservar.
+
+### P-16 ✅ Reserva para personas a cargo
+
+Muchos clientes son chicos que van con sus padres. Un **titular** (el adulto con cuenta de Google)
+puede cargar en su cuenta hasta [5] **personas a cargo** y reservar para ellas.
+
+- **Cada persona es un cliente** con su propio historial, faltas seguidas, beneficios y cumpleaños
+  (un chico también puede tener descuento de cumpleaños).
+- **Un turno futuro activo por persona**, no por cuenta (I-3): el padre puede reservar su turno y el
+  de su hijo, incluso en horarios seguidos.
+- **Las notificaciones** de los turnos de una persona a cargo le llegan al titular, y el texto dice
+  para quién es ("¿Confirmás el turno de Tomi de hoy a las 16:00?").
+- **Habilitación por persona:** las faltas de un chico no restringen al padre, y al revés. Si el
+  barbero bloquea al titular, sus personas a cargo tampoco pueden reservar desde esa cuenta.
+- **Datos mínimos:** de una persona a cargo solo se guardan el nombre y, opcionalmente, el día y mes
+  de cumpleaños. No tiene teléfono ni email propios (los del titular sirven para el contacto).
+- **Vinculación:** si el barbero tenía cargado a mano a ese chico, puede vincularlo a la cuenta del
+  titular, igual que con cualquier cliente manual (RF-18).
+- **Baja:** el titular puede quitar una persona a cargo (se anonimiza, como cualquier cliente). Si el
+  titular pide la baja de su cuenta, se anonimizan también sus personas a cargo.

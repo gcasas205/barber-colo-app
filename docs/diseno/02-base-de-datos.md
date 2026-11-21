@@ -29,7 +29,7 @@ Guía: skills `supabase` y `supabase-postgres-best-practices`
 
 ```mermaid
 erDiagram
-    AUTH_USERS ||--o| CUSTOMERS : "es"
+    AUTH_USERS ||--o{ CUSTOMERS : "titular y personas a cargo"
     ACQUISITION_SOURCES ||--o{ CUSTOMERS : "origen"
     CUSTOMERS ||--o| CUSTOMERS : "vinculado a"
     CUSTOMERS ||--|| CONDUCT_RECORDS : "ficha"
@@ -45,7 +45,8 @@ erDiagram
 
     CUSTOMERS {
         uuid id PK
-        uuid user_id FK "null si no tiene cuenta"
+        uuid account_user_id FK "cuenta a la que pertenece (null si es manual)"
+        customer_role role "holder, dependent o manual"
         text full_name
         text phone_e164 "único entre no vinculados"
         text email "se actualiza en cada login"
@@ -151,7 +152,7 @@ La exclusión usa la extensión `btree_gist` para combinar `=` y `&&`.
 
 | Tabla | Columnas clave | Restricciones |
 |---|---|---|
-| `customers` | ver diagrama; `created_at`. `email` se copia del login para poder buscar sin cruzar con el esquema de Auth y **se actualiza en cada ingreso** | `user_id` único; `phone_e164 ~ '^\+[1-9][0-9]{7,14}$'`; **teléfono único entre clientes activos no vinculados** (I-10): índice único parcial `where linked_to is null and anonymized_at is null`; fecha de nacimiento válida (`birth_month between 1 and 12`, día según el mes, 29/2 permitido); `linked_to <> id` |
+| `customers` | ver diagrama; `created_at`. `email` se copia del login (solo del titular) para poder buscar sin cruzar con el esquema de Auth y **se actualiza en cada ingreso** | **un titular por cuenta**: índice único parcial `(account_user_id) where role = 'holder'`; `role = 'manual'` ⇔ `account_user_id is null`; **las personas a cargo no tienen teléfono ni email** (`check`); teléfono obligatorio para titulares y manuales no anonimizados; el máximo de [5] personas a cargo lo controla el caso de uso (con la fila del titular bloqueada); `phone_e164 ~ '^\+[1-9][0-9]{7,14}$'`; **teléfono único entre clientes activos no vinculados** (I-10): índice único parcial `where linked_to is null and anonymized_at is null`; fecha de nacimiento válida (`birth_month between 1 and 12`, día según el mes, 29/2 permitido); `linked_to <> id` |
 | `acquisition_sources` | `id smallint`, `name`, `position`, `active` | `name` único |
 
 - **Baja de datos (RNF-07):** no se borra la fila (los turnos pasados sostienen las estadísticas). Se
@@ -173,6 +174,7 @@ create type app.appointment_status as enum (
 create type app.appointment_origin as enum ('app', 'manual');
 create type app.actor_kind        as enum ('customer', 'guest', 'barber', 'system');
 create type app.payment_method    as enum ('cash', 'transfer', 'mercado_pago', 'other');
+create type app.customer_role     as enum ('holder', 'dependent', 'manual');
 ```
 
 **`appointments`** (columnas además de las del diagrama): `booked_at`, `booked_by_kind`,

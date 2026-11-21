@@ -101,7 +101,7 @@ El test de arquitectura permite que solo `src/server/` importe `infrastructure` 
 |---|---|---|---|
 | **appointments** | `bookAppointment`, `bookManualAppointment`, `approveAppointment`, `rejectAppointment`, `confirmAppointment`, `keepAppointment`, `releaseAppointment`, `cancelAppointment`, `rescheduleAppointment`, `markAttendance`, `correctAttendance`, `processDueActions` | cliente, invitado, barbero, sistema | Todos los de `dominio.md` §7 |
 | **schedule** | `updateScheduleSettings`, `setWeeklyRanges`, `addBlock`, `removeBlock` | barbero | `SlotBlocked` |
-| **customers** | `registerCustomer` (primer login), `updateProfile`, `createManualCustomer`, `linkCustomers`, `updateNotes`, `anonymizeCustomer` | cliente, barbero | `CustomerRegistered`, `CustomerLinked`, `CustomerAnonymized` |
+| **customers** | `registerCustomer` (primer login: crea el titular), `addDependent`, `updateDependent`, `removeDependent`, `updateProfile`, `createManualCustomer`, `linkCustomers`, `updateNotes`, `anonymizeCustomer` | cliente, barbero | `CustomerRegistered`, `CustomerLinked`, `CustomerAnonymized` |
 | **conduct** | `blockCustomer`, `unblockCustomer`, `updateConductSettings` | barbero | `NoShowThresholdReached` |
 | **pricing** | `setRate`, `createBenefitRule`, `deactivateBenefitRule` | barbero | `BenefitReached` |
 | **notifications** | `subscribePush`, `unsubscribePush`, `markRead`, `deliverPending` | cliente, barbero, sistema | — |
@@ -245,7 +245,7 @@ flowchart LR
     P[proxy.ts<br/>refresca la sesión<br/>en cada pedido] --> G["getActor()<br/>shared/auth<br/>getClaims() verificado"]
     G --> C{rol en app_metadata}
     C -- barber --> B[Actor barbero]
-    C -- sin rol --> K[Actor cliente<br/>+ customerId]
+    C -- sin rol --> K[Actor cliente<br/>+ ids del titular y<br/>sus personas a cargo]
     L[Token de enlace<br/>/t/token] --> I[Actor invitado<br/>solo ese turno]
     S[Secreto del cron<br/>o token de acción] --> Y[Actor sistema /<br/>acción puntual]
 ```
@@ -256,7 +256,7 @@ flowchart LR
 - **Alta del barbero:** la variable `BARBER_EMAIL` indica su cuenta. En su primer login, el callback le
   asigna `app_metadata.role = 'barber'` con la clave secreta de Supabase (que solo existe en el servidor
   y solo se usa ahí). Nadie más puede volverse barbero.
-- **Autorización** en cada caso de uso: un cliente solo actúa sobre sus turnos; un invitado solo sobre
+- **Autorización** en cada caso de uso: un titular solo actúa sobre sus turnos y los de sus personas a cargo (el actor trae la lista de clientes de su cuenta); un invitado solo sobre
   el turno de su enlace; las acciones de configuración son solo del barbero.
 - **Enlace de invitado:** el token se compara por su hash (DB-04). Para evitar que alguien pruebe
   tokens al azar, hay un límite de intentos fallidos por IP (contador en la base, ventana de 10 min).

@@ -35,17 +35,20 @@ Es la app de **una** barbería y de **un** barbero, no una plataforma de reserva
 - Un solo barbero, un servicio con duración fija, turnos de bloque fijo.
 - Interfaz en español rioplatense; fechas y horas en la hora de Buenos Aires.
 - Stack fijo por la constitución: Next.js 16, Tailwind CSS v4, Supabase, Vercel.
-- **Abierto:** cómo reserva un adulto para un chico (hoy cada turno pertenece a una cuenta).
+- Un adulto (titular) puede cargar hasta [5] personas a cargo, por ejemplo sus hijos, y reservar para ellas (P-16 en `docs/dominio.md`).
 
 ## Brand Commitments
 
-- Nombre: la barbería se conoce por el apodo del barbero, **Colo**.
-- Existen **logo**, **Instagram con fotos** y una **estética propia del local** (colores, decoración, cartel). La app debe respetarlos. **Pendiente:** recibir el logo, el usuario de Instagram y fotos o descripción del local; hasta entonces no se inventan.
+- Nombre: **Barbería y Peluquería El Colo** (`@elcolo.barbershop` en Instagram), "Salón masculino". Colo es el barbero.
+- **Logo** (insignia circular tipo sello): "BARBERIA" en arco, "PELUQUERÍA", bigote de manubrio, cinta "★ EL COLO ★" y borde con rayas diagonales de poste de barbero. Dos versiones en uso: **clara** (fondo crema, azul marino y rojo) y **oscura** (fondo negro, bigote naranja). Redibujadas en vector en `public/brand/` a partir de la foto de perfil (150 px); la tipografía de la reproducción es aproximada.
+- **Estética del local** (fotos públicas de Instagram): paredes blancas con cuadros de estilo vintage y tatuaje, mesada de madera clara, pared verde, sillones negros, capas negras a rayas y los colores del poste de barbero.
+- **Horario publicado:** lunes a sábado de 10 a 20 h (dato para precargar la agenda; lo confirma el barbero).
 
 ## Evidence on Hand
 
-- Ninguno de los materiales de marca está todavía en el repositorio.
-- No hay testimonios, fotos ni precios reales cargados: no se fabrican.
+- Logo redibujado: `public/brand/logo-el-colo.svg` (claro) y `public/brand/logo-el-colo-oscuro.svg` (oscuro), con sus PNG.
+- Las fotos de Instagram muestran clientes reales: **no se usan en la app** sin permiso de cada persona. Sirven solo como referencia de estética.
+- No hay testimonios ni precios reales cargados: no se fabrican.
 
 ## Product Principles
 

@@ -9,6 +9,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - Análisis extendido aprobado: `docs/dominio.md`, `docs/casos-de-uso.md`, `docs/secuencias.md` y `docs/estadisticas-crm.md`, con las decisiones P-04 a P-15, inspirado en Corralap (`EloSanz/crm-web-app`).
 
 ## Decisiones (y por qué)
+- P-16: titular + hasta 5 personas a cargo (hijos); cada persona es un cliente con su historial; notificaciones al titular.
 - Supabase Cron para las tareas cada minuto: la ventana de confirmación es de 30 min y el cron gratis de Vercel no alcanza.
 - Vercel no despliega solo (`vercel.json`): despliega GitHub Actions después de que pasan los checks.
 - Fuentes del sistema en lugar de `next/font/google`: el build no depende de la red.
@@ -21,5 +22,5 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.
 
 ## Próximos pasos
-1. Diseño (rama `design/arquitectura`): 1) arquitectura aprobada (`docs/diseno/01-arquitectura.md`), 2) base de datos aprobada (`docs/diseno/02-base-de-datos.md`, redundancia solo intencional: proyecciones que se recalculan y reconcilian), 3) backend aprobado (`docs/diseno/03-backend.md`), 4) interfaz con impeccable: `PRODUCT.md` escrito; faltan logo, Instagram y fotos del local, y definir reserva para menores.
+1. Diseño (rama `design/arquitectura`): 1) arquitectura aprobada (`docs/diseno/01-arquitectura.md`), 2) base de datos aprobada (`docs/diseno/02-base-de-datos.md`, redundancia solo intencional: proyecciones que se recalculan y reconcilian), 3) backend aprobado (`docs/diseno/03-backend.md`), 4) interfaz con impeccable: `PRODUCT.md` completo, logo redibujado en `public/brand/`; sigue la dirección visual (new-work).
 2. Spec 001: agenda y disponibilidad.
