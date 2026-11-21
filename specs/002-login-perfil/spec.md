@@ -1,6 +1,6 @@
 # Spec 002 — Login y perfil
 
-Estado: aprobada (2026-11-21), con las resoluciones de `clarificacion.md`
+Estado: aprobada (2026-11-21), con las resoluciones de `clarificacion.md` y el **cambio 01** (sin Google por ahora: ver al final)
 
 Origen: `docs/analisis.md` (RF-01 a RF-03, actores, D-11 a D-15) y las respuestas de Gonzalo del
 2026-11-21. La spec anterior (001) dejó la página pública de horarios en producción.
@@ -53,12 +53,22 @@ la reserva, la política de faltas y los descuentos.
 
 ## Requisitos funcionales
 
+> **Cambio 01 (2026-11-21):** por ahora no se usa Google. Los requisitos marcados con *(Google)* pasan a
+> la spec de publicación. Mientras tanto, se entra con correo y contraseña (solo usuarios de prueba) o
+> como invitado, igual que la pantalla de ingreso de Corralap (RF-1, RF-22).
+
 **Ingreso**
-- RF-1. EL SISTEMA ofrece una pantalla de ingreso con "Entrar con Google" y "Entrar como invitado". La
-  página pública de horarios tiene el enlace "Ingresar" en la chapa superior, al lado del tema.
-- RF-2. CUANDO un visitante vuelve de Google con la identidad confirmada, EL SISTEMA crea su cuenta si
+- RF-1. EL SISTEMA ofrece una pantalla "Ingresar" con un formulario de **Correo** y **Contraseña**
+  (obligatorios, con un botón para mostrar u ocultar la contraseña) y el botón "Ingresar"; debajo,
+  "Entrar como invitado". La página pública de horarios tiene el enlace "Ingresar" en la chapa
+  superior, al lado del tema. *(Google: se suma "Entrar con Google" en la spec de publicación.)*
+- RF-1b. SI el correo o la contraseña no son correctos, ENTONCES EL SISTEMA muestra "No pudimos ingresar.
+  Revisá el correo y la contraseña", sin decir cuál de los dos falló.
+- RF-1c. SI una cuenta de correo y contraseña no es de prueba, o la demo está desactivada, ENTONCES EL
+  SISTEMA no la deja entrar.
+- RF-2. CUANDO un visitante vuelve de Google *(Google: spec de publicación.)* con la identidad confirmada, EL SISTEMA crea su cuenta si
   no existe e inicia la sesión.
-- RF-3. SI el ingreso con Google falla o la persona lo cancela, ENTONCES EL SISTEMA vuelve a la pantalla
+- RF-3. SI el ingreso con Google falla *(Google: spec de publicación.)* o la persona lo cancela, ENTONCES EL SISTEMA vuelve a la pantalla
   de ingreso con el mensaje "No pudimos entrar con Google. Probá de nuevo", sin crear nada.
 - RF-4. EL SISTEMA mantiene la sesión en ese dispositivo hasta que la persona sale o pasa un tiempo sin
   usar la app: **60 días** para clientes e invitados, **30 días** para Colo.
@@ -68,13 +78,13 @@ la reserva, la política de faltas y los descuentos.
   ejemplo, si pierde el celular).
 
 **Rol de barbero**
-- RF-6. CUANDO entra con Google la cuenta cuyo email coincide (sin importar mayúsculas) con el email de
+- RF-6. CUANDO entra con Google la cuenta *(Google: spec de publicación.)* cuyo email coincide (sin importar mayúsculas) con el email de
   Colo configurado fuera del código, EL SISTEMA le da el rol de barbero. Cualquier otra cuenta es cliente.
-- RF-7. SI el email de Colo no está configurado, ENTONCES nadie tiene el rol de barbero (salvo Colo
+- RF-7. SI el email de Colo no está configurado *(Google: spec de publicación.)*, ENTONCES nadie tiene el rol de barbero (salvo Colo
   (demo) mientras los usuarios de prueba estén activos).
-- RF-7b. SI Google no confirma que el email está verificado, ENTONCES esa cuenta nunca tiene el rol de
+- RF-7b. SI Google no confirma *(Google: spec de publicación.)* que el email está verificado, ENTONCES esa cuenta nunca tiene el rol de
   barbero.
-- RF-7c. CUANDO cambia el email de Colo configurado, la cuenta anterior pierde el rol de barbero en su
+- RF-7c. CUANDO cambia el email de Colo *(Google: spec de publicación.)* configurado, la cuenta anterior pierde el rol de barbero en su
   próximo pedido, aunque tenga una sesión abierta.
 - RF-8. SI alguien sin rol de barbero intenta abrir una pantalla de Colo, ENTONCES EL SISTEMA muestra
   "No tenés acceso a esta pantalla", sin mostrar ningún dato.
@@ -127,9 +137,10 @@ la reserva, la política de faltas y los descuentos.
 - RF-21. EL SISTEMA nunca muestra el sobrenombre al cliente ni a nadie sin rol de barbero.
 
 **Usuarios de prueba (D-11)**
-- RF-22. MIENTRAS los usuarios de prueba están activos, EL SISTEMA muestra en la pantalla de ingreso
-  "Entrar como Colo (demo)", "Entrar como cliente de prueba 1" y "Entrar como cliente de prueba 2",
-  sin claves, con la aclaración "Modo de prueba".
+- RF-22. MIENTRAS los usuarios de prueba están activos, EL SISTEMA muestra al final de la pantalla de
+  ingreso la lista de cuentas de prueba, cada una con su rol y su correo: **Colo (barbero)**, **Cliente
+  de prueba 1** y **Cliente de prueba 2**. CUANDO se toca una, EL SISTEMA completa el correo y la
+  contraseña en el formulario, sin mostrar la contraseña. *(Igual que Corralap.)*
 - RF-22b. MIENTRAS una sesión es de prueba, EL SISTEMA muestra arriba de todo una franja fija "Modo de
   prueba · Salir", para que nunca se confunda con la app real.
 - RF-23. EL SISTEMA trata a Colo (demo) como barbero, con permiso para cambiar todo (D-15).
@@ -161,8 +172,9 @@ la reserva, la política de faltas y los descuentos.
 
 ## Casos límite
 
-1. La persona cancela en la pantalla de Google → vuelve al ingreso con el mensaje de RF-3.
-2. La cuenta de Google no tiene nombre → el campo nombre aparece vacío y es obligatorio.
+1. *(Google)* La persona cancela en la pantalla de Google → vuelve al ingreso con el mensaje de RF-3.
+2. *(Google)* La cuenta de Google no tiene nombre → el campo nombre aparece vacío y es obligatorio.
+2b. Correo de prueba con la contraseña equivocada → RF-1b.
 3. "11 3816-3491", "011 15 3816-3491" y "+54 9 11 3816-3491" son el mismo teléfono.
 4. Un fijo ("4555-1234", sin código de área) se rechaza (RF-10).
 5. Dos cuentas cargan el mismo teléfono al mismo tiempo → una lo consigue y la otra ve RF-11.
@@ -188,6 +200,8 @@ la reserva, la política de faltas y los descuentos.
 
 ## Fuera de alcance
 
+- **Ingreso con Google y cuenta real de Colo** (RF-2, RF-3, RF-6 a RF-7c): spec de publicación, junto
+  con apagar la demo y el hosting definitivo (D-16).
 - Reservar, cancelar y reprogramar (spec 004). Personas a cargo (spec 004: "¿para quién es el turno?").
 - Ficha del cliente, edición del teléfono por Colo y búsqueda de clientes (spec de clientes).
 - Ajustes de Colo: franjas, paso, bloqueos y servicios (spec 003).
@@ -198,9 +212,8 @@ la reserva, la política de faltas y los descuentos.
 ## Criterios de finalización
 
 - Todos los RF y RNF con tests o evidencia, incluidos tests contra la base de los permisos (RNF-3).
-- En el entorno de Vercel: Gonzalo entra con Google, como invitado y con los tres usuarios de prueba, y
-  los usuarios de prueba siguen activos; Colo (o Gonzalo con su email configurado como el de Colo) ve la
-  lista de clientes y pone un sobrenombre.
+- En el entorno de Vercel: Gonzalo entra con las tres cuentas de prueba y como invitado; como Colo
+  (barbero) ve la lista de clientes y pone un sobrenombre; como cliente de prueba completa su perfil.
 - `MEMORY.md` actualizado.
 
 ## Dudas abiertas

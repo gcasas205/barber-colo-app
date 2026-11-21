@@ -1,7 +1,22 @@
 # Plan — Spec 002: Login y perfil
 
-Estado: borrador (pendiente de aprobación)
+Estado: aprobado (2026-11-21), con el cambio 01 (sin Google: sección 0)
 Spec: [`spec.md`](spec.md) (aprobada) · Diseño: ADR-07, `docs/diseno/03-backend.md` §9, `02-base-de-datos.md` §3.2
+
+## 0. Cambio 01: sin Google por ahora
+
+- La pantalla de ingreso es como la de Corralap: correo y contraseña, y la lista de cuentas de prueba
+  (rol + correo) que completa el formulario al tocarla.
+- Las tres cuentas de prueba son usuarios de **correo y contraseña** de Supabase Auth:
+  `colo@example.com`, `cliente1@example.com` y `cliente2@example.com` (dominio reservado para ejemplos:
+  nunca es de nadie). Sus contraseñas viven en el código de la pantalla, como en Corralap: son públicas a
+  propósito y solo sirven mientras `DEMO_ENABLED` esté activo.
+- `getActor()` reconoce a esas cuentas por su correo **y** por estar en `app.demo_accounts`; cualquier
+  otra cuenta de correo y contraseña no tiene acceso (RF-1c). El rol por `BARBER_EMAIL` y el ingreso
+  con Google se implementan en la spec de publicación.
+- En producción, las tres cuentas las crea una persona desde el panel de Supabase (T1). En la base local
+  las crea `supabase/seed.sql`, que solo corre en local.
+- El invitado sigue con el ingreso anónimo de Supabase.
 
 ## 1. Resumen
 
@@ -116,9 +131,9 @@ anuncian con `aria-live` (RNF-5). Todo sigue `DESIGN.md`, en claro y en oscuro.
 
 | Paso | Cómo se verifica | Cómo se vuelve atrás |
 |---|---|---|
-| Crear el cliente OAuth de Google (Google Cloud → pantalla de consentimiento y credenciales) con la dirección de vuelta de Supabase | Existen el *Client ID* y el *Secret* | Borrar las credenciales |
-| En Supabase → Auth: activar Google (con ese ID y secreto), activar el ingreso anónimo y cargar las direcciones permitidas (`https://barber-colo.vercel.app/**` y `http://localhost:3000/**`) | El botón de Google llega a la pantalla de Google | Desactivar los proveedores |
-| En Vercel → Production: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `BARBER_EMAIL`, `DEMO_ENABLED=true` e `IP_HASH_PEPPER` (al azar) | `/ingresar` muestra los botones de prueba | Borrar las variables |
+| En Supabase → Authentication: activar el ingreso anónimo y crear los 3 usuarios de prueba (correo, contraseña y *Auto Confirm User*) | Aparecen en la lista de usuarios | Borrar los usuarios y desactivar el ingreso anónimo |
+| En Vercel → Production: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `DEMO_ENABLED=true` e `IP_HASH_PEPPER` (al azar) | `/ingresar` muestra la lista de cuentas de prueba | Borrar las variables |
+| *(Spec de publicación)* Cliente OAuth de Google, proveedor Google en Supabase y `BARBER_EMAIL` | — | — |
 
 ## 11. Cobertura
 
