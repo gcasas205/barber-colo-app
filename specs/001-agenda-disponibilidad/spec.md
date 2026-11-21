@@ -1,6 +1,6 @@
 # Spec 001 — Agenda, servicios y horarios libres
 
-Estado: aprobada (2026-11-21) · **Cambio 01 en revisión** (velocidad, dirección fija, tema y redes; ver al final)
+Estado: aprobada (2026-11-21) · **Cambio 01 aprobado (2026-11-21)** (velocidad, dirección fija, tema y redes; ver al final)
 Origen: `docs/analisis.md` (RN-01, RN-02, RN-04, RN-30, RN-35 a RN-39 · RF-04, RF-07, RF-08, RF-37, RF-41 a RF-44 · RNF-01, RNF-04, RNF-09, RNF-12, RNF-14), `docs/dominio.md` (D-10, I-8, I-9, I-16)
 Diseño: `docs/diseno/` · Interfaz: `DESIGN.md`
 
@@ -80,6 +80,8 @@ proyecto y va primero.
 - RF-16. MIENTRAS la página está abierta, EL SISTEMA deja de ofrecer los horarios que ya no cumplen la anticipación mínima, sin que haga falta recargar (se revisa al menos cada minuto).
 - RF-17. EL SISTEMA ofrece en la chapa superior un control de tema con tres opciones: **Claro**, **Oscuro** y **Automático** (sigue la configuración del dispositivo, y es la opción inicial). La elección se recuerda en ese dispositivo y la página se abre directamente con el tema elegido, sin mostrar primero el otro.
 - RF-18. EL SISTEMA muestra al pie de la página enlaces a WhatsApp (+54 9 11 3816-3491) y a Instagram (@elcolo.barbershop) de El Colo. El botón de WhatsApp del aviso de arriba se mantiene.
+- RF-19. MIENTRAS la página espera datos del servidor, EL SISTEMA muestra el loader de El Colo (la insignia con el poste girando y el tic del bigote, UI-01), nunca una pantalla en blanco ni un texto suelto.
+- RF-20. EL SISTEMA usa como ícono de la app (pestaña del navegador y acceso directo en la pantalla del celular) la insignia del loader, quieta.
 
 ## Requisitos no funcionales
 
@@ -134,6 +136,7 @@ Pedido de Gonzalo después de ver la app en producción:
 - **Velocidad:** la app era lenta. Causas: el servidor de Vercel estaba en Washington y la base en São Paulo, y cada elección pedía la página entera al servidor. Ahora la página trae una sola vez los datos del mes y calcula los horarios en el dispositivo, con la misma lógica pura (RF-15, RNF-3).
 - **Dirección fija:** la elección ya no viaja en la dirección (`?servicio=…`). Se asume que no se puede compartir un enlace a un día puntual y que "atrás" sale de la página (RF-15).
 - **Tema** claro, oscuro o automático (RF-17), y **redes al pie** (RF-18).
+- **Loader en toda espera** (RF-19) e **ícono de la app** con la insignia quieta (RF-20).
 - Correcciones de la validación: RF-4 (semana inicial), RF-5 (los días sin lugar no se pueden elegir), RF-3/RF-13 (sin centavos).
 
 ## Dudas abiertas
