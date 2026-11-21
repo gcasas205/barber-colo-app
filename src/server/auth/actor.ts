@@ -4,7 +4,7 @@ import { resolveSession, type Actor } from "@/modules/identity";
 import { createIdentityRepository } from "@/modules/identity/infrastructure/identity-repository";
 import { database } from "@/shared/db/client";
 import { authEnv } from "@/shared/config/env";
-import { toSessionClaims } from "./claims";
+import { readClaims } from "./claims";
 import { supabaseServer } from "./supabase";
 
 /**
@@ -14,8 +14,7 @@ import { supabaseServer } from "./supabase";
 export const getActor = cache(async (): Promise<Actor> => {
   const env = authEnv();
   const supabase = await supabaseServer();
-  const { data, error } = await supabase.auth.getClaims();
-  const claims = error ? null : toSessionClaims(data?.claims);
+  const claims = await readClaims(supabase.auth);
   const actor = await resolveSession(
     {
       identities: createIdentityRepository(database()),

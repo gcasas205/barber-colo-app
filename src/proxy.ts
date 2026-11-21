@@ -42,7 +42,8 @@ export async function proxy(request: NextRequest) {
     },
   });
   // Verifica el token y, si venció, lo renueva con el refresh token (y escribe las cookies nuevas).
-  await supabase.auth.getClaims();
+  // Si lanza (token de otro proyecto, JWKS caído), la pantalla sigue: getActor la trata como "sin sesión".
+  await supabase.auth.getClaims().catch(() => undefined);
   return response;
 }
 

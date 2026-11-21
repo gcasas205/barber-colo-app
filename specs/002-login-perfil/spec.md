@@ -1,6 +1,6 @@
 # Spec 002 — Login y perfil
 
-Estado: aprobada (2026-11-21), con las resoluciones de `clarificacion.md` y el **cambio 01** (sin Google por ahora: ver al final)
+Estado: implementada (2026-11-21; aprobada el mismo día), con las resoluciones de `clarificacion.md` y el **cambio 01** (sin Google por ahora: ver al final)
 
 Origen: `docs/analisis.md` (RF-01 a RF-03, actores, D-11 a D-15) y las respuestas de Gonzalo del
 2026-11-21. La spec anterior (001) dejó la página pública de horarios en producción.

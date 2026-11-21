@@ -25,6 +25,7 @@ Estado: aprobado (2026-11-21), con el cambio 01 (sin Google) · Plan: [`plan.md`
 - [x] **T9. [agente] Pruebas de punta a punta, velocidad y comando de borrado de la demo.** RF-25, RNF-6
   - Hecho cuando: `tests/e2e/login.py` y `speed.py` en verde en local; `npm run demo:purge` probado
     contra la base local con datos reales al lado.
-- [ ] **T10. [persona] Verificación en Vercel.** Criterios de finalización
+- [x] **T10. [persona] Verificación en Vercel.** Criterios de finalización
   - Hecho cuando: Gonzalo entra con las tres cuentas de prueba y como invitado; como Colo ve la lista y
     pone un sobrenombre; como cliente de prueba completa el perfil. Evidencia: capturas.
+  - Hecho (2026-11-21): Gonzalo verificó en barber-colo.vercel.app; e2e en producción en verde con la base nueva en sa-east-1 (entrar como Colo 0,75 s, `/colo` ~0,15 s desde Buenos Aires).
