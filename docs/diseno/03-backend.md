@@ -261,6 +261,12 @@ flowchart LR
 - **Enlace de invitado:** el token se compara por su hash (DB-04). Para evitar que alguien pruebe
   tokens al azar, hay un límite de intentos fallidos por IP (contador en la base, ventana de 10 min).
 
+> **Actualización (spec 002, 2026-11-21):** ver ADR-07 actualizado. `getActor()` devuelve `barber`,
+> `customer`, `guest`, `demo` o `none` a partir de los claims verificados, `BARBER_EMAIL` (spec de
+> publicación), `DEMO_ENABLED`, `app.demo_accounts`, `app.guest_devices` y la última actividad. El
+> enlace secreto `/t/token` sigue para los turnos que carga Colo (spec 005). `SUPABASE_SECRET_KEY` ya
+> no hace falta; se suman `DEMO_ENABLED` e `IP_HASH_PEPPER` (solo servidor).
+
 ## 10. Configuración y secretos
 
 | Variable | Dónde | Para qué |

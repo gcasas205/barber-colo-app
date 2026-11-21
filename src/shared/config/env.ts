@@ -26,3 +26,27 @@ export function serverEnv(source: Record<string, string | undefined> = process.e
   if (source === process.env) cached = parsed.data;
   return parsed.data;
 }
+
+/** Variables de la sesión (spec 002). Separadas de serverEnv: la página pública no las necesita. */
+const authSchema = z.object({
+  NEXT_PUBLIC_SUPABASE_URL: z.url(),
+  /** Clave publicable de Supabase (no es secreta). */
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(20),
+  /** "true" mientras duren los usuarios de prueba (D-11): los apaga Gonzalo al publicar. */
+  DEMO_ENABLED: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
+  /** Email de la cuenta de Google de Colo (spec de publicación). */
+  BARBER_EMAIL: z.email().optional(),
+  /** Para guardar la IP de los intentos como hash (RF-18b). */
+  IP_HASH_PEPPER: z.string().min(32).optional(),
+});
+
+export type AuthEnv = z.infer<typeof authSchema>;
+
+export function authEnv(source: Record<string, string | undefined> = process.env): AuthEnv {
+  const parsed = authSchema.safeParse(source);
+  if (!parsed.success) {
+    const names = [...new Set(parsed.error.issues.map((i) => i.path.join(".")))].join(", ");
+    throw new Error(`Faltan o son inválidas estas variables de entorno: ${names}`);
+  }
+  return parsed.data;
+}

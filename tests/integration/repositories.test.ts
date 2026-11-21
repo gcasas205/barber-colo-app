@@ -26,7 +26,6 @@ afterAll(async () => {
   await db.destroy();
   await admin.query("delete from app.schedule_blocks");
   await admin.query("update app.services set deactivated_at = null");
-  await admin.query("alter role app_server password null");
   await admin.end();
 });
 

@@ -32,3 +32,17 @@ export async function sqlState(client: Client, sql: string, params: unknown[] = 
     return (error as { code?: string }).code ?? "unknown";
   }
 }
+
+/** Crea un usuario de Auth en la base local (solo tests). Devuelve su id. */
+export async function createAuthUser(
+  client: Client,
+  opts: { email?: string; anonymous?: boolean } = {},
+): Promise<string> {
+  const { rows } = await client.query(
+    `insert into auth.users (id, instance_id, aud, role, email, is_anonymous, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+     values (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', $1, $2, '{}', '{}', now(), now())
+     returning id`,
+    [opts.email ?? null, opts.anonymous ?? false],
+  );
+  return rows[0].id as string;
+}

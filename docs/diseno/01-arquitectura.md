@@ -255,6 +255,20 @@ Reglas de esta capa, tomadas de la guía de seguridad de Next.js 16 que trae el 
 - Una **capa de acceso** (`shared/auth`) es el único lugar que lee la sesión: devuelve
   `{ userId, role, customerId }` y la usan todas las Server Actions.
 
+> **Actualización (spec 002, 2026-11-21):**
+> - **El rol de barbero se calcula en cada pedido**, no se guarda en `app_metadata`: es barbero quien
+>   tiene el email **verificado** igual a `BARBER_EMAIL`, o Colo (demo) mientras la demo esté activa.
+>   Así, cambiar el email le quita el rol a la cuenta anterior en el próximo pedido, y el servidor **no
+>   necesita `SUPABASE_SECRET_KEY`**.
+> - **Invitados y cuentas de prueba también tienen sesión de Supabase.** Los invitados usan el ingreso
+>   anónimo (una sesión por dispositivo, asociada a su cliente en `app.guest_devices`). Las cuentas de
+>   prueba entran con correo y contraseña y se reconocen por `app.demo_accounts`. Cualquier otra cuenta
+>   de correo y contraseña no tiene acceso.
+> - **Sin Google por ahora (D-17):** el ingreso con Google y `BARBER_EMAIL` se activan en la spec de
+>   publicación.
+> - **Vencimiento por inactividad** propio (`app.user_activity`): 60 días clientes, 30 Colo. El plan
+>   gratuito de Supabase no ofrece ese ajuste.
+
 ### ADR-08. PWA y notificaciones sin plugins
 
 - **Decisión:** `app/manifest.ts`, un service worker propio (`public/sw.js`) y la librería `web-push`
@@ -284,6 +298,14 @@ Reglas de esta capa, tomadas de la guía de seguridad de Next.js 16 que trae el 
   `cacheTag` al cambiar.
 - **Riesgo:** es el modelo nuevo de Next 16 y hay menos ejemplos. Si en la spec 001 complica más de lo
   que aporta, se desactiva y se registra el cambio.
+
+> **Actualización (spec 001, cambio 01, 2026-11-21):** la página pública **calcula los horarios en el
+> dispositivo**. El servidor manda una vez por visita una *foto de la agenda* (franjas, paso,
+> anticipación, ocupaciones como lapsos y su hora) y el navegador usa el mismo dominio puro; la dirección
+> no cambia al elegir. Las funciones de Vercel corren en `gru1`, al lado de la base. El cálculo del
+> navegador es solo para mostrar: la reserva (spec 004) vuelve a validar en el servidor.
+> - **CSP:** fija en la página pública; con *nonce* por pedido en las pantallas con sesión (spec 002).
+> - **Hosting (D-16):** Vercel para desarrollo y demo; nada debe depender de servicios propios de Vercel.
 
 ### ADR-12. Estrategia de pruebas por capa
 

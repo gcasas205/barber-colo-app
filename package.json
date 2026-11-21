@@ -16,12 +16,15 @@
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "db:start": "supabase start -x realtime,storage-api,imgproxy,edge-runtime,logflare,vector,studio,mailpit,postgres-meta,supavisor",
     "db:reset": "supabase db reset",
-    "db:types": "kysely-codegen --dialect postgres --url postgresql://postgres:postgres@127.0.0.1:54332/postgres --include-pattern 'app.*' --out-file src/shared/db/types.ts"
+    "db:types": "kysely-codegen --dialect postgres --url postgresql://postgres:postgres@127.0.0.1:54332/postgres --include-pattern 'app.*' --out-file src/shared/db/types.ts",
+    "demo:purge": "node --experimental-strip-types scripts/purge-demo.mts"
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",
     "@fontsource-variable/archivo": "5.3.0",
     "@fontsource-variable/atkinson-hyperlegible-next": "5.3.0",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.2",
     "date-fns": "4.4.0",
     "kysely": "0.29.9",
     "lucide-react": "1.77.0",

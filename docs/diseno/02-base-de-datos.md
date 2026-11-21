@@ -276,6 +276,18 @@ Se descartaron por redundantes sin beneficio: `appointments.discount_bps_total` 
 `benefit_rules.active` (lo dice `deactivated_at`) y los contadores de cancelaciones y
 reprogramaciones tarde en `conduct_records` (se cuentan en `stats`).
 
+> **Actualización (spec 002, 2026-11-21), implementada en `supabase/migrations/20261121200*`:**
+> - `customer_role` es `holder`, `dependent` o **`guest`** (antes `manual`), más `registered_by`
+>   (`self` o `barber`): el invitado que se registra solo y el cliente que carga Colo son la misma figura.
+> - Columnas nuevas en `customers`: `nickname` (solo lo ve Colo), `is_demo` (con `check` de "(demo)" en
+>   el nombre), `birth_day`/`birth_month` sin año. El titular nace sin teléfono (perfil incompleto); el
+>   invitado siempre tiene teléfono y nunca cuenta.
+> - Tablas nuevas de identidad: `guest_devices`, `demo_accounts`, `user_activity`, `phone_changes`
+>   (retención de 12 meses) y `guest_attempts` (hash de la IP, retención de 1 día). Limpieza diaria con
+>   pg_cron (`retencion-diaria`).
+> - `app_server` puede crear y actualizar clientes, nunca borrarlos.
+> - Las reglas de un `check` necesitan `is not null` explícito: una comparación con `null` no falla.
+
 ## 4. Estadísticas (`stats`)
 
 Vistas de **solo lectura** que calculan en Postgres (aprendizaje de Corralap). Agrupan siempre en la

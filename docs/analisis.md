@@ -48,6 +48,7 @@ Una aplicación web instalable en el celular (PWA, con manifest y notificaciones
 |---|---|
 | **Cliente** | Persona con cuenta de Google que reserva y gestiona sus turnos. |
 | **Cliente sin cuenta** | Persona que el barbero carga a mano (nombre y teléfono). Gestiona su turno con un enlace y se puede vincular a una cuenta más adelante. |
+| **Invitado** | Cliente sin cuenta que se registra solo, con nombre y teléfono (D-12). Se lo reconoce por el teléfono para la política de faltas; no acumula visitas para los descuentos. |
 | **Barbero** (administrador) | Único usuario con permisos para configurar la agenda, los precios y los descuentos, ver todos los turnos, marcar asistencia y gestionar clientes. |
 | **Sistema** (procesos automáticos) | Envía los pedidos de confirmación, avisa al barbero de los turnos sin confirmar y recalcula faltas y beneficios. |
 
@@ -253,15 +254,17 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 | # | Spec | Contenido | RF | MVP |
 |---|---|---|---|---|
 | 001 | `agenda-disponibilidad` | Horario semanal, paso de agenda, bloqueos, catálogo de servicios (precio y duración), anticipación mínima y horarios libres por servicio | 04–08, 37, 41–43 | ✅ |
-| 002 | `login-perfil` | Google, alta de cliente, teléfono, rol barbero, **Ajustes de Colo (franjas, paso, bloqueos y servicios)**, **usuarios de prueba temporales (D-11)** | 01–03, 04–05, 41–44 | ✅ |
-| 003 | `reserva-cancelacion` | Reservar, evitar doble reserva, cancelar y **reprogramar** en plazo o tarde, margen de 10 min, precio congelado, cancelación del barbero con motivo | 08–13, 39–40, P-05, P-07, P-14 | ✅ |
-| 004 | `turnos-manuales-enlace` | Carga manual, enlace secreto, mensaje para WhatsApp y vinculación de clientes | 14–18 | ✅ |
-| 005 | `pwa-notificaciones` | Manifest, instalación, permisos, Web Push con acciones y avisos dentro de la app | 34 + avisos de las demás | ✅ |
-| 006 | `confirmacion` | Recordatorio del día anterior, pedido 1 h antes, ventana de 30 min, SinConfirmar, reservas con poca anticipación y resumen diario | 19–23, 35–39 | ✅ |
-| 007 | `asistencia-faltas` | Marcar asistencia, faltas seguidas, aprobación, bloqueo e historial | 24–28 | ✅ |
-| 008 | `fidelizacion` | Descuento del 4.º corte del mes, del corte 10 y de cumpleaños, suma de descuentos y barras de progreso | 29–33, P-15 | v1.1 |
-| 009 | `sena-online` | Seña con Mercado Pago para clientes con 3 faltas seguidas | — | v2 |
-| 010 | `estadisticas-crm` | Indicadores por período, ficha 360, salud del cliente y "a quién escribirle hoy" (ver `docs/estadisticas-crm.md`) | P-10 a P-13 | v1.1 |
+| 002 | `login-perfil` | Google, **invitado (D-12)**, alta de cliente, teléfono, rol barbero (D-13), sobrenombre (D-14), **usuarios de prueba temporales (D-11, D-15)** | 01–03 | ✅ |
+| 003 | `ajustes-colo` | Ajustes de Colo: franjas, paso, bloqueos y servicios | 04–05, 41–44 | ✅ |
+| 004 | `reserva-cancelacion` | Reservar (también como invitado), **personas a cargo**, evitar doble reserva, cancelar y **reprogramar** en plazo o tarde, margen de 10 min, precio congelado, cancelación del barbero con motivo | 08–13, 39–40, P-05, P-07, P-14 | ✅ |
+| 005 | `turnos-manuales-enlace` | Carga manual, enlace secreto, mensaje para WhatsApp y vinculación de clientes | 14–18 | ✅ |
+| 006 | `pwa-notificaciones` | Manifest, instalación, permisos, Web Push con acciones y avisos dentro de la app | 34 + avisos de las demás | ✅ |
+| 007 | `confirmacion` | Recordatorio del día anterior, pedido 1 h antes, ventana de 30 min, SinConfirmar, reservas con poca anticipación y resumen diario | 19–23, 35–39 | ✅ |
+| 008 | `asistencia-faltas` | Marcar asistencia, faltas seguidas, aprobación, bloqueo e historial | 24–28 | ✅ |
+| 009 | `fidelizacion` | Descuento del 4.º corte del mes, del corte 10 y de cumpleaños, suma de descuentos y barras de progreso | 29–33, P-15 | v1.1 |
+| 010 | `sena-online` | Seña con Mercado Pago para clientes con 3 faltas seguidas | — | v2 |
+| P | `publicacion` | **Antes de publicar:** ingreso con Google, cuenta real de Colo (`BARBER_EMAIL`), apagar y borrar la demo, hosting definitivo (D-16) | 01–03 | ✅ |
+| 011 | `estadisticas-crm` | Indicadores por período, ficha 360, salud del cliente y "a quién escribirle hoy" (ver `docs/estadisticas-crm.md`) | P-10 a P-13 | v1.1 |
 
 > La 001 va primero porque toda la lógica de turnos depende de calcular bien los horarios libres, y es
 > la parte con más riesgo de errores de fechas (como pasaba con la racha en el Diario de Estudio).
@@ -292,7 +295,13 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 | D-08 | Se agrega un recordatorio simple el día anterior. Hay que contemplar las reservas para el mismo día (ver 6.6). |
 | D-09 | Se respeta el precio que vio el cliente al reservar. |
 | D-10 | Servicios con turno: Corte ($ 18.000), Completo — corte, barba y cejas ($ 20.000) — y Claritos ($ 70.000), cada uno con su duración, que define el barbero. Las ceras son un producto, fuera de los turnos. Los beneficios (visitas y descuentos) aplican solo a Corte y Completo. Fuente: pizarra de precios del local, 2026-11-20. |
-| D-11 | **Usuarios de prueba temporales** en el mismo entorno, para probar la app como Colo y como cliente: **Colo (demo)** y dos clientes de prueba, que se eligen con botones en la pantalla de login, sin claves. Son temporales y se quitan antes del lanzamiento. Resguardos: (1) se activan con una variable de entorno; (2) el ingreso de prueba **se apaga solo** en cuanto existe el primer cliente real, para que la cuenta de Colo (demo) nunca vea datos de clientes reales; (3) los datos de prueba se marcan y se borran juntos. Decidido el 2026-11-21; va en la spec 002. |
+| D-11 | **Usuarios de prueba temporales** en el mismo entorno, para probar la app como Colo y como cliente: **Colo (demo)** y dos clientes de prueba, que se eligen con botones en la pantalla de login, sin claves. Son temporales y se quitan antes del lanzamiento. Resguardos: (1) se activan con una variable de entorno; (2) el ingreso de prueba **se apaga solo** en cuanto existe el primer cliente real, para que la cuenta de Colo (demo) nunca vea datos de clientes reales; (3) los datos de prueba se marcan y se borran juntos. Decidido el 2026-11-21; va en la spec 002. **Actualizado (2026-11-21):** los usuarios de prueba **no se apagan solos**; se desactivan a mano cuando Gonzalo decida publicar la app real. |
+| D-17 | **Sin Google por ahora** (2026-11-21): mientras se prueba, se entra con correo y contraseña (solo cuentas de prueba, listadas en la pantalla de ingreso como en Corralap) o como invitado. Google y la cuenta real de Colo van en la spec de publicación. |
+| D-16 | **Hosting definitivo pendiente:** Vercel queda para desarrollo y demo; al publicar la app real se elige otro hosting. Mientras tanto, nada debe depender de servicios propios de Vercel. |
+| D-12 | **Entrar como invitado**, con nombre y teléfono, sin Google. Se lo reconoce por el teléfono (no verificado: riesgo aceptado) para la política de faltas; no acumula visitas para los descuentos y se le avisa al entrar. Si después crea una cuenta con el mismo teléfono, se unen solos: las faltas pasan a la cuenta y el cliente no ve los turnos que sacó como invitado. Un teléfono solo puede estar en una cuenta. |
+| D-13 | **Colo se reconoce por el email de su cuenta de Google**, configurado como variable de entorno (fuera del repo). |
+| D-14 | **Sobrenombre** de cada cliente, que pone Colo y solo ve Colo. |
+| D-15 | **Colo (demo) puede cambiar todo, sin restauración**: la demo es para probar la app a fondo antes de usarla. |
 
 ### Casos borde de las reservas para el mismo día
 
