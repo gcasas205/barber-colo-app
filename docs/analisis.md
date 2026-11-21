@@ -38,7 +38,7 @@ Una aplicación web instalable en el celular (PWA, con manifest y notificaciones
 ## 3. Alcance de la primera versión
 
 - **Un solo barbero**, una sola agenda, un solo local.
-- **Todos los turnos duran lo mismo** (bloque fijo configurable, por ejemplo 30 min) y tienen **un precio** que carga el barbero.
+- **Tres servicios con turno**, cada uno con su precio y su duración (D-10): **Corte** ($ 18.000), **Completo** (corte, barba y cejas, $ 20.000) y **Claritos** ($ 70.000). Las **ceras** son un producto que se vende en el local, no un servicio con turno.
 - El cliente entra con **su cuenta de Google**.
 - El barbero puede **cargar turnos a mano** y compartirle al cliente un enlace por WhatsApp.
 
@@ -97,12 +97,12 @@ stateDiagram-v2
 Los valores entre corchetes son **parámetros configurables por el barbero**; el número es el valor inicial.
 
 ### 6.1 Agenda y precios
-- RN-01. El barbero define los días y horarios en que atiende, y la duración del bloque [30 min].
+- RN-01. El barbero define los días y horarios en que atiende y el **paso de la agenda** [15 min]: los turnos empiezan en múltiplos de ese paso (10:00, 10:15, 10:30…).
 - RN-02. El barbero puede bloquear días u horarios puntuales (vacaciones, trámites).
-- RN-03. Un horario admite como máximo un turno activo. No puede haber dos reservas en el mismo bloque.
+- RN-03. Dos turnos activos nunca se superponen en el tiempo, aunque sean de servicios con duraciones distintas.
 - RN-04. No se puede reservar en el pasado ni con más de [30] días de anticipación.
 - RN-05. Un cliente puede tener como máximo [1] turno futuro activo a la vez.
-- RN-06. El barbero carga el precio del corte. La app muestra siempre el precio, el descuento que corresponde y el precio final.
+- RN-06. El barbero carga el precio de cada servicio. La app muestra siempre el precio, el descuento que corresponde y el precio final.
 - RN-06b. El **precio base queda congelado al reservar**: si el barbero lo cambia después, el turno conserva el precio que vio el cliente. Los descuentos sí se calculan al marcar Asistió, porque dependen de las asistencias anteriores; hasta entonces la app los muestra como **estimados**.
 
 ### 6.2 Confirmación y cancelación
@@ -123,7 +123,7 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 ### 6.4 Fidelización
 - RN-18. **Visitas del mes**: el **4.º corte** de un cliente dentro de un mismo mes calendario tiene [10 %] de descuento. El conteo vuelve a cero el primer día de cada mes.
 - RN-19. **Corte número N**: el corte número [10] (contando desde siempre) tiene [15 %] de descuento. Después, el contador vuelve a empezar.
-- RN-20. Solo cuentan los turnos en estado **Asistió**.
+- RN-20. Solo cuentan los turnos en estado **Asistió** de servicios que **suman para beneficios** (Corte y Completo; Claritos no). Los descuentos también se aplican solo a esos servicios.
 - RN-21. Si en un mismo corte aplican varios descuentos, **se suman** (ejemplo: 10 % + 15 % = 25 % sobre el precio). Por ahora no hay tope.
 - RN-22. El barbero carga y edita los porcentajes y las condiciones de cada beneficio.
 - RN-23. El cliente ve una **barra de progreso** para cada beneficio ("3 de 4 cortes este mes", "7 de 10 cortes").
@@ -133,6 +133,13 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 - RN-25. Al cargar un turno a mano, el sistema genera un **enlace al turno** que el barbero puede mandar por WhatsApp con un mensaje ya escrito (día, hora, precio y enlace).
 - RN-26. Ese enlace abre una página del turno, sin necesidad de cuenta, donde la persona puede ver el turno y confirmarlo o cancelarlo, con los mismos plazos que en las reglas 6.2.
 - RN-27. El enlace es secreto y no se puede adivinar; deja de servir cuando el turno termina o se cancela.
+
+### 6.5b Servicios
+- RN-35. Los servicios con turno son **Corte**, **Completo** (corte, barba y cejas) y **Claritos**. El barbero puede agregar, editar o desactivar servicios.
+- RN-36. Cada servicio tiene su **duración** (múltiplo del paso de la agenda) y su **precio**, que define el barbero. Valores iniciales confirmados por el dueño: Corte [30 min], Completo [30 min], Claritos [120 min]. El barbero los edita desde Ajustes → Servicios.
+- RN-37. Un turno es de **un** servicio. El horario de fin del turno es su inicio más la duración del servicio.
+- RN-38. Un horario se ofrece para un servicio solo si ese servicio entra completo dentro de una franja de atención, sin bloqueos ni otros turnos en el medio.
+- RN-39. Cada servicio indica si **suma para beneficios**: Corte y Completo sí; Claritos no.
 
 ### 6.6 Recordatorio del día anterior y reservas con poca anticipación
 - RN-28. El día anterior al turno, a una hora configurable [20:00], el sistema envía un **recordatorio simple** con día, hora, precio y la opción de cancelar. No pide confirmación.
@@ -153,13 +160,13 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 - RF-03. EL SISTEMA reconoce como barbero solo a la cuenta configurada como administradora.
 
 ### Agenda y precios (barbero)
-- RF-04. CUANDO el barbero guarda su horario semanal y la duración del bloque, EL SISTEMA genera los horarios disponibles a partir de esos datos.
+- RF-04. CUANDO el barbero guarda su horario semanal y el paso de la agenda, EL SISTEMA genera los horarios disponibles a partir de esos datos.
 - RF-05. CUANDO el barbero bloquea un día u horario, EL SISTEMA deja de ofrecerlo y avisa a los clientes que ya tenían turno en ese rango.
 - RF-06. EL SISTEMA muestra al barbero la agenda del día y de la semana, con el estado de cada turno.
-- RF-07. CUANDO el barbero cambia el precio del corte, EL SISTEMA muestra el nuevo precio en los horarios que se ofrezcan desde ese momento.
+- RF-07. CUANDO el barbero cambia el precio de un servicio, EL SISTEMA muestra el nuevo precio en las reservas que se hagan desde ese momento.
 
 ### Reservas (cliente)
-- RF-08. CUANDO un cliente elige un día, EL SISTEMA muestra solo los horarios libres de ese día, con el precio, el descuento que le correspondería y el precio final.
+- RF-08. CUANDO un cliente elige un servicio y un día, EL SISTEMA muestra solo los horarios de inicio en los que **ese servicio entra completo** sin superponerse con otros turnos ni con bloqueos, con el precio, el descuento que le correspondería y el precio final.
 - RF-09. CUANDO un cliente reserva un horario libre, EL SISTEMA crea el turno en estado Reservado y notifica al barbero.
 - RF-10. SI dos clientes intentan reservar el mismo horario, ENTONCES EL SISTEMA confirma solo la primera reserva y a la segunda le informa que el horario ya no está disponible.
 - RF-11. SI el cliente ya tiene un turno futuro activo, ENTONCES EL SISTEMA no le permite reservar otro y le muestra el que tiene.
@@ -200,7 +207,13 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 - RF-37. SI un cliente intenta reservar con menos de [30 min] de anticipación, ENTONCES EL SISTEMA no ofrece ese horario.
 - RF-38. CUANDO un cliente reserva con menos de 1 h de anticipación, EL SISTEMA crea el turno directamente en estado Confirmado y no envía pedido de confirmación.
 - RF-39. CUANDO un cliente cancela dentro de los [10 min] siguientes a reservar, EL SISTEMA libera el horario sin registrarlo como cancelación tarde, aunque falten menos de 4 h.
-- RF-40. CUANDO el barbero cambia el precio del corte, EL SISTEMA mantiene en los turnos ya reservados el precio base que tenían al reservar.
+- RF-40. CUANDO el barbero cambia el precio de un servicio, EL SISTEMA mantiene en los turnos ya reservados el precio base que tenían al reservar.
+
+### Servicios
+- RF-41. EL SISTEMA ofrece para reservar solo los servicios activos, cada uno con su nombre, descripción, duración y precio.
+- RF-42. CUANDO el barbero crea o edita un servicio (nombre, descripción, duración, precio, si suma para beneficios, si está activo), EL SISTEMA lo aplica a las reservas nuevas sin cambiar los turnos ya reservados.
+- RF-43. CUANDO se reserva un turno, EL SISTEMA guarda el servicio, su duración y su precio de ese momento.
+- RF-44. SI el barbero desactiva un servicio con turnos futuros, ENTONCES EL SISTEMA conserva esos turnos y deja de ofrecer el servicio para reservas nuevas.
 
 ### Notificaciones
 - RF-34. SI el usuario no dio permiso de notificaciones, ENTONCES EL SISTEMA muestra los avisos pendientes dentro de la app y le recuerda cómo activarlas.
@@ -227,7 +240,8 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 ## 9. Fuera de alcance de la primera versión
 
 - Varios barberos o varias sucursales.
-- Servicios con duraciones o precios distintos.
+- Venta de productos (ceras y otros) dentro de la app.
+- Reservar varios servicios en un mismo turno (por ejemplo, Corte + Claritos): se reserva el servicio que los incluye o dos turnos.
 - Cobro online del corte. La **seña online** (por ejemplo, con Mercado Pago) queda para la spec 009.
 - Envío automático de mensajes por WhatsApp (bot o API). En v1 el barbero comparte el enlace a mano con un mensaje ya escrito.
 - Lista de espera cuando se libera un turno.
@@ -238,7 +252,7 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 
 | # | Spec | Contenido | RF | MVP |
 |---|---|---|---|---|
-| 001 | `agenda-disponibilidad` | Horario semanal, bloque fijo, bloqueos, precio, anticipación mínima y cálculo de horarios libres | 04–07, 37 | ✅ |
+| 001 | `agenda-disponibilidad` | Horario semanal, paso de agenda, bloqueos, catálogo de servicios (precio y duración), anticipación mínima y horarios libres por servicio | 04–08, 37, 41–43 | ✅ |
 | 002 | `login-perfil` | Google, alta de cliente, teléfono, rol barbero | 01–03 | ✅ |
 | 003 | `reserva-cancelacion` | Reservar, evitar doble reserva, cancelar y **reprogramar** en plazo o tarde, margen de 10 min, precio congelado, cancelación del barbero con motivo | 08–13, 39–40, P-05, P-07, P-14 | ✅ |
 | 004 | `turnos-manuales-enlace` | Carga manual, enlace secreto, mensaje para WhatsApp y vinculación de clientes | 14–18 | ✅ |
@@ -277,6 +291,7 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 
 | D-08 | Se agrega un recordatorio simple el día anterior. Hay que contemplar las reservas para el mismo día (ver 6.6). |
 | D-09 | Se respeta el precio que vio el cliente al reservar. |
+| D-10 | Servicios con turno: Corte ($ 18.000), Completo — corte, barba y cejas ($ 20.000) — y Claritos ($ 70.000), cada uno con su duración, que define el barbero. Las ceras son un producto, fuera de los turnos. Los beneficios (visitas y descuentos) aplican solo a Corte y Completo. Fuente: pizarra de precios del local, 2026-11-20. |
 
 ### Casos borde de las reservas para el mismo día
 

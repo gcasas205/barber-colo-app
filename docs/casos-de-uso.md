@@ -39,6 +39,7 @@ flowchart LR
         CU07[CU-07 Activar notificaciones]
         CU08[CU-08 Pedir baja de datos]
         CU09[CU-09 Gestionar turno por enlace ★]
+        CU31[CU-31 Gestionar personas a cargo]
 
         CU10[CU-10 Configurar agenda]
         CU11[CU-11 Bloquear días u horarios]
@@ -63,7 +64,7 @@ flowchart LR
         CU28[CU-28 Escribir a quien se enfría]
     end
 
-    Cliente --- CU30 & CU01 & CU02 & CU03 & CU04 & CU05 & CU06 & CU07 & CU08
+    Cliente --- CU31 & CU30 & CU01 & CU02 & CU03 & CU04 & CU05 & CU06 & CU07 & CU08
     Invitado --- CU09
     Barbero --- CU10 & CU11 & CU12 & CU13 & CU14 & CU15 & CU16 & CU17 & CU18 & CU19 & CU30 & CU20 & CU21 & CU07 & CU25 & CU26 & CU27 & CU28
     Reloj --- CU22 & CU23 & CU24
@@ -78,13 +79,13 @@ flowchart LR
 | CU-03 ★ | Reservar turno | Cliente | Turnos | RF-08 a 11, 26, 27, 38, 40 | 003 |
 | CU-04 ★ | Confirmar turno | Cliente | Turnos | RF-20 | 006 |
 | CU-05 ★ | Cancelar turno | Cliente | Turnos | RF-12, 13, 39 | 003 |
-| CU-06 | Ver mis turnos y progreso de beneficios | Cliente | Turnos + Precios | RF-24, 32 | 003, 008 |
+| CU-06 | Ver mis turnos y progreso de beneficios (los míos y los de mis personas a cargo) | Cliente | Turnos + Precios | RF-24, 32, P-16 | 003, 008 |
 | CU-07 | Activar notificaciones e instalar la app | Cliente, Barbero | Notificaciones | RF-02, 34, RNF-02 | 005 |
 | CU-08 | Pedir la baja de mis datos | Cliente | Clientes | RNF-07 | 002 |
 | CU-09 ★ | Gestionar turno por enlace | Invitado | Turnos | RF-16, 17 | 004 |
-| CU-10 | Configurar agenda (franjas, bloque, anticipación) | Barbero | Agenda | RF-04, RN-01, 04, 30 | 001 |
+| CU-10 | Configurar agenda (franjas, paso, anticipación) | Barbero | Agenda | RF-04, RN-01, 04, 30 | 001 |
 | CU-11 | Bloquear días u horarios | Barbero | Agenda | RF-05, RN-02 | 001 |
-| CU-12 | Configurar precio y beneficios | Barbero | Precios | RF-07, 33, RN-22 | 001, 008 |
+| CU-12 | Configurar servicios (precio, duración, beneficios) y reglas de beneficio | Barbero | Precios | RF-07, 33, 41–44, RN-22, RN-35–39 | 001, 008 |
 | CU-13 | Configurar plazos (cancelación, confirmación, recordatorio) | Barbero | Turnos | RN-07 a 11, 28 | 006 |
 | CU-14 | Ver agenda del día y de la semana | Barbero | Turnos + Agenda | RF-06 | 003 |
 | CU-15 ★ | Cargar turno manual y compartir enlace | Barbero | Turnos + Clientes | RF-14, 15, P-08 | 004 |
@@ -92,6 +93,7 @@ flowchart LR
 | CU-17 ★ | Decidir turno sin confirmar | Barbero | Turnos | RF-21, 22 | 006 |
 | CU-18 ★ | Registrar asistencia o falta | Barbero | Turnos | RF-24, 25, 29, 30, P-06, P-09 | 007, 008 |
 | CU-19 | Cancelar turno como barbero (con motivo) | Barbero | Turnos | P-05 | 003 |
+| CU-31 | Gestionar personas a cargo (agregar, editar, quitar) | Cliente (titular) | Clientes | P-16 | 002 |
 | CU-30 ★ | Reprogramar turno | Cliente, Barbero, Invitado | Turnos | P-07, P-14 | 003 |
 | CU-20 | Ver ficha del cliente y bloquearlo | Barbero | Conducta + Clientes | RF-27, 28, RN-17 | 007 |
 | CU-21 | Vincular cliente sin cuenta | Barbero | Clientes | RF-18 | 004 |
@@ -117,12 +119,12 @@ flowchart LR
 | **Garantía de éxito** | Existe un turno activo del cliente en ese horario, con el precio base congelado, y el barbero fue avisado. |
 
 **Flujo principal**
-1. El cliente elige un día.
-2. El sistema muestra los horarios libres con precio, descuento estimado y precio final.
+1. El titular elige **para quién** es el turno (él o una de sus personas a cargo; si no tiene personas a cargo, se saltea), el **servicio** (Corte, Completo o Claritos, con precio y duración) y un día.
+2. El sistema muestra los horarios en los que ese servicio entra completo, con precio, descuento estimado y precio final.
 3. El cliente elige un horario y confirma la reserva.
 4. El sistema verifica la habilitación del cliente (normal).
 5. El sistema verifica que el horario siga libre y que el cliente no tenga otro turno futuro activo.
-6. El sistema crea el turno con la tarifa vigente como precio base y estado **Reservado**.
+6. El sistema crea el turno con el servicio, su precio vigente como precio base, su hora de fin según la duración y estado **Reservado**.
 7. El sistema muestra la confirmación y avisa al barbero.
 
 **Flujos alternativos**
@@ -150,7 +152,7 @@ flowchart LR
 4. El sistema pasa el turno a **Cancelado**, libera el horario y avisa al barbero.
 
 **Flujos alternativos**
-- 2a. **Tarde** (faltan menos de 4 h y pasaron más de 10 min desde la reserva): en el paso 3 el sistema advierte que quedará registrado como cancelación tarde; en el paso 4 el estado es **CanceladoTarde** y Conducta lo registra (sin sumar faltas).
+- 2a. **Tarde** (faltan menos de 4 h y pasaron más de 10 min desde la reserva): en el paso 3 el sistema advierte que quedará registrado como cancelación tarde; en el paso 4 el estado es **CanceladoTarde** y queda en el historial del turno (sin sumar faltas).
 - 1a. **El turno ya empezó**: no se puede cancelar.
 
 ---
@@ -210,7 +212,7 @@ CU-22, que decide qué corresponde según la hora:
 | **Garantía de éxito** | Existe un turno activo con origen manual y un enlace secreto; WhatsApp quedó abierto con el mensaje. |
 
 **Flujo principal**
-1. El barbero elige un horario libre en su agenda.
+1. El barbero elige el servicio y un horario libre para ese servicio en su agenda.
 2. Busca al cliente por nombre o teléfono y lo selecciona.
 3. El sistema crea el turno (mismas reglas que CU-03: precio base, estado inicial según la hora) y genera el enlace.
 4. El barbero toca "Enviar por WhatsApp"; el sistema abre WhatsApp con el número y un mensaje ya escrito.
@@ -241,7 +243,7 @@ CU-22, que decide qué corresponde según la hora:
 
 **Flujo principal (asistió)**
 1. El barbero abre el turno y ve el precio base, los descuentos que corresponden y el precio final.
-2. Toca **Asistió**.
+2. Toca **Asistió** (si el cliente pidió otro servicio en el momento, lo cambia antes; P-17).
 3. El sistema calcula la liquidación con las visitas computables previas del cliente y las reglas activas.
 4. El turno pasa a **Asistió** con su liquidación.
 5. Conducta pone en cero las faltas seguidas; Precios registra la visita computable.
@@ -283,3 +285,20 @@ CU-22, que decide qué corresponde según la hora:
 - 1a. **Ya reprogramó 2 veces**: el sistema ofrece cancelar.
 - 4a. **El horario nuevo lo tomó otro cliente**: vuelve al paso 2; el turno sigue en su horario original.
 - 1b. **Barbero**: elige el nuevo horario, escribe el motivo y el cliente recibe la notificación con el horario nuevo. No cuenta como tarde ni consume el límite del cliente.
+
+---
+
+### CU-31 Gestionar personas a cargo
+
+| | |
+|---|---|
+| **Actor** | Cliente titular |
+| **Garantía de éxito** | La persona a cargo existe en la cuenta del titular y puede recibir turnos. |
+
+1. En su perfil, el titular elige "Agregar persona".
+2. Carga el nombre y, si quiere, el día y mes de cumpleaños.
+3. El sistema crea el cliente como persona a cargo de esa cuenta y su ficha de conducta.
+
+- 1a. **Ya tiene [5] personas a cargo**: el sistema no permite agregar otra.
+- 3a. **Editar**: cambia nombre o cumpleaños.
+- 3b. **Quitar**: si tiene un turno futuro activo, el sistema pide cancelarlo antes; después la persona se anonimiza.

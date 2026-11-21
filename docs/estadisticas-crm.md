@@ -16,7 +16,7 @@ Modelo: [`docs/dominio.md`](dominio.md) · Referencia: Corralap ([app](https://c
 | Servicio de indicadores **de solo lectura** que junta datos de todos los módulos y nunca escribe | Módulo **Estadísticas** como modelo de lectura: lee, no modifica | Alta cohesión: calcular métricas es un tema aparte. Bajo acoplamiento: ningún módulo depende de él |
 | Selector de período (30/90/180/365) y **comparación con el período anterior** en cada cifra | Períodos **7/30/90/365** días (la semana importa en una barbería) | Misma forma, otro ritmo de negocio |
 | Granularidad automática (semana hasta 90 días, mes después) | Día hasta 30 días, semana hasta 90, mes después | Con 7 días, agrupar por semana deja una sola barra |
-| Pestañas: Ventas, Vendedores, Etapas, Presupuestos, Clientes, Obras, Contacto, Catálogo | Pestañas: **Facturación, Agenda, Asistencia, Clientes, Canales, Beneficios** | Un solo barbero y un solo servicio: no hay vendedores, etapas ni catálogo |
+| Pestañas: Ventas, Vendedores, Etapas, Presupuestos, Clientes, Obras, Contacto, Catálogo | Pestañas: **Facturación, Agenda, Asistencia, Clientes, Servicios, Canales, Beneficios** | Un solo barbero y un solo servicio: no hay vendedores, etapas ni catálogo |
 | Patrón por pestaña: cifras clave arriba → series por período con **"Ver tabla"** → rankings → desgloses → listado | Igual | Funciona en el celular y es accesible (cada gráfico tiene su tabla) |
 | Cifra clave con variación: `%` para montos, **puntos porcentuales** para tasas, diferencia simple para cantidades | Igual | Comparar tasas en % de % confunde |
 | "Sin datos" devuelve vacío, **nunca divide por cero** | Igual | Una barbería nueva arranca sin historial |
@@ -72,14 +72,14 @@ No depende del período: es la foto del día.
 | Descuentos otorgados | Σ (precio base − precio final) y % sobre el precio base | % y p. p. |
 | Facturación agendada | Σ precio base de turnos activos futuros | — |
 | Serie | Facturado y cortes por día / semana / mes | — |
-| Desglose | Por medio de pago *(si se aprueba P-11)* · por día de la semana | — |
+| Desglose | Por servicio · por medio de pago · por día de la semana | — |
 
 ### 3.3 Agenda (ocupación)
 
 | Indicador | Definición |
 |---|---|
 | Ocupación | Turnos Asistió / horarios ofrecidos en el período (ya pasados) |
-| Horas trabajadas | Cortes × duración del bloque |
+| Horas trabajadas | Suma de las duraciones de los turnos Asistió |
 | Mapa de calor día × hora | Reservas por franja (como el mapa de calor de etapas de Corralap): dónde hay demanda y dónde hay horas muertas |
 | Anticipación de reserva | Mediana de horas entre la reserva y el turno; % de reservas para el mismo día |
 | Horarios perdidos | Horarios que quedaron vacíos por falta, cancelación tarde o liberación |
@@ -109,6 +109,17 @@ No depende del período: es la foto del día.
 | Por origen | Clientes y facturado por "cómo nos conoció" | — |
 | Por salud | Al día / se enfría / perdido (sección 4) | — |
 | Listado | Nombre, visitas, facturado, última visita, próxima, salud | — |
+
+### 3.5b Servicios
+
+Como la pestaña Catálogo de Corralap, para los servicios de El Colo (D-10).
+
+| Indicador | Definición |
+|---|---|
+| Por servicio | Cantidad, facturado y ticket de Corte, Completo y Claritos, con variación vs. el período anterior |
+| Mezcla | Porcentaje de cada servicio sobre los turnos y sobre la facturación |
+| Horas por servicio | Tiempo de agenda que ocupa cada servicio (Claritos ocupa mucho más por turno) |
+| Facturación por hora | Facturado / horas ocupadas, por servicio: cuál rinde más el tiempo del barbero |
 
 ### 3.6 Canales
 
