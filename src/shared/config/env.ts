@@ -33,7 +33,13 @@ const authSchema = z.object({
   /** Clave publicable de Supabase (no es secreta). */
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(20),
   /** "true" mientras duren los usuarios de prueba (D-11): los apaga Gonzalo al publicar. */
-  DEMO_ENABLED: z.enum(["true", "false"]).default("false").transform((v) => v === "true"),
+  // Tolerante con cómo se carga en un panel: espacios, saltos de línea, comillas o mayúsculas.
+  DEMO_ENABLED: z
+    .string()
+    .default("false")
+    .transform((v) => v.trim().replace(/^["']|["']$/g, "").toLowerCase())
+    .pipe(z.enum(["true", "false"], { message: 'tiene que ser "true" o "false"' }))
+    .transform((v) => v === "true"),
   /** Email de la cuenta de Google de Colo (spec de publicación). */
   BARBER_EMAIL: z.email().optional(),
   /** Para guardar la IP de los intentos como hash (RF-18b). */
@@ -45,7 +51,8 @@ export type AuthEnv = z.infer<typeof authSchema>;
 export function authEnv(source: Record<string, string | undefined> = process.env): AuthEnv {
   const parsed = authSchema.safeParse(source);
   if (!parsed.success) {
-    const names = [...new Set(parsed.error.issues.map((i) => i.path.join(".")))].join(", ");
+    // Nombre de la variable y qué se espera; nunca el valor (puede ser un secreto).
+    const names = [...new Set(parsed.error.issues.map((i) => `${i.path.join(".")} (${i.message})`))].join(", ");
     throw new Error(`Faltan o son inválidas estas variables de entorno: ${names}`);
   }
   return parsed.data;

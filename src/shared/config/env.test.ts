@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { serverEnv } from "./env";
+import { authEnv, serverEnv } from "./env";
 
 describe("serverEnv", () => {
   it("acepta una URL de Postgres", () => {
@@ -14,5 +14,22 @@ describe("serverEnv", () => {
 
   it("rechaza un certificado que no es PEM", () => {
     expect(() => serverEnv({ DATABASE_URL: "postgres://u:p@h/db", DATABASE_CA_CERT: "abc" })).toThrow(/DATABASE_CA_CERT/);
+  });
+});
+
+describe("authEnv", () => {
+  const base = { NEXT_PUBLIC_SUPABASE_URL: "https://x.supabase.co", NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_123456789012345" };
+
+  it.each(["true", "TRUE", " true", "true\n", '"true"', "'True'"])("DEMO_ENABLED=%j activa la demo", (v) => {
+    expect(authEnv({ ...base, DEMO_ENABLED: v }).DEMO_ENABLED).toBe(true);
+  });
+
+  it.each([undefined, "false", "FALSE "])("DEMO_ENABLED=%j la deja apagada", (v) => {
+    expect(authEnv({ ...base, DEMO_ENABLED: v }).DEMO_ENABLED).toBe(false);
+  });
+
+  it("un valor que no es true ni false dice qué se espera, sin mostrar el valor", () => {
+    expect(() => authEnv({ ...base, DEMO_ENABLED: "sí-secreto" })).toThrow(/DEMO_ENABLED \(tiene que ser "true" o "false"\)/);
+    expect(() => authEnv({ ...base, DEMO_ENABLED: "sí-secreto" })).not.toThrow(/secreto/);
   });
 });
