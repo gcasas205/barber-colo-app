@@ -253,7 +253,7 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 | # | Spec | Contenido | RF | MVP |
 |---|---|---|---|---|
 | 001 | `agenda-disponibilidad` | Horario semanal, paso de agenda, bloqueos, catálogo de servicios (precio y duración), anticipación mínima y horarios libres por servicio | 04–08, 37, 41–43 | ✅ |
-| 002 | `login-perfil` | Google, alta de cliente, teléfono, rol barbero | 01–03 | ✅ |
+| 002 | `login-perfil` | Google, alta de cliente, teléfono, rol barbero, **Ajustes de Colo (franjas, paso, bloqueos y servicios)**, **usuarios de prueba temporales (D-11)** | 01–03, 04–05, 41–44 | ✅ |
 | 003 | `reserva-cancelacion` | Reservar, evitar doble reserva, cancelar y **reprogramar** en plazo o tarde, margen de 10 min, precio congelado, cancelación del barbero con motivo | 08–13, 39–40, P-05, P-07, P-14 | ✅ |
 | 004 | `turnos-manuales-enlace` | Carga manual, enlace secreto, mensaje para WhatsApp y vinculación de clientes | 14–18 | ✅ |
 | 005 | `pwa-notificaciones` | Manifest, instalación, permisos, Web Push con acciones y avisos dentro de la app | 34 + avisos de las demás | ✅ |
@@ -292,6 +292,7 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 | D-08 | Se agrega un recordatorio simple el día anterior. Hay que contemplar las reservas para el mismo día (ver 6.6). |
 | D-09 | Se respeta el precio que vio el cliente al reservar. |
 | D-10 | Servicios con turno: Corte ($ 18.000), Completo — corte, barba y cejas ($ 20.000) — y Claritos ($ 70.000), cada uno con su duración, que define el barbero. Las ceras son un producto, fuera de los turnos. Los beneficios (visitas y descuentos) aplican solo a Corte y Completo. Fuente: pizarra de precios del local, 2026-11-20. |
+| D-11 | **Usuarios de prueba temporales** en el mismo entorno, para probar la app como Colo y como cliente: **Colo (demo)** y dos clientes de prueba, que se eligen con botones en la pantalla de login, sin claves. Son temporales y se quitan antes del lanzamiento. Resguardos: (1) se activan con una variable de entorno; (2) el ingreso de prueba **se apaga solo** en cuanto existe el primer cliente real, para que la cuenta de Colo (demo) nunca vea datos de clientes reales; (3) los datos de prueba se marcan y se borran juntos. Decidido el 2026-11-21; va en la spec 002. |
 
 ### Casos borde de las reservas para el mismo día
 

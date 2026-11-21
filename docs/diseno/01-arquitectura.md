@@ -203,6 +203,8 @@ Reglas de esta capa, tomadas de la guía de seguridad de Next.js 16 que trae el 
   migraciones SQL de RLS y cron).
 - **Dependencia nueva:** `kysely`, `postgres` (driver) y `kysely-codegen` en desarrollo.
 
+
+> **Actualización (spec 001, 2026-11-21):** el driver pasa de `postgres` (postgres.js) a `pg`, porque Kysely trae incorporado el dialecto para `pg` y así se evita un paquete de dialecto aparte. La conexión verifica el certificado TLS de Supabase.
 ### ADR-04. Reglas en el dominio, garantías en la base
 
 - **Decisión:** las reglas de negocio se escriben **una vez**, en TypeScript puro (`domain/`), y se
@@ -326,7 +328,7 @@ Reglas de esta capa, tomadas de la guía de seguridad de Next.js 16 que trae el 
 | Paquete | Para qué | ADR |
 |---|---|---|
 | `@supabase/ssr`, `@supabase/supabase-js` | Sesión y login con Google | ADR-07 |
-| `kysely`, `postgres` · `kysely-codegen` (dev) | SQL tipado con transacciones | ADR-03 |
+| `kysely`, `pg` · `kysely-codegen` (dev) | SQL tipado con transacciones | ADR-03 |
 | `zod` | Validación de entradas | ADR-10 |
 | `date-fns`, `@date-fns/tz` | Fechas en hora local | ADR-09 |
 | `web-push` | Envío de notificaciones | ADR-08 |

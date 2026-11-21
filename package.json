@@ -8,27 +8,40 @@
     "start": "next start",
     "lint": "eslint --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:tz",
     "test:watch": "vitest",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:tz": "TEST_TZ=UTC vitest run src && TEST_TZ=Asia/Tokyo vitest run src",
+    "test:integration": "vitest run --config vitest.integration.config.mts",
+    "db:start": "supabase start -x realtime,storage-api,imgproxy,edge-runtime,logflare,vector,studio,mailpit,postgres-meta,supavisor",
+    "db:reset": "supabase db reset",
+    "db:types": "kysely-codegen --dialect postgres --url postgresql://postgres:postgres@127.0.0.1:54332/postgres --include-pattern 'app.*' --out-file src/shared/db/types.ts"
   },
   "dependencies": {
+    "@date-fns/tz": "1.5.0",
     "@fontsource-variable/archivo": "5.3.0",
     "@fontsource-variable/atkinson-hyperlegible-next": "5.3.0",
+    "date-fns": "4.4.0",
+    "kysely": "0.29.9",
     "lucide-react": "1.77.0",
     "next": "16.4.6",
+    "pg": "8.23.1",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.5",
     "@types/node": "^22.20.5",
+    "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^10",
     "eslint-config-next": "16.4.6",
     "husky": "^9.1.7",
+    "kysely-codegen": "0.20.0",
+    "supabase": "3.2.0",
     "tailwindcss": "4.3.5",
     "typescript": "^5",
     "vitest": "^5.1.1"

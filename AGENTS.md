@@ -9,7 +9,8 @@ App web instalable (PWA) para que los clientes de un barbero reserven, confirmen
 
 ## Stack y estructura
 - Next.js (App Router) + TypeScript estricto + Tailwind v4. Supabase (Postgres, Auth Google, Cron). Vercel.
-- `src/app/`: rutas e interfaz. `src/domain/`: lógica de negocio pura con sus tests. `tests/`: tests generales.
+- `src/app/`: rutas e interfaz. `src/ui/`: componentes de presentación. `src/modules/<módulo>/`: `domain/` (lógica pura con sus tests), `application/`, `infrastructure/` e `index.ts` (API pública). `src/shared/kernel/`: fechas, montos y `Result`. `src/server/`: arma los casos de uso. `tests/`: arquitectura, integración y tests generales.
+- `tests/architecture.test.ts` hace fallar el build si se rompen las capas o se importa otro módulo sin pasar por su `index.ts`.
 - `specs/NNN-nombre/`: spec.md, plan.md y tasks.md de cada funcionalidad.
 
 ## Comandos

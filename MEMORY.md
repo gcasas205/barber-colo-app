@@ -11,6 +11,8 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 ## Decisiones (y por qué)
 - D-10: servicios Corte $18.000, Completo (corte, barba y cejas) $20.000, Claritos $70.000, con duración propia; agenda con paso de 15 min; beneficios solo Corte y Completo; ceras = producto, fuera. P-17 aprobada (cambiar servicio al marcar asistencia, precio del servicio nuevo). Duraciones: Corte 30, Completo 30, Claritos 120 (editables en Ajustes → Servicios).
 - P-16: titular + hasta 5 personas a cargo (hijos); cada persona es un cliente con su historial; notificaciones al titular.
+- D-11: usuarios de prueba temporales en el mismo entorno (Colo demo + 2 clientes), con botones en el login (spec 002). Se apagan solos al existir el primer cliente real; quitarlos antes del lanzamiento.
+- Seguridad 001: sin token de Supabase en GitHub (migraciones con `supabase db push --remote=<url>` dentro del job deploy, entorno `production` con aprobación), TLS verificado, `app_server` con permisos mínimos, cabeceras CSP/HSTS.
 - Supabase Cron para las tareas cada minuto: la ventana de confirmación es de 30 min y el cron gratis de Vercel no alcanza.
 - Vercel no despliega solo (`vercel.json`): despliega GitHub Actions después de que pasan los checks.
 - Fuentes del sistema en lugar de `next/font/google`: el build no depende de la red.
@@ -20,9 +22,12 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - UI: seguir `DESIGN.md` (tres voces de color, un solo botón rojo por pantalla, estados con ícono y palabra, poste solo en carga/confirmación/Ahora). Al levantar `next start` para capturas, matar antes el puerto (`fuser -k`), o se sirve un build viejo.
 - Skills de terceros en `.claude/skills` (impeccable, vercel-react-best-practices, supabase, supabase-postgres-best-practices; lock en `skills-lock.json`): excluidas de ESLint. La skill next-best-practices no existe: usar `node_modules/next/dist/docs/`.
 - De Corralap: no cargar todos los datos en memoria para métricas (calcular en Postgres) y agrupar días en hora local, no UTC.
+- `npm test` corre la suite y además `test:tz` (src/ con TEST_TZ=UTC y Asia/Tokyo). Para días, usar `LocalDate` del kernel, nunca `Date`.
+- Base local: `npm run db:start` (puerto 54332, no el 54322 por defecto) y `npm run test:integration`. En este entorno cloud hay que levantar `dockerd` antes. Nada de tipos de rango propios: `db advisors` marca sus constructores y no se pueden modificar.
 - En los tests, ICU puede devolver la zona como `America/Buenos_Aires`: compará el desfase (180 min), no el nombre.
+- `gh` con GraphQL no anda en esta sesión: usar `env -u GH_TOKEN gh api repos/...` (REST) para PRs y checks.
 - TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.
 
 ## Próximos pasos
-1. Diseño (rama `design/arquitectura`): 1) arquitectura aprobada (`docs/diseno/01-arquitectura.md`), 2) base de datos aprobada (`docs/diseno/02-base-de-datos.md`, redundancia solo intencional: proyecciones que se recalculan y reconcilian), 3) backend aprobado (`docs/diseno/03-backend.md`), 4) interfaz con impeccable: `PRODUCT.md` completo, logo redibujado en `public/brand/`; dirección "chapa enlozada" aprobada: `DESIGN.md` ("La chapa del barrio"), componentes en `src/ui/`, prototipo en `/prototipo`. Diseño cerrado.
-2. Spec 001: agenda y disponibilidad.
+1. Diseño cerrado y en `main` (`docs/diseno/`, `DESIGN.md`, prototipo `/prototipo`, componentes `src/ui/`).
+2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec, plan y tareas aprobados. Hecho: T1 (Supabase ref `wzuteatyxtnivriuscei`, entorno `production` con `SUPABASE_DB_URL`), T2 (kernel en `src/shared/kernel`), T3 (validaciones), T4 (disponibilidad en `src/modules/schedule/domain/availability.ts`). T5 (test de arquitectura). T6 (migraciones en `supabase/migrations`, tests en `tests/integration`). T7 (Kysely + pg con TLS verificado, repositorios, casos de uso, `src/server/composition.ts`). T8 (página `/` en `src/app/page.tsx` + `src/app/_reservar/`, capturas en `docs/diseno/assets/spec-001-*`). T9 (job `integration` + migraciones en `deploy`; PR borrador #10 en verde). Sigue T10 [persona]: aprobar el deploy en main, contraseña de app_server y DATABASE_URL en Vercel. Pendiente para la 002: revisar la CSP con nonce (hoy fija con 'unsafe-inline'). Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.

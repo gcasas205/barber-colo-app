@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 // Test de humo: comprueba que la configuración de tests es la que exige la constitución.
 // Se reemplaza o complementa con los tests de cada spec.
-describe("entorno de tests", () => {
+// Con TEST_TZ (npm run test:tz) se cambia la zona a propósito: estos chequeos no aplican.
+describe.skipIf(process.env.TEST_TZ)("entorno de tests", () => {
   it("corre con la zona horaria del local", () => {
     // Según la versión de ICU, el nombre puede aparecer con o sin "Argentina/".
     expect(["America/Argentina/Buenos_Aires", "America/Buenos_Aires"]).toContain(

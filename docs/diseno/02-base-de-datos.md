@@ -144,10 +144,10 @@ se dibujan para no ensuciar el diagrama.
 | Tabla | Columnas clave | Restricciones |
 |---|---|---|
 | `schedule_settings` (1 fila) | `step_minutes` (15, paso de la agenda), `min_notice_minutes` (30), `max_advance_days` (30), `approval_min_notice_minutes` (120) | `id = 1`; `slot_minutes between 5 and 240`; resto `> 0` |
-| `weekly_ranges` | `id`, `weekday` (1 = lunes … 7 = domingo), `opens_at time`, `closes_at time` | `closes_at > opens_at`; **sin superposición en el mismo día** (I-8) con `exclude using gist (weekday with =, timerange(opens_at, closes_at) with &&)` |
+| `weekly_ranges` | `id`, `weekday` (1 = lunes … 7 = domingo), `opens_at time`, `closes_at time` | `closes_at > opens_at`; **sin superposición en el mismo día** (I-8) con `exclude using gist (weekday with =, tsrange(date '2000-01-01' + opens_at, date '2000-01-01' + closes_at) with &&)` (sin tipo de rango propio: el revisor de Supabase marca sus constructores) |
 | `schedule_blocks` | `id`, `period tstzrange`, `reason`, `created_by` | `not isempty(period)`; índice GiST en `period` |
 
-`timerange` es un tipo de rango propio sobre `time` (`create type app.timerange as range (subtype = time)`).
+Las horas de las franjas se llevan a una fecha fija (`2000-01-01`) para usar `tsrange` en la exclusión: un tipo de rango propio sobre `time` crearía constructores que el revisor de seguridad de Supabase marca y que la migración no puede corregir.
 La exclusión usa la extensión `btree_gist` para combinar `=` y `&&`.
 
 ### 3.2 Clientes (`customers`)

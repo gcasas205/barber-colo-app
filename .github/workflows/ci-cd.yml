@@ -1,8 +1,11 @@
 # CI/CD de barber-colo
 # 1. checks: lint, tipos, tests y build en cada PR y en cada push a main.
-# 2. deploy: solo si checks pasó. Preview en los PR, producción en main.
-#    Vercel no despliega por su cuenta (vercel.json → git.deploymentEnabled: false):
-#    lo que no pasa los tests nunca llega a Vercel.
+# 2. integration: levanta Supabase local, aplica las migraciones desde cero, verifica que los tipos
+#    generados estén al día y corre los tests de integración y el revisor de seguridad de Supabase.
+# 3. deploy: solo si pasaron los dos. Preview en los PR; en main, primero aplica las migraciones a
+#    producción y después despliega (entorno `production`: pide tu aprobación y es el único con
+#    acceso a SUPABASE_DB_URL). Vercel no despliega por su cuenta (vercel.json →
+#    git.deploymentEnabled: false): lo que no pasa los tests nunca llega a Vercel.
 
 name: CI/CD
 
@@ -15,7 +18,8 @@ on:
 
 concurrency:
   group: ci-cd-${{ github.ref }}
-  cancel-in-progress: true
+  # En los PR se cancela la corrida vieja; en main nunca: cortar una migración a la mitad es peligroso.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -48,9 +52,41 @@ jobs:
       - name: Build
         run: npm run build
 
+  integration:
+    name: Base de datos e integración
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Levantar Supabase local y aplicar las migraciones
+        run: npm run db:start
+
+      - name: Tipos de la base al día
+        run: |
+          npm run db:types
+          git diff --exit-code src/shared/db/types.ts || {
+            echo "::error::Las migraciones cambiaron el esquema: corré npm run db:types y commiteá src/shared/db/types.ts"
+            exit 1
+          }
+
+      - name: Tests de integración
+        run: npm run test:integration
+
+      - name: Revisor de seguridad y rendimiento de Supabase
+        run: npx supabase db advisors --fail-on warn
+
   deploy:
     name: Deploy a Vercel
-    needs: checks
+    needs: [checks, integration]
     # En PR de forks no hay acceso a los secretos: no se despliega.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
@@ -61,7 +97,21 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_ENV: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && 'production' || 'preview' }}
+      # Solo existe en el entorno production (T1). En preview queda vacío.
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
     steps:
+      - name: Comprobar configuración de la base
+        id: db
+        run: |
+          if [ "$VERCEL_ENV" != "production" ]; then
+            echo "migrate=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::notice::Falta SUPABASE_DB_URL en el entorno production. Se omiten las migraciones."
+            echo "migrate=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "migrate=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Comprobar configuración de Vercel
         id: config
         run: |
@@ -73,13 +123,27 @@ jobs:
           fi
 
       - uses: actions/checkout@v7
-        if: steps.config.outputs.enabled == 'true'
+        if: steps.config.outputs.enabled == 'true' || steps.db.outputs.migrate == 'true'
 
       - uses: actions/setup-node@v7
-        if: steps.config.outputs.enabled == 'true'
+        if: steps.config.outputs.enabled == 'true' || steps.db.outputs.migrate == 'true'
         with:
           node-version-file: .nvmrc
           cache: npm
+
+      # Las migraciones van antes del deploy: el código nuevo nunca corre contra un esquema viejo.
+      # Si una migración falla, no se despliega.
+      - name: Instalar el CLI de Supabase (versión del package-lock)
+        if: steps.db.outputs.migrate == 'true'
+        run: npm ci
+
+      - name: Migraciones pendientes
+        if: steps.db.outputs.migrate == 'true'
+        run: npx supabase db push --remote="$SUPABASE_DB_URL" --dry-run --yes
+
+      - name: Aplicar migraciones a producción
+        if: steps.db.outputs.migrate == 'true'
+        run: npx supabase db push --remote="$SUPABASE_DB_URL" --yes
 
       - name: Instalar Vercel CLI
         if: steps.config.outputs.enabled == 'true'
