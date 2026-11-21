@@ -25,4 +25,4 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 
 ## Próximos pasos
 1. Diseño cerrado y en `main` (`docs/diseno/`, `DESIGN.md`, prototipo `/prototipo`, componentes `src/ui/`).
-2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec en borrador + clarificación; esperando aprobación. Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.
+2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec aprobada; plan y tareas (10, 2 de persona) esperando aprobación. Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.

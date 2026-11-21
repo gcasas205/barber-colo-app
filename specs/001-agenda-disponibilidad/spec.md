@@ -1,6 +1,6 @@
 # Spec 001 — Agenda, servicios y horarios libres
 
-Estado: borrador
+Estado: aprobada (2026-11-21)
 Origen: `docs/analisis.md` (RN-01, RN-02, RN-04, RN-30, RN-35 a RN-39 · RF-04, RF-07, RF-08, RF-37, RF-41 a RF-44 · RNF-01, RNF-04, RNF-09, RNF-12, RNF-14), `docs/dominio.md` (D-10, I-8, I-9, I-16)
 Diseño: `docs/diseno/` · Interfaz: `DESIGN.md`
 
@@ -47,21 +47,24 @@ proyecto y va primero.
 | Anticipación máxima | 30 días |
 | Servicios | **Corte**: "Corte de pelo", 30 min, $ 18.000, suma para beneficios · **Completo**: "Corte, barba y cejas", 30 min, $ 20.000, suma · **Claritos**: "Reflejos", 2 h, $ 70.000, no suma. En ese orden |
 | Bloqueos | Ninguno |
+| Contacto | WhatsApp de El Colo: +54 9 11 3816-3491 (publicado en su Instagram) |
 
 ## Requisitos funcionales
 
 **Servicios**
 - RF-1. EL SISTEMA muestra a cualquier visitante, sin pedirle que inicie sesión, los servicios que se pueden reservar, en el orden definido, cada uno con nombre, qué incluye, duración y precio.
 - RF-2. SI un servicio está desactivado, ENTONCES EL SISTEMA no lo muestra ni calcula horarios para él.
+- RF-2b. SI no hay ningún servicio activo, ENTONCES EL SISTEMA muestra "Por ahora no hay turnos online" con un enlace para escribirle a Colo por WhatsApp.
 - RF-3. EL SISTEMA muestra los precios en pesos, con separador de miles y sin decimales (por ejemplo, "$ 18.000"), y las duraciones en minutos o en horas ("30 min", "2 h", "1 h 30 min").
 
 **Días con lugar**
-- RF-4. CUANDO un visitante elige un servicio, EL SISTEMA muestra cada día de la ventana de reserva con la cantidad de horarios libres de ese servicio en ese día.
+- RF-4. CUANDO un visitante elige un servicio, EL SISTEMA muestra los días de la ventana de reserva **de a una semana** (de lunes a domingo, empezando por la semana de hoy), cada uno con la cantidad de horarios libres de ese servicio, y permite pasar a la semana anterior y a la siguiente sin salir de la ventana.
 - RF-5. SI un día no tiene franjas, está bloqueado completo o no tiene ningún horario libre para el servicio elegido, ENTONCES EL SISTEMA lo muestra como "sin lugar" y no permite elegirlo.
 - RF-6. CUANDO el día elegido no tiene lugar para el servicio, EL SISTEMA indica cuál es el próximo día de la ventana que sí tiene.
+- RF-6b. SI ningún día de la ventana tiene lugar para el servicio elegido, ENTONCES EL SISTEMA muestra "No hay lugar para <servicio> en los próximos 30 días" con un enlace para escribirle a Colo por WhatsApp.
 
 **Horarios libres**
-- RF-7. CUANDO un visitante elige un servicio y un día con lugar, EL SISTEMA muestra los horarios libres de ese servicio en ese día, ordenados de más temprano a más tarde y agrupados en mañana (antes de las 14:00) y tarde.
+- RF-7. CUANDO un visitante elige un servicio y un día con lugar, EL SISTEMA muestra los horarios libres de ese servicio en ese día, ordenados de más temprano a más tarde y **agrupados por franja** (por ejemplo, "10 a 13" y "14 a 20").
 - RF-8. EL SISTEMA ofrece un horario solo si el servicio **termina dentro de la misma franja** en la que empieza: un servicio que cruza el cierre del mediodía o el cierre del día no se ofrece. Terminar exactamente a la hora de cierre está permitido.
 - RF-9. EL SISTEMA no ofrece ningún horario cuyo período (inicio a fin del servicio) se superponga con una ocupación. Un servicio puede empezar exactamente cuando termina una ocupación y terminar exactamente cuando empieza otra.
 - RF-10. SI faltan menos de 30 minutos para el inicio de un horario, ENTONCES EL SISTEMA no lo ofrece. Con exactamente 30 minutos, sí lo ofrece.
@@ -99,7 +102,7 @@ proyecto y va primero.
 
 - Reservar un turno y que el turno ocupe la agenda (spec 003). La página muestra los horarios, pero todavía no tiene botón de reserva.
 - Login e identificación de clientes (spec 002).
-- Pantallas de Colo para editar franjas, paso, bloqueos y servicios (spec 002, con el login).
+- Pantallas de Colo para editar franjas, paso, bloqueos y servicios (spec 002, con el login). Queda decidido para esa spec: **no se permite cambiar el paso** si alguna duración de un servicio activo dejaría de ser múltiplo; el sistema avisa qué servicio hay que ajustar antes.
 - Avisar a clientes con turnos dentro de un bloqueo nuevo (spec 003).
 - Descuentos estimados en los precios (requieren saber quién es el cliente: spec 008).
 - Feriados automáticos: Colo los bloquea a mano.
@@ -112,6 +115,10 @@ proyecto y va primero.
 - La página pública muestra servicios, días y horarios, verificada en 360 px y en web, con teclado y en modo oscuro.
 - `npm run check` y CI en verde; despliegue de prueba en Vercel funcionando.
 - `MEMORY.md` actualizado.
+
+## Clarificación resuelta (2026-11-21)
+
+Ver `clarificacion.md`. Agrupar por franja (RF-7); días de a una semana (RF-4); sin lugar en la ventana → mensaje y WhatsApp (RF-6b); sin servicios activos → mensaje y WhatsApp (RF-2b); cambio de paso incompatible → spec 002; ventana en días calendario (hoy y los 30 siguientes).
 
 ## Dudas abiertas
 

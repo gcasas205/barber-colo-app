@@ -7,3 +7,12 @@
 5. **Caso límite no cubierto (RF-12/RF-13):** si cambia el paso de la agenda y una duración existente deja de ser múltiplo (por ejemplo, paso de 20 con un servicio de 30 min), no se dice qué pasa con ese servicio.
 6. **Posible contradicción con el análisis (RN-04):** el análisis habla de "no más de 30 días de anticipación"; la spec lo define como días calendario (hoy + 30, ambos incluidos). Son dos lecturas distintas en el borde.
 7. **Conflictos con la constitución:** ninguno detectado.
+
+## Resoluciones (aprobadas por el dueño, 2026-11-21)
+
+1. Agrupar los horarios por franja, no por hora fija.
+2. Días de a una semana, con flechas para la anterior y la siguiente.
+3. Sin lugar en los 30 días → mensaje y enlace a WhatsApp.
+4. Sin servicios activos → "Por ahora no hay turnos online" y enlace a WhatsApp.
+5. Cambio de paso incompatible con una duración → no se permite y se avisa; se implementa en la spec 002.
+6. Ventana en días calendario: hoy y los 30 siguientes.
