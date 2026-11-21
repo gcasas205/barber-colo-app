@@ -1,6 +1,6 @@
 # Diseño 2 — Base de datos
 
-Estado: borrador (pendiente de aprobación)
+Estado: aprobado (2026-11-20), con los ajustes de redundancia (DB-07)
 Parte de: Diseño → 1. Arquitectura ✅ · **2. Base de datos** · 3. Backend · 4. Interfaz
 Entrada: [`docs/dominio.md`](../dominio.md) (agregados e invariantes), [`01-arquitectura.md`](01-arquitectura.md) (ADR-02 a ADR-06)
 Guía: skills `supabase` y `supabase-postgres-best-practices`
@@ -48,6 +48,7 @@ erDiagram
         uuid user_id FK "null si no tiene cuenta"
         text full_name
         text phone_e164 "único entre no vinculados"
+        text email "se actualiza en cada login"
         smallint acquisition_source_id FK
         text notes
         smallint birth_month
@@ -88,8 +89,6 @@ erDiagram
         uuid customer_id PK
         smallint consecutive_no_shows
         boolean manually_blocked
-        integer late_cancellations
-        integer late_reschedules
     }
     BENEFIT_RULES {
         smallint id PK
@@ -97,7 +96,7 @@ erDiagram
         smallint n
         smallint window_days
         integer discount_bps
-        boolean active
+        timestamptz deactivated_at "null = activa"
     }
     SETTLEMENT_DISCOUNTS {
         uuid appointment_id PK
@@ -152,7 +151,7 @@ La exclusión usa la extensión `btree_gist` para combinar `=` y `&&`.
 
 | Tabla | Columnas clave | Restricciones |
 |---|---|---|
-| `customers` | ver diagrama; `email` (copiado del login, para buscar), `created_at` | `user_id` único; `phone_e164 ~ '^\+[1-9][0-9]{7,14}$'`; **teléfono único entre clientes activos no vinculados** (I-10): índice único parcial `where linked_to is null and anonymized_at is null`; fecha de nacimiento válida (`birth_month between 1 and 12`, día según el mes, 29/2 permitido); `linked_to <> id` |
+| `customers` | ver diagrama; `created_at`. `email` se copia del login para poder buscar sin cruzar con el esquema de Auth y **se actualiza en cada ingreso** | `user_id` único; `phone_e164 ~ '^\+[1-9][0-9]{7,14}$'`; **teléfono único entre clientes activos no vinculados** (I-10): índice único parcial `where linked_to is null and anonymized_at is null`; fecha de nacimiento válida (`birth_month between 1 and 12`, día según el mes, 29/2 permitido); `linked_to <> id` |
 | `acquisition_sources` | `id smallint`, `name`, `position`, `active` | `name` único |
 
 - **Baja de datos (RNF-07):** no se borra la fila (los turnos pasados sostienen las estadísticas). Se
@@ -178,7 +177,7 @@ create type app.payment_method    as enum ('cash', 'transfer', 'mercado_pago', '
 
 **`appointments`** (columnas además de las del diagrama): `booked_at`, `booked_by_kind`,
 `cancellation_reason_id`, `barber_note` (motivo obligatorio cuando cancela o reprograma el barbero),
-`link_expires_at`, `discount_bps_total`, `attended_marked_at`, `created_at`, `updated_at`.
+`attended_marked_at`, `created_at`, `updated_at`.
 
 | Garantía | Cómo | Invariante |
 |---|---|---|
@@ -187,10 +186,10 @@ create type app.payment_method    as enum ('cash', 'transfer', 'mercado_pago', '
 | Transiciones válidas | *Trigger* `before update of status` que valida el par (anterior, nuevo) contra la tabla de transiciones de `dominio.md` §6 | I-1 |
 | Precio base inmutable | *Trigger* que rechaza cambios de `base_price_cents` después del alta | I-4 |
 | Liquidación solo si asistió | `check ((status = 'attended') = (final_price_cents is not null))` | I-6 |
-| Montos válidos | `base_price_cents >= 0`, `final_price_cents between 0 and base_price_cents`, `discount_bps_total between 0 and 10000` | — |
+| Montos válidos | `base_price_cents >= 0`, `final_price_cents between 0 and base_price_cents` | — |
 | Horario coherente | `ends_at > starts_at` | — |
 | Límite de reprogramaciones | `customer_reschedules between 0 and 2` (el máximo real sale de la política; el `check` es el techo) | I-7b |
-| Enlace secreto | Se guarda **el hash SHA-256 del token**, nunca el token. Único | RNF-06 |
+| Enlace secreto | Se guarda **el hash SHA-256 del token**, nunca el token. Único. No tiene vencimiento propio: vale mientras el turno esté activo y no haya terminado (`status` y `ends_at`) | RNF-06 |
 | Concurrencia optimista | `version` se incrementa en cada cambio; el repositorio actualiza `where id = … and version = …` | — |
 
 **`appointment_history`** (historial y auditoría, RNF-13): una fila por cada cambio de estado o de
@@ -207,19 +206,21 @@ horario, escrita en la misma transacción. **Solo inserción**: el rol de la app
 
 | Tabla | Columnas clave | Restricciones |
 |---|---|---|
-| `conduct_records` | ver diagrama, `updated_at` | `consecutive_no_shows >= 0` (I-12); se crea junto con el cliente |
+| `conduct_records` | ver diagrama, `updated_at` | `consecutive_no_shows >= 0` (I-12); se crea junto con el cliente. Las cancelaciones y reprogramaciones tarde **no** se guardan acá: se cuentan desde el historial en `stats.customer_facts` |
 | `conduct_settings` (1 fila) | `approval_threshold` (3) | `>= 1` |
 | `processed_events` *(compartida, ver 3.7)* | — | Evita contar dos veces la misma falta |
 
 La **habilitación** (normal / requiere aprobación / bloqueado) no se guarda: se calcula (I-13).
+
+`consecutive_no_shows` es una **proyección** (ver sección 3.8): cada evento de asistencia la **recalcula** contando las faltas desde la última asistencia del cliente, nunca le suma o resta 1.
 
 ### 3.5 Precios y beneficios (`pricing`)
 
 | Tabla | Columnas clave | Restricciones |
 |---|---|---|
 | `rates` | `id`, `price_cents`, `valid_from` | `price_cents > 0`; `valid_from` único. Tarifa vigente = la de mayor `valid_from <= now()` (I-16) |
-| `benefit_rules` | ver diagrama, `created_at`, `deactivated_at` | `kind in ('nth_in_month','every_nth','birthday')`; `n >= 1` salvo `birthday`; `window_days` solo en `birthday`; `discount_bps between 100 and 10000` (I-14) |
-| `countable_visits` | ver diagrama, `created_at` | Una por turno asistido; índice `(customer_id, local_date)` |
+| `benefit_rules` | ver diagrama, `created_at`. Activa = `deactivated_at is null` | `kind in ('nth_in_month','every_nth','birthday')`; `n >= 1` salvo `birthday`; `window_days` solo en `birthday`; `discount_bps between 100 and 10000` (I-14) |
+| `countable_visits` | ver diagrama, `created_at` | Una por turno asistido; índice `(customer_id, local_date)`. Es una **proyección** (sección 3.8) |
 | `settlement_discounts` | ver diagrama, `kind` | **Cumpleaños una vez por año** (I-14b): índice único parcial `(customer_id, birthday_year) where kind = 'birthday'` |
 
 Al corregir una asistencia (P-06) se borran la visita computable y los descuentos de ese turno en la
@@ -249,6 +250,25 @@ dos tics del cron se superponen, no procesan lo mismo ni se bloquean entre sí. 
 
 Retención: una tarea semanal borra eventos despachados con más de 30 días y las respuestas viejas de `pg_net`.
 
+### 3.8 Redundancia: qué hay y cómo se mantiene consistente
+
+El esquema está normalizado; la redundancia que queda es intencional y de tres tipos.
+
+| Tipo | Columnas | Por qué existe | Cómo no se desincroniza |
+|---|---|---|---|
+| **Fotos históricas** | `appointments.base_price_cents`, `appointments.ends_at`, `settlement_discounts.kind` | Congelan hechos que pueden cambiar después (precio D-09, duración del bloque, regla de descuento) | No se desincronizan: son el registro de lo que pasó |
+| **Atajos dentro del agregado** | `appointments.status` (vs. historial), `final_price_cents`, `customer_reschedules`, `domain_events.dispatched_at`, `settlement_discounts.customer_id` y `birthday_year` | Velocidad de consulta, restricciones e índices que necesitan el dato en la misma fila | Se escriben en la **misma transacción** que su origen |
+| **Proyecciones entre módulos** | `countable_visits` (Precios), `conduct_records.consecutive_no_shows` (Conducta) | Cada módulo decide con sus propios datos, sin leer las tablas de Turnos (bajo acoplamiento) | Se **recalculan desde cero** con cada evento (idempotentes ante duplicados y correcciones P-06) y una **reconciliación** las compara con el origen |
+
+**Reconciliación:** un test de integración y un control en la tarea `retention` (semanal) comparan
+cada proyección con lo que dicen los turnos. Si difieren, se registra una alerta para revisar y se
+puede reconstruir la proyección desde el origen.
+
+Se descartaron por redundantes sin beneficio: `appointments.discount_bps_total` (está en
+`settlement_discounts`), `appointments.link_expires_at` (lo dicen `status` y `ends_at`),
+`benefit_rules.active` (lo dice `deactivated_at`) y los contadores de cancelaciones y
+reprogramaciones tarde en `conduct_records` (se cuentan en `stats`).
+
 ## 4. Estadísticas (`stats`)
 
 Vistas de **solo lectura** que calculan en Postgres (aprendizaje de Corralap). Agrupan siempre en la
@@ -257,7 +277,7 @@ hora del local.
 | Vista | Una fila por | Columnas principales |
 |---|---|---|
 | `stats.appointment_facts` | turno | `local_date`, `local_hour`, `iso_weekday`, `status`, `origin`, `customer_id`, `base_price_cents`, `final_price_cents`, `discount_cents`, `booked_lead_minutes`, `confirmed_in_window`, `late` |
-| `stats.customer_facts` | cliente | `first_visit`, `last_visit`, `visits`, `billed_cents`, `median_gap_days`, `next_appointment_at`, `acquisition_source`, faltas y cancelaciones tarde |
+| `stats.customer_facts` | cliente | `first_visit`, `last_visit`, `visits`, `billed_cents`, `median_gap_days`, `next_appointment_at`, `acquisition_source`, faltas, cancelaciones tarde y reprogramaciones tarde (contadas desde `appointment_history`) |
 | `stats.offered_capacity` | día | horarios ofrecidos por día (para la ocupación), calculados desde franjas y bloqueos |
 
 Cada indicador de [`estadisticas-crm.md`](../estadisticas-crm.md) es una consulta de agregación sobre
@@ -288,7 +308,7 @@ Las vistas se crean con `security_invoker = true` (skill `supabase`: las vistas 
 | Tarea | Frecuencia | Qué hace |
 |---|---|---|
 | `tick` | cada minuto | `net.http_post` a `/api/cron/tick` con el secreto de Vault (ADR-06) |
-| `retention` | domingos 04:17 | Borra eventos despachados viejos, notificaciones leídas de más de 90 días y respuestas de `pg_net` |
+| `retention` | domingos 04:17 | Borra eventos despachados viejos, notificaciones leídas de más de 90 días y respuestas de `pg_net`; **reconcilia las proyecciones** (sección 3.8) y registra una alerta si difieren |
 | `tick-healthcheck` | cada 10 minutos | Si el último tic exitoso tiene más de 5 minutos, registra una alerta para el barbero (riesgo de §7 de la arquitectura) |
 
 ## 7. Ejemplo: cómo se protege una reserva
@@ -321,7 +341,7 @@ muestra como "Ese horario ya no está disponible".
 | 001 agenda | extensiones (`btree_gist`, `pg_trgm`), esquemas `app`/`stats`, rol `app_server`, `schedule_*`, `weekly_ranges`, `rates` |
 | 002 login | `customers`, `acquisition_sources`, `conduct_records` (vacía) |
 | 003 reservas | tipos de turno, `appointments`, `appointment_history`, `appointment_policy`, `cancellation_reasons`, triggers, `domain_events`, `event_deliveries` |
-| 004 manuales | columnas de enlace (`link_token_hash`, `link_expires_at`) |
+| 004 manuales | columna del enlace (`link_token_hash`) |
 | 005 PWA | `push_subscriptions`, `notifications`, `notification_settings` |
 | 006 confirmación | extensiones `pg_cron` y `pg_net`, tareas `tick` y `tick-healthcheck`, secretos en Vault |
 | 007 asistencia | `conduct_settings`, liquidación en `appointments`, `payment_method` |
@@ -331,6 +351,7 @@ muestra como "Ese horario ya no está disponible".
 ## 9. Cómo se prueba
 
 - **Tests de integración** (Vitest contra el Postgres local de `supabase start`, ADR-12) para cada garantía de la sección 3.3: doble reserva simultánea, transición inválida, cambio de precio, liquidación sin asistencia, cumpleaños dos veces en el año.
+- **Tests de reconciliación** de las proyecciones: después de una secuencia de asistencias, faltas, correcciones y eventos duplicados, `countable_visits` y `consecutive_no_shows` coinciden con lo que dicen los turnos.
 - **`supabase db advisors`** en CI para detectar tablas sin RLS, índices faltantes y funciones inseguras.
 - **Tipos generados** (`kysely-codegen`) en CI: si una migración cambia una tabla y el código no se actualiza, falla el typecheck.
 
@@ -342,6 +363,7 @@ muestra como "Ese horario ya no está disponible".
 - **DB-04.** El token del enlace se guarda hasheado: si se filtra la base, los enlaces no sirven.
 - **DB-05.** Baja de datos por anonimización, no por borrado: se respetan los datos del cliente y no se rompen las estadísticas.
 - **DB-06.** Estadísticas con vistas normales (no materializadas) hasta que haga falta.
+- **DB-07.** Redundancia solo intencional (sección 3.8): proyecciones que se recalculan y se reconcilian; se eliminaron cinco columnas redundantes sin beneficio.
 
 ## 11. A verificar en la implementación
 

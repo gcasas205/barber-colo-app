@@ -150,7 +150,7 @@ flowchart LR
 4. El sistema pasa el turno a **Cancelado**, libera el horario y avisa al barbero.
 
 **Flujos alternativos**
-- 2a. **Tarde** (faltan menos de 4 h y pasaron más de 10 min desde la reserva): en el paso 3 el sistema advierte que quedará registrado como cancelación tarde; en el paso 4 el estado es **CanceladoTarde** y Conducta lo registra (sin sumar faltas).
+- 2a. **Tarde** (faltan menos de 4 h y pasaron más de 10 min desde la reserva): en el paso 3 el sistema advierte que quedará registrado como cancelación tarde; en el paso 4 el estado es **CanceladoTarde** y queda en el historial del turno (sin sumar faltas).
 - 1a. **El turno ya empezó**: no se puede cancelar.
 
 ---

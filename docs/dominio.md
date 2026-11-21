@@ -221,11 +221,9 @@ classDiagram
             customerId
             consecutiveNoShows : int
             manuallyBlocked : bool
-            lateCancellations : int
             eligibility(policy) BookingEligibility
             registerAttendance()
             registerNoShow()
-            registerLateCancellation()
             block()
             unblock()
         }
@@ -247,7 +245,7 @@ classDiagram
             kind : NTH_IN_MONTH | EVERY_NTH | BIRTHDAY
             n : int
             discount : Percentage
-            active : bool
+            deactivatedAt?
         }
         class CountableVisit {
             <<entity>>
@@ -370,8 +368,8 @@ stateDiagram-v2
 | `AppointmentConfirmed` | Turnos | turno | Notificaciones: aviso al barbero |
 | `ConfirmationExpired` | Turnos | turno | Notificaciones: pedir decisión al barbero (Mantener/Liberar) |
 | `AppointmentReleased` | Turnos | turno | Notificaciones: aviso al cliente |
-| `AppointmentCancelled` | Turnos | turno, por quién, ¿tarde?, motivo | Conducta: si es tarde, lo registra. Notificaciones: aviso a la otra parte (con el motivo si canceló el barbero) |
-| `AppointmentRescheduled` | Turnos | turno, horario anterior y nuevo, por quién, ¿tarde?, motivo | Conducta: si es tarde, lo registra. Notificaciones: aviso a la otra parte |
+| `AppointmentCancelled` | Turnos | turno, por quién, ¿tarde?, motivo | Notificaciones: aviso a la otra parte (con el motivo si canceló el barbero) |
+| `AppointmentRescheduled` | Turnos | turno, horario anterior y nuevo, por quién, ¿tarde?, motivo | Notificaciones: aviso a la otra parte |
 | `AttendanceRegistered` | Turnos | turno, cliente, fecha local, ¿asistió?, liquidación | Conducta: suma o resetea faltas. Precios: registra la visita computable |
 | `NoShowThresholdReached` | Conducta | cliente | Notificaciones: aviso al cliente de la política |
 | `BenefitReached` | Precios | cliente, beneficio | Notificaciones: "tu próximo corte tiene X % off" |
@@ -437,8 +435,8 @@ enlace. No es cancelar y reservar de nuevo.
 - **Aviso al barbero**: toda reprogramación del cliente le envía una notificación al barbero con el
   cliente, el horario anterior, el nuevo y si fue tarde (por ejemplo: "Juan pasó su turno del jueves
   16:00 al viernes 11:00").
-- Evento: `AppointmentRescheduled` (horario anterior, horario nuevo, por quién, ¿tarde?). Conducta
-  registra las tardías; Notificaciones avisa a la otra parte.
+- Evento: `AppointmentRescheduled` (horario anterior, horario nuevo, por quién, ¿tarde?).
+  Notificaciones avisa a la otra parte. Las tardías quedan en el historial del turno y se ven en la ficha del cliente.
 
 ### P-15 ✅ Descuento de cumpleaños
 
