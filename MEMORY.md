@@ -15,10 +15,11 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - `npm run typecheck` corre `next typegen` antes de `tsc` para generar los tipos de rutas (`LayoutProps`, `PageProps`).
 
 ## Aprendizajes y errores a evitar
+- Skills de terceros en `.claude/skills` (impeccable, vercel-react-best-practices, supabase, supabase-postgres-best-practices; lock en `skills-lock.json`): excluidas de ESLint. La skill next-best-practices no existe: usar `node_modules/next/dist/docs/`.
 - De Corralap: no cargar todos los datos en memoria para métricas (calcular en Postgres) y agrupar días en hora local, no UTC.
 - En los tests, ICU puede devolver la zona como `America/Buenos_Aires`: compará el desfase (180 min), no el nombre.
 - TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.
 
 ## Próximos pasos
-1. Diseño: base de datos, arquitectura de la aplicación y backend, con las skills de front, back e infra.
+1. Diseño (rama `design/arquitectura`): 1) arquitectura en revisión (`docs/diseno/01-arquitectura.md`), 2) base de datos, 3) backend, 4) interfaz con impeccable.
 2. Spec 001: agenda y disponibilidad.
