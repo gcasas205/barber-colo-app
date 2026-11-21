@@ -1,6 +1,6 @@
 # Spec 002 — Login y perfil
 
-Estado: borrador
+Estado: aprobada (2026-11-21), con las resoluciones de `clarificacion.md`
 
 Origen: `docs/analisis.md` (RF-01 a RF-03, actores, D-11 a D-15) y las respuestas de Gonzalo del
 2026-11-21. La spec anterior (001) dejó la página pública de horarios en producción.
@@ -20,7 +20,8 @@ la reserva, la política de faltas y los descuentos.
 - **Invitado:** entra con nombre y teléfono, sin Google. No acumula visitas para los descuentos; se lo
   reconoce por el teléfono para la política de faltas.
 - **Colo (barbero):** entra con su cuenta de Google, configurada fuera del código.
-- **Usuarios de prueba:** Colo (demo) y dos clientes de prueba, temporales (D-11).
+- **Usuarios de prueba:** Colo (demo) y dos clientes de prueba, temporales (D-11). Quedan activos hasta
+  que Gonzalo decida publicar la app real (D-11 actualizada).
 
 ## Historias de usuario
 
@@ -38,52 +39,66 @@ la reserva, la política de faltas y los descuentos.
 
 ## Definiciones
 
-- **Teléfono:** número de celular argentino. Se acepta como lo escribe una persona ("11 3816-3491",
+- **Teléfono:** número de celular argentino: 10 dígitos contando el código de área (11 3816-3491),
+  con o sin 0, 15, +54 o 9 adelante. Se acepta como lo escribe una persona ("11 3816-3491",
   "011 15 3816-3491", "+54 9 11 3816-3491") y se guarda en formato internacional (+5491138163491).
   Identifica al cliente, pero el historial es de la persona: cambiar el número no borra faltas ni visitas.
+- **Nombre:** de 2 a 40 caracteres, sin espacios al principio, al final ni repetidos; se aceptan tildes
+  y emojis.
 - **Perfil completo:** nombre y teléfono cargados. El cumpleaños es opcional.
 - **Cumpleaños:** día y mes, sin año (es lo único que hace falta para el descuento de P-15).
-- **Cliente real:** cualquier cliente con cuenta o invitado que no sea de prueba.
 - **Sobrenombre:** cómo llama Colo a un cliente ("el pelado de la moto"). Solo lo ve el barbero.
-- **Usuarios de prueba activos:** activados por configuración **y** sin ningún cliente real registrado.
+- **Usuarios de prueba activos:** activados por configuración. Se desactivan a mano, cuando Gonzalo
+  decida publicar la app real; no se apagan solos.
 
 ## Requisitos funcionales
 
 **Ingreso**
-- RF-1. EL SISTEMA ofrece una pantalla de ingreso con "Entrar con Google" y "Entrar como invitado", y
-  un enlace desde la página pública de horarios.
+- RF-1. EL SISTEMA ofrece una pantalla de ingreso con "Entrar con Google" y "Entrar como invitado". La
+  página pública de horarios tiene el enlace "Ingresar" en la chapa superior, al lado del tema.
 - RF-2. CUANDO un visitante vuelve de Google con la identidad confirmada, EL SISTEMA crea su cuenta si
   no existe e inicia la sesión.
 - RF-3. SI el ingreso con Google falla o la persona lo cancela, ENTONCES EL SISTEMA vuelve a la pantalla
   de ingreso con el mensaje "No pudimos entrar con Google. Probá de nuevo", sin crear nada.
-- RF-4. EL SISTEMA mantiene la sesión en ese dispositivo hasta que la persona sale.
+- RF-4. EL SISTEMA mantiene la sesión en ese dispositivo hasta que la persona sale o pasa un tiempo sin
+  usar la app: **60 días** para clientes e invitados, **30 días** para Colo.
 - RF-5. CUANDO la persona elige "Salir", EL SISTEMA cierra la sesión en ese dispositivo y vuelve a la
   página pública.
+- RF-5b. CUANDO Colo elige "Salir de todos los dispositivos", EL SISTEMA cierra todas sus sesiones (por
+  ejemplo, si pierde el celular).
 
 **Rol de barbero**
 - RF-6. CUANDO entra con Google la cuenta cuyo email coincide (sin importar mayúsculas) con el email de
   Colo configurado fuera del código, EL SISTEMA le da el rol de barbero. Cualquier otra cuenta es cliente.
 - RF-7. SI el email de Colo no está configurado, ENTONCES nadie tiene el rol de barbero (salvo Colo
   (demo) mientras los usuarios de prueba estén activos).
+- RF-7b. SI Google no confirma que el email está verificado, ENTONCES esa cuenta nunca tiene el rol de
+  barbero.
+- RF-7c. CUANDO cambia el email de Colo configurado, la cuenta anterior pierde el rol de barbero en su
+  próximo pedido, aunque tenga una sesión abierta.
 - RF-8. SI alguien sin rol de barbero intenta abrir una pantalla de Colo, ENTONCES EL SISTEMA muestra
   "No tenés acceso a esta pantalla", sin mostrar ningún dato.
 
 **Perfil del cliente con cuenta**
 - RF-9. MIENTRAS el perfil de un cliente con cuenta está incompleto, EL SISTEMA le pide completarlo antes
   de mostrarle cualquier otra pantalla de cliente: nombre (precargado desde Google y editable), teléfono
-  (obligatorio) y cumpleaños (opcional).
+  (obligatorio) y cumpleaños (opcional). A Colo no se le pide perfil de cliente.
 - RF-10. SI el teléfono no es un celular argentino válido, ENTONCES EL SISTEMA lo rechaza con "Revisá el
-  número: tiene que ser un celular, con código de área".
+  número: tiene que ser un celular, con código de área". Si parece del exterior, agrega "Si tu número no
+  es de Argentina, escribile a Colo".
+- RF-10b. SI el nombre no cumple la definición, ENTONCES EL SISTEMA lo rechaza con "El nombre tiene que
+  tener entre 2 y 40 letras".
 - RF-11. SI el teléfono ya pertenece a otra cuenta, ENTONCES EL SISTEMA lo rechaza con "Ese teléfono ya
   está registrado. Si es tuyo, escribile a Colo", con el enlace a WhatsApp.
 - RF-12. SI el teléfono pertenece a un invitado, ENTONCES EL SISTEMA une al invitado con la cuenta: las
-  faltas del invitado pasan a la cuenta, lo que hizo como invitado no suma para los descuentos, y el
-  cliente no ve los turnos que sacó como invitado (Colo sí).
+  faltas del invitado pasan a la cuenta, lo que hizo como invitado no suma para los descuentos, los
+  turnos **futuros** del invitado pasan a verse y manejarse desde la cuenta, y los **pasados** no los ve
+  el cliente (Colo sí). Si la unión fue un error, la deshace Colo (spec de clientes).
 - RF-13. MIENTRAS el cumpleaños está vacío, EL SISTEMA muestra en el perfil "Si no cargás tu
   cumpleaños, no vas a tener el descuento de cumpleaños".
 - RF-14. CUANDO un cliente con cuenta cambia su nombre, teléfono o cumpleaños desde su perfil, EL
   SISTEMA aplica las mismas reglas (RF-10 a RF-12) y registra cada cambio de teléfono con el número
-  anterior, quién lo cambió y cuándo.
+  anterior, quién lo cambió y cuándo. El registro se borra a los 12 meses.
 
 **Invitado**
 - RF-15. CUANDO un visitante elige "Entrar como invitado", EL SISTEMA muestra "Como invitado no acumulás
@@ -99,10 +114,14 @@ la reserva, la política de faltas y los descuentos.
   turnos nuevos que cuentan para las faltas de ese teléfono; Colo puede anular faltas que no
   correspondan, en la spec de asistencia y faltas. Quien quiera protección total, crea su cuenta: RF-16.)*
 - RF-18. EL SISTEMA recuerda al invitado en ese dispositivo hasta que sale (RF-4, RF-5).
+- RF-18b. SI desde una misma conexión se intenta entrar como invitado más de 5 veces en una hora,
+  ENTONCES EL SISTEMA lo rechaza con "Esperá un rato y probá de nuevo" (contra bots y contra probar
+  teléfonos para averiguar cuáles tienen cuenta).
 
 **Pantalla de Colo**
 - RF-19. CUANDO Colo entra, EL SISTEMA le muestra su inicio con la lista de clientes registrados, del más
-  reciente al más antiguo: sobrenombre (si tiene) y nombre, teléfono y si es cuenta o invitado.
+  reciente al más antiguo, de a 50 con "Ver más": sobrenombre (si tiene) y nombre, teléfono y si es
+  cuenta o invitado. *(Desde la spec de reserva, los invitados sin ningún turno no aparecen.)*
 - RF-20. EL SISTEMA permite a Colo poner, cambiar o borrar el sobrenombre de un cliente desde esa lista.
   Donde Colo ve a un cliente, se muestra el sobrenombre primero y el nombre al lado.
 - RF-21. EL SISTEMA nunca muestra el sobrenombre al cliente ni a nadie sin rol de barbero.
@@ -111,12 +130,16 @@ la reserva, la política de faltas y los descuentos.
 - RF-22. MIENTRAS los usuarios de prueba están activos, EL SISTEMA muestra en la pantalla de ingreso
   "Entrar como Colo (demo)", "Entrar como cliente de prueba 1" y "Entrar como cliente de prueba 2",
   sin claves, con la aclaración "Modo de prueba".
+- RF-22b. MIENTRAS una sesión es de prueba, EL SISTEMA muestra arriba de todo una franja fija "Modo de
+  prueba · Salir", para que nunca se confunda con la app real.
 - RF-23. EL SISTEMA trata a Colo (demo) como barbero, con permiso para cambiar todo (D-15).
-- RF-24. CUANDO se registra el primer cliente real, EL SISTEMA deja de mostrar los botones de prueba,
-  rechaza cualquier ingreso de prueba aunque alguien tenga la dirección, y cierra las sesiones de prueba
-  abiertas en su próximo pedido.
-- RF-25. EL SISTEMA marca todos los datos de prueba (usuarios, clientes y lo que generen) para poder
-  borrarlos juntos, sin tocar datos reales.
+- RF-24. CUANDO se desactivan los usuarios de prueba en la configuración, EL SISTEMA deja de mostrar los
+  botones de prueba, rechaza cualquier ingreso de prueba aunque alguien tenga la dirección, y cierra las
+  sesiones de prueba abiertas en su próximo pedido. Mientras tanto, siguen activos sin importar cuántos
+  clientes se registren.
+- RF-25. EL SISTEMA marca todos los datos de prueba (usuarios, clientes y lo que generen) con una marca
+  que ningún dato real puede tener, y ofrece un comando para que una persona los borre juntos antes de
+  publicar, sin tocar datos reales.
 
 ## Requisitos no funcionales
 
@@ -131,7 +154,10 @@ la reserva, la política de faltas y los descuentos.
 - RNF-5. **Accesibilidad y diseño:** como en la 001 (`DESIGN.md`, 360 px, teclado, contraste AA, claro y
   oscuro), con los errores de cada campo anunciados y junto al campo.
 - RNF-6. **Velocidad:** con el 4G lento simulado de la 001, la pantalla de ingreso aparece en menos de
-  2 s y entrar como invitado o guardar el perfil responde en menos de 1 s.
+  2 s y entrar como invitado o guardar el perfil responde en menos de 1 s. La página pública sigue
+  cumpliendo el RNF-3 de la 001 (se vuelve a medir).
+- RNF-7. **Portabilidad:** nada de esta spec depende de servicios propios de Vercel (D-16: el hosting
+  definitivo se elige al publicar).
 
 ## Casos límite
 
@@ -148,13 +174,17 @@ la reserva, la política de faltas y los descuentos.
 8. El email de Colo está configurado en mayúsculas y la cuenta de Google en minúsculas → igual es Colo.
 9. El email de Colo todavía no se configuró → Colo entra como cliente (RF-7). Al configurarlo, en su
    próximo ingreso es barbero.
-10. Alguien guardó la dirección del ingreso de prueba y la usa después del primer cliente real → se
+10. Alguien guardó la dirección del ingreso de prueba y la usa después de desactivar la demo → se
     rechaza (RF-24).
-11. Hay una sesión de Colo (demo) abierta cuando se registra el primer cliente real → en su próximo
-    pedido se cierra (RF-24).
+11. Hay una sesión de Colo (demo) abierta cuando se desactiva la demo → en su próximo pedido se cierra
+    (RF-24).
 12. Un cliente borra las cookies → tiene que volver a entrar; si es invitado, con su teléfono vuelve a
     ser el mismo (RF-17).
 13. Un cliente intenta abrir la lista de clientes de Colo → RF-8.
+14. Un invitado con un turno para la semana que viene crea su cuenta con el mismo teléfono → ve ese turno
+    desde la cuenta; no ve los que ya pasaron (RF-12).
+15. Alguien prueba 6 teléfonos en una hora como invitado → el sexto se rechaza (RF-18b).
+16. Una cuenta de Google con el email de Colo pero sin verificar → es cliente (RF-7b).
 
 ## Fuera de alcance
 
@@ -168,8 +198,9 @@ la reserva, la política de faltas y los descuentos.
 ## Criterios de finalización
 
 - Todos los RF y RNF con tests o evidencia, incluidos tests contra la base de los permisos (RNF-3).
-- En producción: Gonzalo entra con Google, como invitado y con los tres usuarios de prueba; Colo (o
-  Gonzalo con el email de prueba configurado) ve la lista de clientes.
+- En el entorno de Vercel: Gonzalo entra con Google, como invitado y con los tres usuarios de prueba, y
+  los usuarios de prueba siguen activos; Colo (o Gonzalo con su email configurado como el de Colo) ve la
+  lista de clientes y pone un sobrenombre.
 - `MEMORY.md` actualizado.
 
 ## Dudas abiertas

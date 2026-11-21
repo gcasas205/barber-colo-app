@@ -52,3 +52,23 @@ Revisión como QA del borrador (2026-11-21). Solo se detecta: las resoluciones s
     (RNF-3 de la 001, hoy con margen).
 18. **Datos de prueba en producción.** Los usuarios de prueba viven en la base real: un error en RF-25
     podría borrar datos reales si no hay una marca imposible de confundir.
+
+## Resoluciones (aprobadas por Gonzalo, 2026-11-21)
+
+- **8:** los usuarios de prueba **no se apagan solos**: se desactivan a mano cuando Gonzalo decida
+  publicar la app real (D-11 actualizada). Con eso, las pruebas con cuentas reales no los apagan.
+- **1:** sesión de 60 días sin uso para clientes e invitados y de 30 para Colo, más "Salir de todos los
+  dispositivos" para Colo (RF-4, RF-5b).
+- **2, 3:** reglas de teléfono y de nombre en Definiciones, RF-10 y RF-10b.
+- **4:** "Ingresar" en la chapa superior de la página pública (RF-1).
+- **5:** lista de a 50 con "Ver más" (RF-19).
+- **6:** franja fija "Modo de prueba · Salir" (RF-22b).
+- **7, 18:** marca imposible de confundir y comando que corre una persona (RF-25).
+- **9:** los turnos futuros del invitado pasan a la cuenta; los pasados no se ven (RF-12).
+- **10:** a Colo no se le pide perfil de cliente (RF-9).
+- **11:** la unión equivocada la deshace Colo en la spec de clientes (RF-12).
+- **12:** máximo 5 ingresos como invitado por hora desde una misma conexión (RF-18b).
+- **13, 14:** RF-7c y RF-7b.
+- **15:** el registro de cambios de teléfono se borra a los 12 meses (RF-14).
+- **17:** se vuelve a medir la velocidad de la página pública (RNF-6).
+- Además: D-16, el hosting definitivo se elige al publicar; nada de esta spec depende de Vercel (RNF-7).
