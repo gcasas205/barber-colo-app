@@ -143,6 +143,7 @@ describe("restricciones de los servicios (RF-13)", () => {
       expect(await sqlState(db, insert, ["Barba", 15, 0])).toBe("23514");
       expect(await sqlState(db, insert, ["Barba", 15, -100])).toBe("23514");
       expect(await sqlState(db, insert, ["Barba", 0, 1000000])).toBe("23514");
+      expect(await sqlState(db, insert, ["Barba", 15, 1000050])).toBe("23514"); // con centavos
       expect(await sqlState(db, insert, ["Barba", 15, 1000000])).toBeNull();
     }));
 
