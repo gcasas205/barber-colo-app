@@ -1,26 +1,171 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * El Colo · Chapa enlozada
+ * Carteles esmaltados del barrio en los colores del poste de barbero.
+ * Tres voces de color que no se mezclan:
+ *   - Esmalte azul: la marca, la estructura (chapas, navegación, selección).
+ *   - Rojo poste: solo la acción principal de la pantalla y lo crítico.
+ *   - Estados (verde farmacia, ámbar, rojo, gris): solo cuando el dato ES un estado, siempre con marca.
+ */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  /* Superficies */
+  --porcelana: #f3f5f4;
+  --chapa-blanca: #ffffff;
+  --linea: #d5dbe3;
+  /* Esmalte azul (rampa) */
+  --esmalte-950: #0e1729;
+  --esmalte-900: #15223d;
+  --esmalte-800: #1d2f52;
+  --esmalte-700: #2a4170;
+  --esmalte-200: #c9d3e6;
+  --esmalte-100: #e6ebf4;
+  /* Tinta */
+  --tinta: #15223d;
+  --tinta-suave: #47536b;
+  --tinta-sobre-esmalte: #f3f5f4;
+  --tinta-sobre-esmalte-suave: #b9c4da;
+  /* Rojo poste */
+  --poste: #b8262f;
+  --poste-oscuro: #951d25;
+  --poste-claro: #f9e3e4;
+  /* Estados */
+  --ok: #1d6b45;
+  --ok-fondo: #e2f1e8;
+  --espera: #8a5a00;
+  --espera-fondo: #fbf0d9;
+  --alerta: #b8262f;
+  --alerta-fondo: #f9e3e4;
+  --neutro: #5b6577;
+  --neutro-fondo: #eceff3;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --porcelana: #0b1220;
+    --chapa-blanca: #131d31;
+    --linea: #26344f;
+    --esmalte-800: #1d2f52;
+    --esmalte-100: #1a2740;
+    --esmalte-200: #2f4268;
+    --tinta: #eef1f6;
+    --tinta-suave: #a7b2c7;
+    --poste: #d8434c;
+    --poste-oscuro: #b8262f;
+    --poste-claro: #3a1a20;
+    --ok: #6fcf9b;
+    --ok-fondo: #12301f;
+    --espera: #f0b64d;
+    --espera-fondo: #352708;
+    --alerta: #f07a80;
+    --alerta-fondo: #3a1a20;
+    --neutro: #a7b2c7;
+    --neutro-fondo: #1a2438;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --color-porcelana: var(--porcelana);
+  --color-chapa: var(--chapa-blanca);
+  --color-linea: var(--linea);
+  --color-esmalte-950: var(--esmalte-950);
+  --color-esmalte-900: var(--esmalte-900);
+  --color-esmalte: var(--esmalte-800);
+  --color-esmalte-700: var(--esmalte-700);
+  --color-esmalte-200: var(--esmalte-200);
+  --color-esmalte-100: var(--esmalte-100);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-sobre-esmalte: var(--tinta-sobre-esmalte);
+  --color-sobre-esmalte-suave: var(--tinta-sobre-esmalte-suave);
+  --color-poste: var(--poste);
+  --color-poste-oscuro: var(--poste-oscuro);
+  --color-poste-claro: var(--poste-claro);
+  --color-ok: var(--ok);
+  --color-ok-fondo: var(--ok-fondo);
+  --color-espera: var(--espera);
+  --color-espera-fondo: var(--espera-fondo);
+  --color-alerta: var(--alerta);
+  --color-alerta-fondo: var(--alerta-fondo);
+  --color-neutro: var(--neutro);
+  --color-neutro-fondo: var(--neutro-fondo);
+
+  --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-chapa: "Archivo Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-chapa: 14px;
+  --radius-control: 12px;
+
+  --shadow-chapa: 0 1px 0 rgb(255 255 255 / 0.14) inset, 0 0 0 2px rgb(255 255 255 / 0.1) inset,
+    0 8px 18px -8px rgb(14 23 41 / 0.45);
+  --shadow-chapa-clara: 0 0 0 1px var(--linea) inset, 0 6px 14px -10px rgb(14 23 41 / 0.35);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body {
+    background: var(--porcelana);
+    color: var(--tinta);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.45;
+  }
+  ::selection {
+    background: var(--esmalte-200);
+    color: var(--tinta);
+  }
+  :focus-visible {
+    outline: 3px solid var(--poste);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  input,
+  textarea {
+    caret-color: var(--poste);
+  }
+}
+
+@layer components {
+  /* Letras de chapa: grotesca ensanchada, mayúsculas espaciadas */
+  .letras-chapa {
+    font-family: var(--font-chapa);
+    font-stretch: 118%;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .cifra {
+    font-family: var(--font-chapa);
+    font-stretch: 108%;
+    font-weight: 750;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Gesto distintivo: el poste. Rayas diagonales que avanzan como un poste de barbero girando. */
+@keyframes poste-gira {
+  to {
+    background-position: 56.57px 0;
+  }
+}
+.poste {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--poste) 0 10px,
+    #ffffff 10px 20px,
+    var(--esmalte-800) 20px 30px,
+    #ffffff 30px 40px
+  );
+  background-size: 56.57px 56.57px;
+  animation: poste-gira 1.6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .poste {
+    animation: none;
+  }
 }

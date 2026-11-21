@@ -1,13 +1,39 @@
 # Diseño 4 — Interfaz
 
-Estado: en construcción
+Estado: en revisión (UI-01 aprobada, UI-02 en revisión)
 Parte de: Diseño → 1. Arquitectura ✅ · 2. Base de datos ✅ · 3. Backend ✅ · **4. Interfaz**
 Entrada: [`PRODUCT.md`](../../PRODUCT.md) · Método: skill `impeccable`
 
-> La dirección visual completa (mundo visual, tipografía, color, componentes y pantallas) se agrega
-> en las próximas rondas con impeccable. Esta sección registra las decisiones ya tomadas.
+> Decisiones de interfaz tomadas con el método de impeccable. El contrato de dirección vive en
+> `.impeccable/surfaces/src-app.md`; el `DESIGN.md` se escribe al terminar, a partir de lo construido.
 
 ---
+
+## UI-02. Dirección visual: chapa enlozada (en revisión)
+
+Elegida entre cuatro opciones (el turnero sorteado, chapa enlozada, el subte y el estándar de la
+categoría). Los carteles esmaltados del barrio en los colores del poste de barbero.
+
+![Prototipo: inicio del cliente, reservar, hoy del barbero (claro y oscuro)](assets/prototipo-chapa-enlozada.png)
+
+| Aspecto | Definición |
+|---|---|
+| Superficies | Fondo blanco porcelana frío; **chapas** azul esmalte (estructura, lo importante, la selección) y chapas blancas (contenido), esquinas de 14 px, borde interior claro en las de esmalte |
+| Color | Tres voces que no se mezclan: **esmalte azul** (marca y estructura), **rojo poste** (solo la acción principal de la pantalla y lo crítico), **estados** (verde, ámbar, rojo, gris) solo cuando el dato es un estado |
+| Estados | Color + ícono + palabra (`StatusMark`): nunca solo color |
+| Tipografía | **Archivo** ensanchada en mayúsculas espaciadas para las letras de chapa y en cifras tabulares para horarios y montos; **Atkinson Hyperlegible Next** para el texto (diseñada para baja visión). Texto base de 17 px |
+| Controles | Estándar (radios, botones, navegación inferior), 52 a 56 px de alto, foco visible en rojo poste |
+| Gesto distintivo | **El poste**: rayas que avanzan como un poste girando, solo en la carga, la confirmación de una reserva y el turno "ahora" del barbero |
+| Tema | Claro de día (luz del local, calle); oscuro según el sistema, con la misma estructura |
+
+**Prototipo navegable** (datos de ejemplo): `/prototipo`, `/prototipo/cliente`, `/prototipo/reservar`
+(con el flujo completo hasta la confirmación) y `/prototipo/barbero`. Los componentes base quedan en
+`src/ui/` y se reutilizan en las specs.
+
+**Dependencias nuevas:** `@fontsource-variable/archivo` y `@fontsource-variable/atkinson-hyperlegible-next`
+(fuentes autoalojadas: el build no depende de la red) y `lucide-react` (un solo sistema de íconos).
+
+**Pendiente para cerrar la dirección:** tu aprobación, la revisión final de impeccable y el `DESIGN.md`.
 
 ## UI-01. Pantalla de carga con el logo ✅
 
