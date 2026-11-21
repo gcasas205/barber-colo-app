@@ -8,7 +8,7 @@ Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
   - Hecho cuando: tests en verde con `TZ` de Buenos Aires, UTC y Tokio (`npm run test:tz`), incluidos fin de mes, fin de año y 23:50.
 - [x] **T3. [agente] Dominio de Agenda y Servicios: tipos y validaciones.** RF-12, RF-13, RF-14
   - Hecho cuando: tests de franjas superpuestas, cierre antes de apertura, paso inválido, precio ≤ 0, duración no múltiplo, nombre duplicado y bloqueo vacío en verde.
-- [ ] **T4. [agente] Disponibilidad: `bookingWindow`, `dayStarts`, `weekAvailability`, `nextDayWithRoom`.** RF-4 a RF-11, RNF-2
+- [x] **T4. [agente] Disponibilidad: `bookingWindow`, `dayStarts`, `weekAvailability`, `nextDayWithRoom`.** RF-4 a RF-11, RNF-2
   - Hecho cuando: los 12 casos límite de la spec están como tabla de tests con `now` fijo y pasan en las tres zonas.
 - [ ] **T5. [agente] Test de arquitectura.** Constitución, principio 3
   - Hecho cuando: el test pasa con el código actual y falla si se agrega a propósito un import prohibido (se prueba y se revierte).
