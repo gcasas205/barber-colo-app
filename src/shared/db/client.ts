@@ -2,6 +2,7 @@ import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
 import { serverEnv } from "@/shared/config/env";
 import { poolConfig } from "./pool-config";
+import { SUPABASE_ROOT_CA_2021 } from "./supabase-ca";
 import type { DB } from "./types";
 
 export type Database = Kysely<DB>;
@@ -16,7 +17,7 @@ let instance: Database | undefined;
 export function database(): Database {
   if (!instance) {
     const env = serverEnv();
-    instance = createDatabase(env.DATABASE_URL, env.DATABASE_CA_CERT);
+    instance = createDatabase(env.DATABASE_URL, env.DATABASE_CA_CERT ?? SUPABASE_ROOT_CA_2021);
   }
   return instance;
 }

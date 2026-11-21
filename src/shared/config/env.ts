@@ -7,7 +7,7 @@ import { z } from "zod";
 const schema = z.object({
   /** Conexión del rol app_server por el pooler de Supabase (modo transacción). */
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
-  /** Certificado raíz de Supabase (PEM). Obligatorio para cualquier base que no sea la local (S-2). */
+  /** Reemplaza al certificado raíz de Supabase incluido en el código (PEM), por si Supabase lo rota. */
   DATABASE_CA_CERT: z.string().includes("BEGIN CERTIFICATE").optional(),
 });
 

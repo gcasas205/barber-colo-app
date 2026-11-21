@@ -194,7 +194,7 @@ Los usuarios de prueba (D-11) no entran en esta spec: llegan con el login, en la
 | Crear el proyecto `barber-colo` en Supabase (región São Paulo, plan gratuito) | Vos | Me pasás el *project ref* | Borrar el proyecto |
 | Crear el entorno `production` en GitHub, limitado a `main` y con tu aprobación obligatoria | Vos | Aparece en Settings → Environments | Borrar el entorno |
 | Cargar `SUPABASE_DB_URL` como secreto de ese entorno | Vos | El job `migrate` corre en verde | Borrar el secreto |
-| Después del primer `migrate`: poner contraseña a `app_server` (SQL que te paso) y cargar en Vercel `DATABASE_URL` (pooler, modo transacción) y `DATABASE_CA_CERT` (certificado de Supabase, en Database Settings → SSL) | Vos | La página `/` del deploy muestra los servicios | Quitar la variable |
+| Después del primer `migrate`: poner contraseña a `app_server` (SQL que te paso) y cargar en Vercel `DATABASE_URL` (pooler, modo transacción) (el certificado de Supabase ya viene en el código) | Vos | La página `/` del deploy muestra los servicios | Quitar la variable |
 
 ## 12. Cobertura
 
