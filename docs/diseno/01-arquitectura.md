@@ -1,6 +1,6 @@
 # Diseño 1 — Arquitectura de la aplicación
 
-Estado: borrador (pendiente de aprobación)
+Estado: aprobado (2026-11-20)
 Parte de: Diseño → **1. Arquitectura** · 2. Base de datos · 3. Backend · 4. Interfaz
 Entrada: [`docs/dominio.md`](../dominio.md), [`docs/casos-de-uso.md`](../casos-de-uso.md), [`docs/constitution.md`](../constitution.md)
 
