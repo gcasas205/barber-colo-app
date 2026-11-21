@@ -32,4 +32,4 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 ## Próximos pasos
 1. Diseño cerrado y en `main` (`docs/diseno/`, `DESIGN.md`, prototipo `/prototipo`, componentes `src/ui/`).
 2. **Spec 001 implementada** (PR #10 y #11, en producción en barber-colo.vercel.app). Página pública que calcula en el dispositivo con la foto de la agenda; Supabase ref `wzuteatyxtnivriuscei`; funciones en `gru1`; e2e y velocidad en `tests/e2e/*.py` (producción: carga 1,2 s desde EE. UU., cambios ~100 ms). Franjas 10–13 y 14–20 siguen provisorias.
-3. **Siguiente: spec 002** (`login-perfil`), arrancando por el login con usuarios de prueba (D-11: Colo demo + 2 clientes, se apagan solos con el primer cliente real) y Ajustes de Colo. Revisar ahí la CSP con nonce (hoy fija con 'unsafe-inline').
+3. **Spec 002 (`login-perfil`) en borrador** (rama `spec/002-login-perfil`): Google, invitado (D-12), Colo por email en variable de entorno (D-13), sobrenombre solo para Colo (D-14), usuarios de prueba (D-11; Colo demo cambia todo, D-15). Backlog renumerado: 003 = ajustes de Colo, 004 = reserva. Revisar ahí la CSP con nonce (hoy fija con 'unsafe-inline').
