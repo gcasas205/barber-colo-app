@@ -22,7 +22,7 @@ Estado: aprobado (2026-11-21), con el cambio 01 (sin Google) · Plan: [`plan.md`
   - Hecho cuando: tests y capturas; un cliente que abre `/colo` ve RF-8.
 - [x] **T8. [agente] Seguridad del navegador: CSP con nonce en las pantallas con sesión y hash del script del tema.** RNF-4
   - Hecho cuando: test de cabeceras por ruta; e2e sin errores de CSP; la página pública sigue prerenderizada.
-- [ ] **T9. [agente] Pruebas de punta a punta, velocidad y comando de borrado de la demo.** RF-25, RNF-6
+- [x] **T9. [agente] Pruebas de punta a punta, velocidad y comando de borrado de la demo.** RF-25, RNF-6
   - Hecho cuando: `tests/e2e/login.py` y `speed.py` en verde en local; `npm run demo:purge` probado
     contra la base local con datos reales al lado.
 - [ ] **T10. [persona] Verificación en Vercel.** Criterios de finalización

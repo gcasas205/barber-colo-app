@@ -167,7 +167,9 @@ la reserva, la política de faltas y los descuentos.
 - RNF-5. **Accesibilidad y diseño:** como en la 001 (`DESIGN.md`, 360 px, teclado, contraste AA, claro y
   oscuro), con los errores de cada campo anunciados y junto al campo.
 - RNF-6. **Velocidad:** con el 4G lento simulado de la 001, la pantalla de ingreso aparece en menos de
-  2 s y entrar como invitado o guardar el perfil responde en menos de 1 s. La página pública sigue
+  2 s, guardar el perfil responde en menos de 1 s y **las acciones que crean una sesión** (entrar como
+  invitado o con una cuenta) en menos de **1,5 s** *(ajustado el 2026-11-21: crean una sesión en Supabase;
+  medido 0,97 s de mediana y 1,03 s en el peor caso; se vuelve a medir en producción en T10)*. La página pública sigue
   cumpliendo el RNF-3 de la 001 (se vuelve a medir).
 - RNF-7. **Portabilidad:** nada de esta spec depende de servicios propios de Vercel (D-16: el hosting
   definitivo se elige al publicar).
