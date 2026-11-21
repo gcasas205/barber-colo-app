@@ -32,7 +32,7 @@ Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
   - Hecho cuando: el caso de uso devuelve todo lo necesario para el mes en una consulta por tabla, sin motivos de bloqueos; `serverClock` corrige el desfase del dispositivo (tests).
 - [x] **T13. [agente] Página con cálculo en el dispositivo: dirección fija, días sin lugar no elegibles, refresco cada minuto y loader en las esperas.** RF-4, RF-5, RF-15, RF-16, RF-19
   - Hecho cuando: tests del componente en verde; en el navegador, elegir servicio, día o semana no cambia la dirección ni pide nada al servidor.
-- [ ] **T14. [agente] Tema claro/oscuro/automático, pie con WhatsApp e Instagram e ícono de la app.** RF-17, RF-18, RF-20
+- [x] **T14. [agente] Tema claro/oscuro/automático, pie con WhatsApp e Instagram e ícono de la app.** RF-17, RF-18, RF-20
   - Hecho cuando: el tema elegido se recuerda y abre sin parpadeo (captura); el detector de impeccable sin hallazgos en los tres temas; el ícono aparece en la pestaña.
 - [ ] **T15. [agente] Región São Paulo y test de velocidad.** RNF-3
   - Hecho cuando: `vercel.json` con `gru1`; el test de velocidad local da < 2 s la carga y < 200 ms los cambios.
