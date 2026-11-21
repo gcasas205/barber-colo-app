@@ -1,6 +1,6 @@
 # Spec 001 — Agenda, servicios y horarios libres
 
-Estado: aprobada (2026-11-21) · **Cambio 01 aprobado (2026-11-21)** (velocidad, dirección fija, tema y redes; ver al final)
+Estado: **implementada (2026-11-21)** · con el cambio 01 (velocidad, dirección fija, tema y redes; ver al final)
 Origen: `docs/analisis.md` (RN-01, RN-02, RN-04, RN-30, RN-35 a RN-39 · RF-04, RF-07, RF-08, RF-37, RF-41 a RF-44 · RNF-01, RNF-04, RNF-09, RNF-12, RNF-14), `docs/dominio.md` (D-10, I-8, I-9, I-16)
 Diseño: `docs/diseno/` · Interfaz: `DESIGN.md`
 
