@@ -18,7 +18,7 @@ Estado: aprobado (2026-11-21), con el cambio 01 (sin Google) · Plan: [`plan.md`
     futuros simulados, sexto intento, borrado de la demo con datos reales al lado).
 - [x] **T6. [agente] Pantallas de ingreso (como Corralap), perfil, cuenta del invitado y franja de prueba.** RF-1 a RF-1c, RF-4, RF-5, RF-9 a RF-18b, RF-22, RF-22b
   - Hecho cuando: tests de los componentes; capturas en 360 px y web, claro y oscuro; detector de impeccable sin hallazgos.
-- [ ] **T7. [agente] Pantalla de Colo: lista, sobrenombre y salir de todos los dispositivos.** RF-5b, RF-19 a RF-21
+- [x] **T7. [agente] Pantalla de Colo: lista, sobrenombre y salir de todos los dispositivos.** RF-5b, RF-19 a RF-21
   - Hecho cuando: tests y capturas; un cliente que abre `/colo` ve RF-8.
 - [ ] **T8. [agente] Seguridad del navegador: CSP con nonce en las pantallas con sesión y hash del script del tema.** RNF-4
   - Hecho cuando: test de cabeceras por ruta; e2e sin errores de CSP; la página pública sigue prerenderizada.
