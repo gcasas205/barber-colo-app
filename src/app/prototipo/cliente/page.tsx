@@ -30,14 +30,15 @@ export default function ClientHome() {
                 Tu próximo turno
               </h2>
               <p className="cifra text-[40px] leading-none">Jue 26 · 16:00</p>
+              <p className="text-[18px] font-bold">Corte</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <StatusMark status="booked" />
               <span className="text-[15px] text-sobre-esmalte-suave">Te pedimos confirmar a las 15:00</span>
             </div>
             <p className="text-[16px]">
-              <span className="text-sobre-esmalte-suave line-through">{pesos(12000)}</span>{" "}
-              <span className="cifra text-[20px]">{pesos(10800)}</span>{" "}
+              <span className="text-sobre-esmalte-suave line-through">{pesos(18000)}</span>{" "}
+              <span className="cifra text-[20px]">{pesos(16200)}</span>{" "}
               <span className="text-sobre-esmalte-suave">· 10 % off por tu 4.º corte del mes</span>
             </p>
             <div className="flex gap-3">

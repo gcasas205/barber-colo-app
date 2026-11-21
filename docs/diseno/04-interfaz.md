@@ -37,6 +37,12 @@ fijo a la derecha; el inicio del cliente pone los beneficios al costado. Mismo m
 (con el flujo completo hasta la confirmación) y `/prototipo/barbero`. Los componentes base quedan en
 `src/ui/` y se reutilizan en las specs.
 
+**Servicios (D-10):** la reserva suma el paso "Servicio" (Corte, Completo, Claritos) con descripción,
+duración y precio; los días y horarios se calculan para el servicio elegido, y Claritos avisa que no
+suma para beneficios. En la vista del barbero, cada turno muestra su servicio (no la descripción del corte).
+
+![Reservar con servicios y hoy del barbero](assets/prototipo-servicios.png)
+
 **Dependencias nuevas:** `@fontsource-variable/archivo` y `@fontsource-variable/atkinson-hyperlegible-next`
 (fuentes autoalojadas: el build no depende de la red) y `lucide-react` (un solo sistema de íconos).
 

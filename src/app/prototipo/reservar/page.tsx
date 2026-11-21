@@ -9,7 +9,7 @@ import { Button } from "@/ui/Button";
 import { Plate } from "@/ui/Plate";
 import { PoleBand } from "@/ui/PoleBand";
 import { cx } from "@/ui/cx";
-import { DAYS, FREE_SLOTS, RATE, pesos } from "../_data";
+import { DAYS, SERVICES, occupancy, pesos, startsFor } from "../_data";
 
 const NAV = [
   { href: "/prototipo/cliente", label: "Inicio", icon: House },
@@ -23,6 +23,10 @@ const PEOPLE = [
   { id: "tomi", label: "Para Tomi", detail: "Tomás", discount: 0 },
 ];
 
+function duration(minutes: number) {
+  return minutes < 60 ? `${minutes} min` : `${minutes / 60} h`;
+}
+
 /** Grupos de la grilla de horarios. */
 function splitByTime(slots: string[]) {
   return {
@@ -33,14 +37,17 @@ function splitByTime(slots: string[]) {
 
 export default function BookPrototype() {
   const [person, setPerson] = useState("yo");
+  const [serviceId, setServiceId] = useState<string>("corte");
   const [dayId, setDayId] = useState<string>("jue-26");
   const [slot, setSlot] = useState<string | null>(null);
   const [booked, setBooked] = useState(false);
 
   const day = DAYS.find((d) => d.id === dayId)!;
   const who = PEOPLE.find((p) => p.id === person)!;
-  const finalPrice = Math.round(RATE * (1 - who.discount));
-  const groups = splitByTime(FREE_SLOTS[dayId] ?? []);
+  const service = SERVICES.find((s) => s.id === serviceId)!;
+  const discount = service.countsForBenefits ? who.discount : 0;
+  const finalPrice = Math.round(service.price * (1 - discount));
+  const groups = splitByTime(startsFor(dayId, service.minutes));
 
   if (booked && slot) {
     return (
@@ -55,7 +62,7 @@ export default function BookPrototype() {
                 {day.short} {day.day} · {slot}
               </p>
               <p className="text-sobre-esmalte-suave">
-                {who.id === "yo" ? "Para vos" : "Para Tomi"} · {pesos(finalPrice)}
+                {service.name} · {who.id === "yo" ? "para vos" : "para Tomi"} · {pesos(finalPrice)}
               </p>
             </div>
           </Plate>
@@ -110,12 +117,52 @@ export default function BookPrototype() {
         </fieldset>
 
         <fieldset className="flex flex-col">
+          <legend className="mb-3 text-[20px] font-bold">Servicio</legend>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {SERVICES.map((s) => (
+              <label
+                key={s.id}
+                className={cx(
+                  "flex min-h-[64px] cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-control)] px-4 py-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-poste sm:flex-col sm:items-start sm:justify-start",
+                  serviceId === s.id
+                    ? "bg-esmalte text-sobre-esmalte shadow-[var(--shadow-chapa-control)]"
+                    : "bg-chapa text-tinta shadow-[var(--shadow-chapa-clara)] hover:shadow-[inset_0_0_0_2px_var(--esmalte-200)]",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="servicio"
+                  value={s.id}
+                  checked={serviceId === s.id}
+                  onChange={() => {
+                    setServiceId(s.id);
+                    setSlot(null);
+                  }}
+                  className="sr-only"
+                />
+                <span className="flex flex-col">
+                  <span className="text-[18px] font-bold">{s.name}</span>
+                  <span className={cx("text-[15px]", serviceId === s.id ? "text-sobre-esmalte-suave" : "text-tinta-suave")}>
+                    {s.description} · {duration(s.minutes)}
+                  </span>
+                </span>
+                <span className="cifra shrink-0 text-[19px]">{pesos(s.price)}</span>
+              </label>
+            ))}
+          </div>
+          {!service.countsForBenefits && (
+            <p className="mt-2 text-[15px] text-tinta-suave">{service.name} no suma para tus beneficios ni tiene descuento.</p>
+          )}
+        </fieldset>
+
+        <fieldset className="flex flex-col">
           <legend className="mb-3 text-[20px] font-bold">Día</legend>
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-6 lg:overflow-visible lg:px-0">
             {DAYS.map((d) => {
-              const full = d.free === 0;
+              const free = startsFor(d.id, service.minutes).length;
+              const full = free === 0;
               const selected = d.id === dayId;
-              const busy = d.total - d.free;
+              const busy = occupancy(d.id);
               return (
                 <label
                   key={d.id}
@@ -148,11 +195,11 @@ export default function BookPrototype() {
                   >
                     <span
                       className={cx("block h-full rounded-full", selected ? "bg-sobre-esmalte" : "bg-esmalte")}
-                      style={{ width: `${(busy / d.total) * 100}%` }}
+                      style={{ width: `${busy * 100}%` }}
                     />
                   </span>
                   <span className={cx("text-[13px] font-bold", selected ? "text-sobre-esmalte-suave" : "text-tinta-suave")}>
-                    {full ? "Completo" : `${d.free} libres`}
+                    {full ? "Sin lugar" : `${free} libres`}
                   </span>
                 </label>
               );
@@ -161,7 +208,12 @@ export default function BookPrototype() {
         </fieldset>
 
         <fieldset className="flex flex-col gap-4">
-          <legend className="mb-1 text-[20px] font-bold">{day.long} · horarios libres</legend>
+          <legend className="mb-1 text-[20px] font-bold">
+            {day.long} · {service.name.toLowerCase()} de {duration(service.minutes)}
+          </legend>
+          {groups.mañana.length + groups.tarde.length === 0 && (
+            <p className="text-tinta-suave">Ese día no hay lugar para {service.name.toLowerCase()}. Probá otro día.</p>
+          )}
           {(["mañana", "tarde"] as const).map((part) =>
             groups[part].length ? (
               <div key={part} className="flex flex-col gap-2">
@@ -198,12 +250,12 @@ export default function BookPrototype() {
 
       <aside
         aria-label="Resumen de la reserva"
-        className="sticky bottom-[64px] z-10 self-end border-t border-linea bg-chapa px-4 py-3 shadow-[0_-10px_20px_-16px_rgb(14_23_41/0.5)] lg:top-28 lg:bottom-auto lg:rounded-[var(--radius-chapa)] lg:border-0 lg:p-5 lg:shadow-[var(--shadow-chapa-clara)]"
+        className="sticky bottom-[64px] z-10 self-end border-t lg:self-start border-linea bg-chapa px-4 py-3 shadow-[0_-10px_20px_-16px_rgb(14_23_41/0.5)] lg:top-28 lg:bottom-auto lg:rounded-[var(--radius-chapa)] lg:border-0 lg:p-5 lg:shadow-[var(--shadow-chapa-clara)]"
       >
         <h2 className="mb-3 hidden text-[20px] font-bold lg:block">Tu reserva</h2>
         <div className="mb-2 flex items-baseline justify-between gap-3 lg:mb-4 lg:flex-col lg:items-start lg:gap-1">
           <p className="font-bold">
-            {slot ? `${day.short} ${day.day} · ${slot}` : "Elegí un horario"}
+            {slot ? `${service.name} · ${day.short} ${day.day} · ${slot}` : `${service.name} · elegí un horario`}
             <span className="font-normal text-tinta-suave"> · {who.id === "yo" ? "para vos" : "para Tomi"}</span>
           </p>
           <p className="cifra text-[19px]">{pesos(finalPrice)}</p>

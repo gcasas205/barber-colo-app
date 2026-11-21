@@ -27,18 +27,18 @@ sequenceDiagram
     participant E as Eventos
     participant N as Notificaciones
 
-    C->>UI: Elige un día
-    UI->>T: horariosLibres(día)
-    T->>A: horariosOfrecidos(día, ahora)
+    C->>UI: Elige un servicio y un día
+    UI->>T: horariosLibres(servicio, día)
+    T->>A: horariosOfrecidos(día, ahora, duración del servicio)
     A-->>T: horarios ofrecidos
     T->>T: freeSlots(ofrecidos, turnos activos)
-    T->>P: tarifa vigente y descuento estimado(cliente, día)
+    T->>P: precio del servicio y descuento estimado(cliente, servicio, día)
     P-->>T: precio, descuento, precio final
     T-->>UI: horarios libres con precios
     UI-->>C: Muestra horarios
 
-    C->>UI: Reserva 16:00
-    UI->>T: reservar(cliente, 16:00)
+    C->>UI: Reserva Corte a las 16:00
+    UI->>T: reservar(cliente, servicio, 16:00)
     T->>K: habilitación(cliente)
     K-->>T: normal | requiere aprobación | bloqueado
     alt bloqueado
@@ -46,8 +46,8 @@ sequenceDiagram
     else normal o requiere aprobación
         T->>A: ¿16:00 sigue ofrecido? (ahora)
         A-->>T: sí
-        T->>P: tarifa vigente
-        P-->>T: precio base
+        T->>P: precio y duración del servicio
+        P-->>T: precio base, duración
         T->>T: initialStatus(horario, ahora, habilitación)
         T->>T: Guardar turno + evento en una sola operación
         alt el horario ya tiene un turno activo (I-2) u otro turno futuro del cliente (I-3)

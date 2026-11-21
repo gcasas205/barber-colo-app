@@ -32,7 +32,7 @@ Es la app de **una** barbería y de **un** barbero, no una plataforma de reserva
 ## Capabilities and Constraints
 
 - Funcionalidades: `docs/analisis.md`, `docs/casos-de-uso.md` (30 casos de uso) y `docs/estadisticas-crm.md`.
-- Un solo barbero, un servicio con duración fija, turnos de bloque fijo.
+- Un solo barbero. Servicios con turno: Corte ($ 18.000), Completo — corte, barba y cejas ($ 20.000) — y Claritos ($ 70.000), cada uno con su duración. Las ceras ($ 18.000) son un producto del local, fuera de los turnos. Precios de la pizarra del local (20/11/2026).
 - Interfaz en español rioplatense; fechas y horas en la hora de Buenos Aires.
 - Stack fijo por la constitución: Next.js 16, Tailwind CSS v4, Supabase, Vercel.
 - Un adulto (titular) puede cargar hasta [5] personas a cargo, por ejemplo sus hijos, y reservar para ellas (P-16 en `docs/dominio.md`).

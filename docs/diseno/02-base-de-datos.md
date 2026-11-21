@@ -38,6 +38,7 @@ erDiagram
     APPOINTMENTS ||--o{ SETTLEMENT_DISCOUNTS : "descuentos"
     APPOINTMENTS ||--o| COUNTABLE_VISITS : "visita"
     CANCELLATION_REASONS ||--o{ APPOINTMENTS : "motivo"
+    SERVICES ||--o{ APPOINTMENTS : "servicio"
     BENEFIT_RULES ||--o{ SETTLEMENT_DISCOUNTS : "aplica"
     AUTH_USERS ||--o{ PUSH_SUBSCRIPTIONS : "dispositivos"
     AUTH_USERS ||--o{ NOTIFICATIONS : "recibe"
@@ -60,6 +61,7 @@ erDiagram
     APPOINTMENTS {
         uuid id PK
         uuid customer_id FK
+        smallint service_id FK
         timestamptz starts_at
         timestamptz ends_at
         appointment_status status
@@ -141,7 +143,7 @@ se dibujan para no ensuciar el diagrama.
 
 | Tabla | Columnas clave | Restricciones |
 |---|---|---|
-| `schedule_settings` (1 fila) | `slot_minutes`, `min_notice_minutes` (30), `max_advance_days` (30), `approval_min_notice_minutes` (120) | `id = 1`; `slot_minutes between 5 and 240`; resto `> 0` |
+| `schedule_settings` (1 fila) | `step_minutes` (15, paso de la agenda), `min_notice_minutes` (30), `max_advance_days` (30), `approval_min_notice_minutes` (120) | `id = 1`; `slot_minutes between 5 and 240`; resto `> 0` |
 | `weekly_ranges` | `id`, `weekday` (1 = lunes … 7 = domingo), `opens_at time`, `closes_at time` | `closes_at > opens_at`; **sin superposición en el mismo día** (I-8) con `exclude using gist (weekday with =, timerange(opens_at, closes_at) with &&)` |
 | `schedule_blocks` | `id`, `period tstzrange`, `reason`, `created_by` | `not isempty(period)`; índice GiST en `period` |
 
@@ -183,7 +185,7 @@ create type app.customer_role     as enum ('holder', 'dependent', 'manual');
 
 | Garantía | Cómo | Invariante |
 |---|---|---|
-| **Un turno activo por horario**, aunque cambie la duración del bloque | `exclude using gist (tstzrange(starts_at, ends_at, '[)') with &&) where (status in ('pending_approval','booked','confirmed','unconfirmed'))` | I-2 |
+| **Dos turnos activos nunca se superponen**, aunque sean de servicios con distinta duración | `exclude using gist (tstzrange(starts_at, ends_at, '[)') with &&) where (status in ('pending_approval','booked','confirmed','unconfirmed'))` | I-2 |
 | Un turno futuro activo por cliente | **No se puede expresar con un índice** ("futuro" depende de la hora). El caso de uso bloquea la fila del cliente (`select … for update`) y cuenta sus turnos activos futuros dentro de la misma transacción | I-3 |
 | Transiciones válidas | *Trigger* `before update of status` que valida el par (anterior, nuevo) contra la tabla de transiciones de `dominio.md` §6 | I-1 |
 | Precio base inmutable | *Trigger* que rechaza cambios de `base_price_cents` después del alta | I-4 |
@@ -220,7 +222,7 @@ La **habilitación** (normal / requiere aprobación / bloqueado) no se guarda: s
 
 | Tabla | Columnas clave | Restricciones |
 |---|---|---|
-| `rates` | `id`, `price_cents`, `valid_from` | `price_cents > 0`; `valid_from` único. Tarifa vigente = la de mayor `valid_from <= now()` (I-16) |
+| `services` | `id smallint`, `name`, `description`, `duration_minutes`, `price_cents`, `counts_for_benefits`, `position`, `deactivated_at` | `price_cents > 0`; `duration_minutes > 0` y múltiplo del paso (lo valida el caso de uso, porque el paso vive en otra tabla); `name` único entre los activos (I-16). Datos iniciales: Corte, Completo, Claritos (D-10) |
 | `benefit_rules` | ver diagrama, `created_at`. Activa = `deactivated_at is null` | `kind in ('nth_in_month','every_nth','birthday')`; `n >= 1` salvo `birthday`; `window_days` solo en `birthday`; `discount_bps between 100 and 10000` (I-14) |
 | `countable_visits` | ver diagrama, `created_at` | Una por turno asistido; índice `(customer_id, local_date)`. Es una **proyección** (sección 3.8) |
 | `settlement_discounts` | ver diagrama, `kind` | **Cumpleaños una vez por año** (I-14b): índice único parcial `(customer_id, birthday_year) where kind = 'birthday'` |
@@ -261,7 +263,7 @@ El esquema está normalizado; la redundancia que queda es intencional y de tres 
 
 | Tipo | Columnas | Por qué existe | Cómo no se desincroniza |
 |---|---|---|---|
-| **Fotos históricas** | `appointments.base_price_cents`, `appointments.ends_at`, `settlement_discounts.kind` | Congelan hechos que pueden cambiar después (precio D-09, duración del bloque, regla de descuento) | No se desincronizan: son el registro de lo que pasó |
+| **Fotos históricas** | `appointments.base_price_cents`, `appointments.ends_at`, `settlement_discounts.kind` | Congelan hechos que pueden cambiar después (precio D-09, duración del servicio, regla de descuento) | No se desincronizan: son el registro de lo que pasó |
 | **Atajos dentro del agregado** | `appointments.status` (vs. historial), `final_price_cents`, `customer_reschedules`, `domain_events.dispatched_at`, `settlement_discounts.customer_id` y `birthday_year` | Velocidad de consulta, restricciones e índices que necesitan el dato en la misma fila | Se escriben en la **misma transacción** que su origen |
 | **Proyecciones entre módulos** | `countable_visits` (Precios), `conduct_records.consecutive_no_shows` (Conducta) | Cada módulo decide con sus propios datos, sin leer las tablas de Turnos (bajo acoplamiento) | Se **recalculan desde cero** con cada evento (idempotentes ante duplicados y correcciones P-06) y una **reconciliación** las compara con el origen |
 
@@ -281,7 +283,7 @@ hora del local.
 
 | Vista | Una fila por | Columnas principales |
 |---|---|---|
-| `stats.appointment_facts` | turno | `local_date`, `local_hour`, `iso_weekday`, `status`, `origin`, `customer_id`, `base_price_cents`, `final_price_cents`, `discount_cents`, `booked_lead_minutes`, `confirmed_in_window`, `late` |
+| `stats.appointment_facts` | turno | `local_date`, `local_hour`, `iso_weekday`, `status`, `origin`, `customer_id`, `service_id`, `duration_minutes`, `base_price_cents`, `final_price_cents`, `discount_cents`, `booked_lead_minutes`, `confirmed_in_window`, `late` |
 | `stats.customer_facts` | cliente | `first_visit`, `last_visit`, `visits`, `billed_cents`, `median_gap_days`, `next_appointment_at`, `acquisition_source`, faltas, cancelaciones tarde y reprogramaciones tarde (contadas desde `appointment_history`) |
 | `stats.offered_capacity` | día | horarios ofrecidos por día (para la ocupación), calculados desde franjas y bloqueos |
 
@@ -343,7 +345,7 @@ muestra como "Ese horario ya no está disponible".
 
 | Spec | Migraciones que agrega |
 |---|---|
-| 001 agenda | extensiones (`btree_gist`, `pg_trgm`), esquemas `app`/`stats`, rol `app_server`, `schedule_*`, `weekly_ranges`, `rates` |
+| 001 agenda | extensiones (`btree_gist`, `pg_trgm`), esquemas `app`/`stats`, rol `app_server`, `schedule_*`, `weekly_ranges`, `services` |
 | 002 login | `customers`, `acquisition_sources`, `conduct_records` (vacía) |
 | 003 reservas | tipos de turno, `appointments`, `appointment_history`, `appointment_policy`, `cancellation_reasons`, triggers, `domain_events`, `event_deliveries` |
 | 004 manuales | columna del enlace (`link_token_hash`), `rate_limit_hits` |
@@ -362,7 +364,7 @@ muestra como "Ese horario ya no está disponible".
 
 ## 10. Decisiones de este diseño (para aprobar)
 
-- **DB-01.** Exclusión por rango de tiempo en lugar de índice único por hora de inicio: protege también si el barbero cambia la duración del bloque con turnos ya reservados.
+- **DB-01.** Exclusión por rango de tiempo en lugar de índice único por hora de inicio: con servicios de distinta duración (D-10), es la única forma de impedir superposiciones.
 - **DB-02.** "Un turno futuro por cliente" se garantiza con bloqueo de la fila del cliente, no con un índice: un turno pasado sin marcar no debería impedir reservar el siguiente.
 - **DB-03.** Configuración en tablas de una fila por módulo (no un JSON de ajustes ni variables de entorno): cada módulo es dueño de sus parámetros y el barbero los edita desde la app.
 - **DB-04.** El token del enlace se guarda hasheado: si se filtra la base, los enlaces no sirven.

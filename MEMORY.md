@@ -9,6 +9,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - Análisis extendido aprobado: `docs/dominio.md`, `docs/casos-de-uso.md`, `docs/secuencias.md` y `docs/estadisticas-crm.md`, con las decisiones P-04 a P-15, inspirado en Corralap (`EloSanz/crm-web-app`).
 
 ## Decisiones (y por qué)
+- D-10: servicios Corte $18.000, Completo (corte, barba y cejas) $20.000, Claritos $70.000, con duración propia; agenda con paso de 15 min; beneficios solo Corte y Completo; ceras = producto, fuera. P-17 (cambiar servicio al marcar asistencia) y duraciones iniciales (30/45/120) por confirmar.
 - P-16: titular + hasta 5 personas a cargo (hijos); cada persona es un cliente con su historial; notificaciones al titular.
 - Supabase Cron para las tareas cada minuto: la ventana de confirmación es de 30 min y el cron gratis de Vercel no alcanza.
 - Vercel no despliega solo (`vercel.json`): despliega GitHub Actions después de que pasan los checks.

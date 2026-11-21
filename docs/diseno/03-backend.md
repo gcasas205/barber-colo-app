@@ -15,7 +15,7 @@ Todos los casos de uso tienen la misma forma. Eso hace que cada spec sea predeci
 
 ```ts
 // modules/appointments/application/book-appointment.ts
-export type BookAppointmentInput = { slotStart: Instant };
+export type BookAppointmentInput = { customerId: CustomerId; serviceId: ServiceId; slotStart: Instant };
 
 export type BookAppointmentError =
   | 'SLOT_NOT_OFFERED' | 'SLOT_TAKEN' | 'ALREADY_HAS_ACTIVE'
@@ -25,7 +25,7 @@ export function makeBookAppointment(deps: {
   appointments: AppointmentRepository;   // puerto propio
   schedule: ScheduleQuery;               // puerto hacia Agenda
   eligibility: EligibilityQuery;         // puerto hacia Conducta
-  rates: RateQuery;                      // puerto hacia Precios
+  services: ServiceCatalog;              // puerto hacia Precios (servicio, precio, duración)
   policy: AppointmentPolicyRepository;
 }) {
   return async function execute(
@@ -103,17 +103,17 @@ El test de arquitectura permite que solo `src/server/` importe `infrastructure` 
 | **schedule** | `updateScheduleSettings`, `setWeeklyRanges`, `addBlock`, `removeBlock` | barbero | `SlotBlocked` |
 | **customers** | `registerCustomer` (primer login: crea el titular), `addDependent`, `updateDependent`, `removeDependent`, `updateProfile`, `createManualCustomer`, `linkCustomers`, `updateNotes`, `anonymizeCustomer` | cliente, barbero | `CustomerRegistered`, `CustomerLinked`, `CustomerAnonymized` |
 | **conduct** | `blockCustomer`, `unblockCustomer`, `updateConductSettings` | barbero | `NoShowThresholdReached` |
-| **pricing** | `setRate`, `createBenefitRule`, `deactivateBenefitRule` | barbero | `BenefitReached` |
+| **pricing** | `createService`, `updateService`, `deactivateService`, `createBenefitRule`, `deactivateBenefitRule` | barbero | `BenefitReached` |
 | **notifications** | `subscribePush`, `unsubscribePush`, `markRead`, `deliverPending` | cliente, barbero, sistema | — |
 
 **Puertos entre módulos** (los define quien pregunta, en su `application`):
 
 | Puerto (en appointments) | Lo implementa | Devuelve |
 |---|---|---|
-| `ScheduleQuery.offeredSlots(range, now, audience)` | schedule | Horarios ofrecidos (con anticipación de 2 h para clientes que requieren aprobación) |
+| `ScheduleQuery.offeredSlots(range, now, duration, audience)` | schedule | Inicios donde un servicio de esa duración entra completo (con anticipación de 2 h para clientes que requieren aprobación) |
 | `EligibilityQuery.of(customerId)` | conduct | `normal` / `requires_approval` / `blocked` |
-| `RateQuery.current(now)` | pricing | Tarifa vigente en centavos |
-| `SettlementCalculator.settle(customerId, localDate, basePrice)` | pricing | Liquidación con descuentos |
+| `ServiceCatalog.get(serviceId)` / `.active()` | pricing | Servicio con precio vigente en centavos, duración y si suma para beneficios |
+| `SettlementCalculator.settle(customerId, serviceId, localDate, basePrice)` | pricing | Liquidación con descuentos (sin descuentos si el servicio no suma) |
 | `CustomerDirectory.contact(customerId)` | customers | Nombre y teléfono (para el mensaje de WhatsApp) |
 
 ## 5. Despachador de eventos

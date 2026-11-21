@@ -45,7 +45,7 @@ export default function BarberToday() {
                 <h1 id="ahora" className="text-[24px] font-bold leading-tight">
                   Ahora: {now.name}
                 </h1>
-                <p className="text-sobre-esmalte-suave">Degradé bajo con 2 · Barba perfilada</p>
+                <p className="text-[18px] font-bold text-sobre-esmalte-suave">{now.service}</p>
               </div>
               <p className="cifra text-[34px] leading-none">{now.time}</p>
             </div>
@@ -134,6 +134,7 @@ export default function BarberToday() {
 function Row({
   time,
   name,
+  service,
   forWhom,
   status,
   price,
@@ -146,7 +147,9 @@ function Row({
         <span className="truncate font-bold">{name}</span>
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] text-tinta-suave">
           <StatusMark status={status} />
-          <span className="cifra text-[15px]">{pesos(price)}</span>
+          <span>
+            {service} · <span className="cifra text-[15px]">{pesos(price)}</span>
+          </span>
           {forWhom ? <span>Reservó {forWhom}</span> : null}
         </span>
       </span>

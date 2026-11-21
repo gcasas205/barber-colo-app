@@ -34,7 +34,7 @@ publica eventos.
 | 2 | **Agenda** | Soporte | Cuándo atiende el barbero y qué horarios se ofrecen | Agenda, Franjas, Bloqueos |
 | 3 | **Clientes** | Soporte | Quién se atiende, de qué cuenta depende y cómo se lo contacta | Cliente (persona atendida) |
 | 4 | **Conducta** | Soporte | Faltas seguidas y si un cliente puede reservar | Ficha de conducta, Política de faltas |
-| 5 | **Precios y beneficios** | Soporte | Cuánto cuesta un corte y qué descuento corresponde | Tarifa, Reglas de beneficio, Visitas computables |
+| 5 | **Precios y beneficios** | Soporte | Qué servicios hay, cuánto cuestan y duran, y qué descuento corresponde | Servicio, Reglas de beneficio, Visitas computables |
 | 6 | **Notificaciones** | Genérico | Entregar avisos al celular y dentro de la app | Suscripciones, Notificaciones |
 | 7 | **Identidad** | Genérico | Quién inicia sesión y con qué rol | Usuario (lo resuelve el proveedor de login) |
 | 8 | **Estadísticas** | Modelo de lectura | Indicadores, inicio del día y ficha 360 del barbero. Solo lee; nadie depende de él | Nada (ver [`estadisticas-crm.md`](estadisticas-crm.md)) |
@@ -64,7 +64,7 @@ flowchart LR
     T -- "consulta: horarios ofrecidos" --> A
     T -- "consulta: ¿existe? contacto" --> C
     T -- "consulta: habilitación" --> K
-    T -- "consulta: tarifa y descuento" --> P
+    T -- "consulta: servicio, precio y descuento" --> P
     C -- "consulta: usuario" --> I
     R -- "cada minuto: procesar plazos" --> T
 
@@ -86,8 +86,9 @@ Estos términos se usan igual en la interfaz, en las specs y en el código (en i
 | Término | Definición |
 |---|---|
 | **Turno** (`Appointment`) | Reserva de un horario concreto para un cliente. Tiene un estado y un historial. |
-| **Horario** (`Slot`) | Bloque de tiempo de duración fija con un inicio y un fin. Es un valor, no una entidad. |
-| **Agenda** (`Schedule`) | Configuración de cuándo atiende el barbero: franjas semanales, duración del bloque y bloqueos. |
+| **Horario** (`Slot`) | Bloque de tiempo con un inicio y un fin. Su largo depende del servicio. Es un valor, no una entidad. |
+| **Paso de la agenda** | Cada cuántos minutos puede empezar un turno (por ejemplo, 15: 10:00, 10:15, 10:30…). |
+| **Agenda** (`Schedule`) | Configuración de cuándo atiende el barbero: franjas semanales, paso de la agenda y bloqueos. |
 | **Franja** (`WeeklyRange`) | Día de la semana con hora de inicio y fin de atención (puede haber varias por día). |
 | **Bloqueo** (`Block`) | Rango de fecha y hora en el que no se atiende, aunque caiga dentro de una franja. |
 | **Horario ofrecido** | Horario que surge de la agenda, no está bloqueado y respeta la anticipación mínima y máxima. |
@@ -102,8 +103,8 @@ Estos términos se usan igual en la interfaz, en las specs y en el código (en i
 | **Falta** | Turno marcado por el barbero como "no asistió". |
 | **Faltas seguidas** | Faltas sin ninguna asistencia en el medio. Vuelven a cero con una asistencia. |
 | **Habilitación** (`BookingEligibility`) | Si un cliente puede reservar: `normal`, `requiere aprobación` o `bloqueado`. |
-| **Tarifa** (`Rate`) | Precio vigente del corte. |
-| **Precio base** | Tarifa congelada en el turno al momento de reservar. |
+| **Servicio** (`Service`) | Lo que se reserva: Corte, Completo (corte, barba y cejas) o Claritos. Tiene descripción, duración, precio y si suma para beneficios. |
+| **Precio base** | Precio del servicio congelado en el turno al momento de reservar. |
 | **Beneficio** (`Benefit`) | Regla de descuento: "el N.º corte del mes" o "cada N cortes". |
 | **Visita computable** | Turno marcado como Asistió. Es lo único que cuenta para beneficios. |
 | **Liquidación** (`Settlement`) | Foto del precio de un turno asistido: precio base, descuentos aplicados y precio final. |
@@ -126,6 +127,7 @@ classDiagram
             <<aggregate root>>
             id
             customerId
+            serviceId
             slot : Slot
             status : AppointmentStatus
             origin : app | manual
@@ -183,10 +185,10 @@ classDiagram
     namespace Agenda {
         class Schedule {
             <<aggregate root>>
-            slotDuration : Duration
+            step : Duration
             minNotice : 30m
             maxAdvance : 30d
-            offeredSlots(range, now) Slot[]
+            offeredSlots(range, now, duration) Slot[]
         }
         class WeeklyRange {
             <<value object>>
@@ -239,10 +241,15 @@ classDiagram
     }
 
     namespace PreciosYBeneficios {
-        class Rate {
+        class Service {
             <<aggregate root>>
+            id
+            name
+            description
+            duration : Duration
             price : Money
-            validFrom : Instant
+            countsForBenefits : bool
+            active : bool
         }
         class BenefitRule {
             <<aggregate root>>
@@ -309,11 +316,11 @@ se cumplen siempre. Entre agregados, la consistencia es eventual (vía eventos).
 | Agregado | Invariantes (siempre verdaderas) | Reglas |
 |---|---|---|
 | **Turno** | I-1. Solo se pasa de un estado a otro por las transiciones del diagrama 6. <br>I-2. **Un horario tiene como máximo un turno activo.** <br>I-3. Un cliente tiene como máximo **un turno futuro activo**. <br>I-4. El precio base no cambia después de reservar. <br>I-5. Asistencia o falta solo se marcan a partir del inicio del turno. <br>I-6. La liquidación existe si y solo si el estado es Asistió. <br>I-7. Todo cambio de estado o de horario deja un registro con actor y fecha. <br>I-7b. Un turno se reprograma como máximo [2] veces por el cliente. | RN-03, RN-05, RN-06b, RN-07 a RN-11, RN-31 a RN-33, RNF-13 |
-| **Agenda** | I-8. Las franjas de un mismo día no se superponen. <br>I-9. La duración del bloque es mayor que cero y divide el día en horarios enteros dentro de cada franja. | RN-01, RN-02, RN-04, RN-30 |
+| **Agenda** | I-8. Las franjas de un mismo día no se superponen. <br>I-9. El paso de la agenda es mayor que cero y divide la hora en partes iguales (5, 10, 15, 20, 30 o 60 min). | RN-01, RN-02, RN-04, RN-30 |
 | **Cliente** | I-10. El teléfono está normalizado (formato internacional) y es único entre clientes no vinculados. Lo tienen el titular y los clientes manuales; las personas a cargo usan el del titular. <br>I-11. Un cliente vinculado no puede volver a vincularse. <br>I-17. Una cuenta tiene exactamente un titular y hasta [5] personas a cargo. <br>I-18. Una persona a cargo no tiene cuenta, email ni teléfono propios. | RF-14, RF-18, RNF-07, P-16 |
 | **Ficha de conducta** | I-12. Las faltas seguidas nunca son negativas y vuelven a cero con una asistencia. <br>I-13. La habilitación se **calcula**, no se guarda: bloqueado manual > faltas ≥ umbral > normal. | RN-12 a RN-17 |
 | **Regla de beneficio** | I-14. N ≥ 1 (salvo BIRTHDAY) y descuento entre 1 % y 100 %. <br>I-14b. BIRTHDAY se aplica como máximo una vez por cliente y año. <br>I-15. Desactivar una regla no altera liquidaciones pasadas. | RN-18 a RN-23, RF-33 |
-| **Tarifa** | I-16. Siempre hay exactamente una tarifa vigente. | RN-06 |
+| **Servicio** | I-16. Duración mayor que cero y múltiplo del paso de la agenda; precio mayor que cero; nombre único entre los activos. | RN-06, RN-35 a RN-39 |
 
 ## 6. Ciclo de vida del Turno (actualizado)
 
@@ -391,13 +398,13 @@ Son el centro de los tests.
 
 | Servicio | Módulo | Entrada → salida |
 |---|---|---|
-| `offeredSlots` | Agenda | agenda, rango de días, ahora → horarios ofrecidos |
+| `offeredSlots` | Agenda | agenda, rango de días, ahora, duración del servicio → inicios donde el servicio entra completo |
 | `freeSlots` | Turnos | horarios ofrecidos, turnos activos → horarios libres |
 | `initialStatus` | Turnos | horario, ahora, habilitación, política → PendienteAprobación / Reservado / Confirmado |
 | `cancellationKind` | Turnos | turno, ahora, política → a tiempo / tarde (vale también para reprogramar) |
 | `dueActions` | Turnos | turnos activos, ahora, política → recordatorios, pedidos y vencimientos que corresponden ahora |
 | `eligibility` | Conducta | ficha, política → normal / requiere aprobación / bloqueado |
-| `applicableDiscounts` | Precios | visitas previas del cliente, fecha local del turno, reglas activas → descuentos |
+| `applicableDiscounts` | Precios | servicio, visitas previas del cliente, fecha local del turno, reglas activas → descuentos (ninguno si el servicio no suma para beneficios) |
 | `settle` | Precios | precio base, descuentos → liquidación (suma de porcentajes, redondeo a centavos) |
 | `isBirthdayWeek` | Precios | fecha de nacimiento (día y mes), fecha local del turno, parámetros → sí / no (cuidado con fin de año y 29/2) |
 | `benefitProgress` | Precios | visitas del cliente, hoy, reglas → progreso por beneficio |
@@ -470,3 +477,24 @@ puede cargar en su cuenta hasta [5] **personas a cargo** y reservar para ellas.
   titular, igual que con cualquier cliente manual (RF-18).
 - **Baja:** el titular puede quitar una persona a cargo (se anonimiza, como cualquier cliente). Si el
   titular pide la baja de su cuenta, se anonimizan también sus personas a cargo.
+
+### D-10 ✅ Servicios con precio y duración propios
+
+El barbero tiene tres servicios con turno: **Corte** ($ 18.000), **Completo** (corte, barba y cejas,
+$ 20.000) y **Claritos** ($ 70.000), cada uno con la duración que él define. Las **ceras** son un
+producto del local y no entran en los turnos.
+
+- **Agenda:** pasa de "bloques fijos" a un **paso** [15 min]: un turno puede empezar en cualquier
+  múltiplo del paso donde su servicio entre completo. Turnos de distinta duración nunca se superponen.
+- **Reserva:** el cliente elige primero el servicio; los horarios que ve dependen de su duración.
+  El turno guarda el servicio, su precio y su fin.
+- **Beneficios:** solo Corte y Completo suman visitas y reciben descuentos (también el de cumpleaños).
+  Un Claritos no suma ni se descuenta.
+- **Estadísticas:** se suma la vista por servicio (facturación y cantidad), como el catálogo de Corralap.
+
+### P-17 Cambio de servicio al marcar asistencia (por confirmar)
+
+Si el cliente reservó Corte y en el sillón pide Completo, el barbero puede **cambiar el servicio al
+marcar Asistió**. El precio base pasa a ser el del servicio nuevo en ese momento (excepción a D-09,
+porque el cambio lo pide el cliente) y queda en el historial. Si el nuevo servicio dura más y choca con
+el turno siguiente, el sistema lo avisa, pero no lo impide: el turno ya está ocurriendo.
