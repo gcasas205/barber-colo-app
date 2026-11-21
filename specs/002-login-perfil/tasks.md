@@ -10,7 +10,7 @@ Estado: aprobado (2026-11-21), con el cambio 01 (sin Google) · Plan: [`plan.md`
 - [x] **T3. [agente] Migraciones de clientes e identidad, con retención y permisos.** RF-4, RF-14, RF-17, RF-18b, RF-25, RNF-3
   - Hecho cuando: `supabase db reset` aplica todo; los tests de integración de restricciones, permisos y
     marca de prueba pasan; `db advisors` sin hallazgos.
-- [ ] **T4. [agente] Identidad: `getActor()`, cuentas de prueba, invitado, inactividad y `proxy.ts`.** RF-1b, RF-1c, RF-4, RF-5, RF-8, RF-24
+- [x] **T4. [agente] Identidad: `getActor()`, cuentas de prueba, invitado, inactividad y `proxy.ts`.** RF-1b, RF-1c, RF-4, RF-5, RF-8, RF-24
   - Hecho cuando: tests de `actor.ts` (cuenta de correo que no es de prueba, demo apagada, 61 días sin
     uso) y de integración con sesiones reales de la base local.
 - [ ] **T5. [agente] Casos de uso: perfil con unión de invitados, invitado con límite, demo, lista y sobrenombre.** RF-2, RF-9 a RF-25

@@ -83,7 +83,7 @@ describe("identidad (RF-4, RF-14, RF-17, RF-18b, RF-22)", () => {
       expect(
         await sqlState(db, "insert into app.guest_devices (auth_user_id, customer_id) select $1, id from app.customers where full_name = 'Lucas'", [anon]),
       ).toBeNull();
-      const colo = await createAuthUser(db, { email: "colo@example.com" });
+      const colo = await createAuthUser(db, { email: "prueba-barbero@x.com" });
       expect(await sqlState(db, "insert into app.demo_accounts (auth_user_id, kind) values ($1, 'barber')", [colo])).toBeNull();
       const otro = await createAuthUser(db, { email: "otro@example.com" });
       expect(await sqlState(db, "insert into app.demo_accounts (auth_user_id, kind) values ($1, 'barber')", [otro])).toBe("23505");
