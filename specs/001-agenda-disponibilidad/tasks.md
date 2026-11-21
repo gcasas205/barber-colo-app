@@ -2,11 +2,11 @@
 
 Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
 
-- [ ] **T1. [persona] Crear el proyecto de Supabase y los secretos de GitHub.** RNF-5
+- [x] **T1. [persona] Crear el proyecto de Supabase y los secretos de GitHub.** RNF-5
   - Hecho cuando: existe el proyecto `barber-colo` (São Paulo); en GitHub existe el entorno `production` (solo `main`, con aprobación obligatoria) y tiene el secreto `SUPABASE_DB_URL`. Evidencia: el *project ref* y una captura del entorno (sin valores).
 - [x] **T2. [agente] Kernel compartido: zona, `LocalDate`, minutos, montos y duraciones.** RF-3, RNF-1
   - Hecho cuando: tests en verde con `TZ` de Buenos Aires, UTC y Tokio (`npm run test:tz`), incluidos fin de mes, fin de año y 23:50.
-- [ ] **T3. [agente] Dominio de Agenda y Servicios: tipos y validaciones.** RF-12, RF-13, RF-14
+- [x] **T3. [agente] Dominio de Agenda y Servicios: tipos y validaciones.** RF-12, RF-13, RF-14
   - Hecho cuando: tests de franjas superpuestas, cierre antes de apertura, paso inválido, precio ≤ 0, duración no múltiplo, nombre duplicado y bloqueo vacío en verde.
 - [ ] **T4. [agente] Disponibilidad: `bookingWindow`, `dayStarts`, `weekAvailability`, `nextDayWithRoom`.** RF-4 a RF-11, RNF-2
   - Hecho cuando: los 12 casos límite de la spec están como tabla de tests con `now` fijo y pasan en las tres zonas.
