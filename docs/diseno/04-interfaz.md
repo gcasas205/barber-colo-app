@@ -13,8 +13,8 @@ Entrada: [`PRODUCT.md`](../../PRODUCT.md) · Método: skill `impeccable`
 
 **Pedido:** usar el logo de El Colo en los momentos de carga, como hace Corralap.
 
-**Decisión:** el **borde de poste de barbero del logo gira**, como el cartel giratorio de la puerta
-de una barbería, y el centro (bigote, "BARBERIA", "EL COLO") queda quieto. Es la misma idea que
+**Decisión:** el **borde de poste de barbero del logo gira** y **el bigote se mueve** una vez por vuelta, como el cartel giratorio de la puerta
+de una barbería, mientras el resto del centro ("BARBERIA", "EL COLO") queda quieto. Es la misma idea que
 Corralap, donde una parte del logo se anima en lugar de usar un indicador genérico, pero con el
 elemento más reconocible de este logo.
 
@@ -22,7 +22,8 @@ elemento más reconocible de este logo.
 |---|---|
 | Archivos | `public/brand/loader-el-colo.svg` (claro) y `public/brand/loader-el-colo-oscuro.svg` (oscuro). SVG autónomos con su animación CSS adentro |
 | Movimiento | Rotación continua del borde, una vuelta cada 2,4 s, velocidad constante. Entrada de 320 ms (aparece y escala de 94 % a 100 %) |
-| Movimiento reducido | Con `prefers-reduced-motion` el logo queda quieto (constitución y `PRODUCT.md`) |
+| Bigote | Una vez por vuelta hace un "tic": se tuerce a un lado (−6°), al otro (+5°) y vuelve, con un leve estiramiento, en el último tercio de la vuelta (entre el 62 % y el 92 %). El resto del tiempo queda quieto, para no competir con el giro |
+| Movimiento reducido | Con `prefers-reduced-motion` el logo queda quieto, borde y bigote incluidos (constitución y `PRODUCT.md`) |
 | Tamaño | 132 px en pantalla completa; nunca menos de 96 px (debajo de eso el texto del logo no se lee) |
 | Texto | Debajo del logo, una línea corta según el contexto: "Cargando tus turnos…", "Cargando la agenda…". Siempre presente para lectores de pantalla (`role="status"`, `aria-live="polite"`) |
 | Tema | Versión clara sobre fondo crema; oscura sobre fondo oscuro |
