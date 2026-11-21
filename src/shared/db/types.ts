@@ -5,6 +5,12 @@
 
 import type { ColumnType } from "kysely";
 
+export type AppCustomerRole = "dependent" | "guest" | "holder";
+
+export type AppDemoKind = "barber" | "client_1" | "client_2";
+
+export type AppRegisteredBy = "barber" | "self";
+
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
@@ -12,6 +18,51 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
 export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export interface AppCustomers {
+  account_user_id: string | null;
+  anonymized_at: Timestamp | null;
+  birth_day: number | null;
+  birth_month: number | null;
+  created_at: Generated<Timestamp>;
+  email: string | null;
+  full_name: string;
+  id: Generated<string>;
+  is_demo: Generated<boolean>;
+  linked_to: string | null;
+  nickname: string | null;
+  phone_e164: string | null;
+  registered_by: Generated<AppRegisteredBy>;
+  role: AppCustomerRole;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface AppDemoAccounts {
+  auth_user_id: string;
+  customer_id: string | null;
+  kind: AppDemoKind;
+}
+
+export interface AppGuestAttempts {
+  attempted_at: Generated<Timestamp>;
+  id: Generated<Int8>;
+  ip_hash: string;
+}
+
+export interface AppGuestDevices {
+  auth_user_id: string;
+  created_at: Generated<Timestamp>;
+  customer_id: string;
+}
+
+export interface AppPhoneChanges {
+  changed_at: Generated<Timestamp>;
+  changed_by: string | null;
+  customer_id: string;
+  id: Generated<Int8>;
+  new_phone: string | null;
+  old_phone: string | null;
+}
 
 export interface AppScheduleBlocks {
   created_at: Generated<Timestamp>;
@@ -42,6 +93,11 @@ export interface AppServices {
   price_cents: number;
 }
 
+export interface AppUserActivity {
+  auth_user_id: string;
+  last_seen_at: Timestamp;
+}
+
 export interface AppWeeklyRanges {
   closes_at: string;
   id: Generated<Int8>;
@@ -50,8 +106,14 @@ export interface AppWeeklyRanges {
 }
 
 export interface DB {
+  "app.customers": AppCustomers;
+  "app.demo_accounts": AppDemoAccounts;
+  "app.guest_attempts": AppGuestAttempts;
+  "app.guest_devices": AppGuestDevices;
+  "app.phone_changes": AppPhoneChanges;
   "app.schedule_blocks": AppScheduleBlocks;
   "app.schedule_settings": AppScheduleSettings;
   "app.services": AppServices;
+  "app.user_activity": AppUserActivity;
   "app.weekly_ranges": AppWeeklyRanges;
 }
