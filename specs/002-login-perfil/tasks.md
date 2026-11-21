@@ -13,7 +13,7 @@ Estado: aprobado (2026-11-21), con el cambio 01 (sin Google) · Plan: [`plan.md`
 - [x] **T4. [agente] Identidad: `getActor()`, cuentas de prueba, invitado, inactividad y `proxy.ts`.** RF-1b, RF-1c, RF-4, RF-5, RF-8, RF-24
   - Hecho cuando: tests de `actor.ts` (cuenta de correo que no es de prueba, demo apagada, 61 días sin
     uso) y de integración con sesiones reales de la base local.
-- [ ] **T5. [agente] Casos de uso: perfil con unión de invitados, invitado con límite, demo, lista y sobrenombre.** RF-2, RF-9 a RF-25
+- [x] **T5. [agente] Casos de uso: perfil con unión de invitados, invitado con límite, demo, lista y sobrenombre.** RF-2, RF-9 a RF-25
   - Hecho cuando: tests con repositorios en memoria y de integración (dos clientes, unión con turnos
     futuros simulados, sexto intento, borrado de la demo con datos reales al lado).
 - [ ] **T6. [agente] Pantallas de ingreso (como Corralap), perfil, cuenta del invitado y franja de prueba.** RF-1 a RF-1c, RF-4, RF-5, RF-9 a RF-18b, RF-22, RF-22b

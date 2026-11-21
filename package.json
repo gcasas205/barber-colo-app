@@ -16,7 +16,8 @@
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "db:start": "supabase start -x realtime,storage-api,imgproxy,edge-runtime,logflare,vector,studio,mailpit,postgres-meta,supavisor",
     "db:reset": "supabase db reset",
-    "db:types": "kysely-codegen --dialect postgres --url postgresql://postgres:postgres@127.0.0.1:54332/postgres --include-pattern 'app.*' --out-file src/shared/db/types.ts"
+    "db:types": "kysely-codegen --dialect postgres --url postgresql://postgres:postgres@127.0.0.1:54332/postgres --include-pattern 'app.*' --out-file src/shared/db/types.ts",
+    "demo:purge": "node --experimental-strip-types scripts/purge-demo.ts"
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",

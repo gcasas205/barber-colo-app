@@ -148,7 +148,8 @@ la reserva, la política de faltas y los descuentos.
   botones de prueba, rechaza cualquier ingreso de prueba aunque alguien tenga la dirección, y cierra las
   sesiones de prueba abiertas en su próximo pedido. Mientras tanto, siguen activos sin importar cuántos
   clientes se registren.
-- RF-25. EL SISTEMA marca todos los datos de prueba (usuarios, clientes y lo que generen) con una marca
+- RF-25. *(Al editar el perfil, un cliente de prueba conserva " (demo)" al final del nombre.)*
+  EL SISTEMA marca todos los datos de prueba (usuarios, clientes y lo que generen) con una marca
   que ningún dato real puede tener, y ofrece un comando para que una persona los borre juntos antes de
   publicar, sin tocar datos reales.
 
