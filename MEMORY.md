@@ -22,9 +22,10 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - UI: seguir `DESIGN.md` (tres voces de color, un solo botón rojo por pantalla, estados con ícono y palabra, poste solo en carga/confirmación/Ahora). Al levantar `next start` para capturas, matar antes el puerto (`fuser -k`), o se sirve un build viejo.
 - Skills de terceros en `.claude/skills` (impeccable, vercel-react-best-practices, supabase, supabase-postgres-best-practices; lock en `skills-lock.json`): excluidas de ESLint. La skill next-best-practices no existe: usar `node_modules/next/dist/docs/`.
 - De Corralap: no cargar todos los datos en memoria para métricas (calcular en Postgres) y agrupar días en hora local, no UTC.
+- `npm test` corre la suite y además `test:tz` (src/ con TEST_TZ=UTC y Asia/Tokyo). Para días, usar `LocalDate` del kernel, nunca `Date`.
 - En los tests, ICU puede devolver la zona como `America/Buenos_Aires`: compará el desfase (180 min), no el nombre.
 - TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.
 
 ## Próximos pasos
 1. Diseño cerrado y en `main` (`docs/diseno/`, `DESIGN.md`, prototipo `/prototipo`, componentes `src/ui/`).
-2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec aprobada; plan y tareas (10, 2 de persona) esperando aprobación. Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.
+2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec, plan y tareas aprobados. Hecho: T2 (kernel en `src/shared/kernel`). Sigue T3. T1 (Supabase) la hace el usuario. Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.

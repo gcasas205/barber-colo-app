@@ -1,6 +1,6 @@
 # Plan — Spec 001: Agenda, servicios y horarios libres
 
-Estado: borrador (pendiente de aprobación)
+Estado: aprobado (2026-11-21)
 Spec: [`spec.md`](spec.md) (aprobada) · Diseño: `docs/diseno/01` a `04`, `DESIGN.md`
 
 ## 1. Resumen
