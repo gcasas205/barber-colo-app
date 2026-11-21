@@ -169,15 +169,18 @@ suite con `TZ=UTC` y `TZ=Asia/Tokyo`. Corre en CI.
    los tipos y verifica que no cambien (`git diff --exit-code src/shared/db/types.ts`), y corre
    `tests/integration` y `supabase db advisors`. El job `deploy` pasa a esperar a `checks` **y** a
    `integration`.
-2. **Job `migrate`** (solo en `main`, antes de `deploy`, en el entorno `production` de GitHub):
-   `supabase db push --db-url` con `SUPABASE_DB_URL` (conexión directa, con el rol `postgres`). No
-   usa token de acceso (S-1). Si falta el secreto, se saltea con un aviso, igual que el deploy.
+2. **Migraciones dentro del job `deploy`** (solo en `main`, en el entorno `production`): primero
+   `supabase db push --remote="$SUPABASE_DB_URL" --dry-run` (muestra qué se va a aplicar), después
+   el `push` real y recién entonces el deploy. Van en el mismo job y no en uno aparte para que
+   alcance **una sola aprobación** tuya por cada pase a producción (cada job con entorno protegido
+   pide la suya). No usa token de acceso (S-1). Si falta el secreto, se saltea con un aviso. En
+   `main` no se cancelan corridas en curso. *(El CLI 3.x reemplazó `--db-url` por `--remote=<url>`.)*
 
 ## 10b. Seguridad
 
 | # | Riesgo | Medida | Se verifica con |
 |---|---|---|---|
-| S-1 | Un token de Supabase con acceso a toda la cuenta guardado en GitHub | No se usa token de acceso. Las migraciones se aplican con `supabase db push --db-url`, con la contraseña de la base guardada en el **entorno `production` de GitHub**, que solo usa `main` y pide tu aprobación antes de correr | Configuración del entorno en GitHub (T1) |
+| S-1 | Un token de Supabase con acceso a toda la cuenta guardado en GitHub | No se usa token de acceso. Las migraciones se aplican con `supabase db push --remote=<url>`, con la contraseña de la base guardada en el **entorno `production` de GitHub**, que solo usa `main` y pide tu aprobación antes de correr | Configuración del entorno en GitHub (T1) |
 | S-2 | Conexión a la base sin verificar el certificado (suplantación) | `pg` con `ssl: { ca: <certificado de Supabase>, rejectUnauthorized: true }`. Prohibido `rejectUnauthorized: false`: hay un test que busca ese texto en el código | Test + conexión real en T10 |
 | S-3 | Permisos de más en el rol de la app | En la 001, `app_server` solo tiene `SELECT` en las tablas de agenda y servicios. Cada spec agrega los permisos que necesita | Test de integración: un `INSERT` como `app_server` falla |
 | S-4 | Base expuesta a la API pública de Supabase | Los esquemas `app` y `stats` no se publican; se revocan los permisos de `anon` y `authenticated` (también los predeterminados para tablas futuras); RLS activado en todas las tablas | Tests de integración + `supabase db advisors` |
