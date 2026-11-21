@@ -5,7 +5,7 @@ Estado: aprobado (2026-11-21), con el cambio 01 (sin Google) · Plan: [`plan.md`
 - [ ] **T1. [persona] Auth de Supabase: ingreso anónimo, 3 cuentas de prueba y variables de entorno.** RF-15, RF-22
   - Hecho cuando: el ingreso anónimo está activo, las 3 cuentas de prueba existen (confirmadas) y las 4
     variables están en Vercel. Evidencia: captura de la lista de usuarios y nombres de las variables.
-- [ ] **T2. [agente] Dominio de clientes: teléfono, nombre, cumpleaños y reglas del teléfono.** RF-9 a RF-12, RF-16, RF-17
+- [x] **T2. [agente] Dominio de clientes: teléfono, nombre, cumpleaños y reglas del teléfono.** RF-9 a RF-12, RF-16, RF-17
   - Hecho cuando: tests en verde en las tres zonas (más de 20 formatos de teléfono y todas las salidas de `phone-claim`).
 - [ ] **T3. [agente] Migraciones de clientes e identidad, con retención y permisos.** RF-4, RF-14, RF-17, RF-18b, RF-25, RNF-3
   - Hecho cuando: `supabase db reset` aplica todo; los tests de integración de restricciones, permisos y
