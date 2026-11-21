@@ -93,7 +93,11 @@ la reserva, la política de faltas y los descuentos.
   invitado y le dice "Ese teléfono tiene una cuenta. Entrá con Google". *(Protege al titular: nadie
   puede sacar turnos a su nombre poniendo su número.)*
 - RF-17. SI el teléfono ya pertenece a un invitado, ENTONCES EL SISTEMA lo reconoce como el mismo
-  invitado (con sus faltas) y no cambia el nombre guardado.
+  cliente para la política de faltas y no cambia el nombre guardado. En ese dispositivo, el invitado
+  solo ve y maneja los turnos que sacó desde ese mismo dispositivo. *(El teléfono no se verifica:
+  así, quien pone el número de otro invitado no ve ni cancela sus turnos. Lo que sí puede es sacar
+  turnos nuevos que cuentan para las faltas de ese teléfono; Colo puede anular faltas que no
+  correspondan, en la spec de asistencia y faltas. Quien quiera protección total, crea su cuenta: RF-16.)*
 - RF-18. EL SISTEMA recuerda al invitado en ese dispositivo hasta que sale (RF-4, RF-5).
 
 **Pantalla de Colo**
@@ -136,7 +140,10 @@ la reserva, la política de faltas y los descuentos.
 3. "11 3816-3491", "011 15 3816-3491" y "+54 9 11 3816-3491" son el mismo teléfono.
 4. Un fijo ("4555-1234", sin código de área) se rechaza (RF-10).
 5. Dos cuentas cargan el mismo teléfono al mismo tiempo → una lo consigue y la otra ve RF-11.
-6. Un invitado vuelve otro día desde otro celular con el mismo teléfono → es el mismo invitado (RF-17).
+6. Un invitado vuelve otro día desde otro celular con el mismo teléfono → es el mismo cliente para las
+   faltas, pero desde ese celular no ve los turnos que sacó desde el otro (RF-17).
+6b. Alguien pone el teléfono de otro invitado → no ve ni cancela los turnos de esa persona; los turnos
+   que saque sí cuentan para las faltas de ese teléfono (RF-17, riesgo aceptado en D-12).
 7. Un invitado pone el teléfono de alguien con cuenta → RF-16.
 8. El email de Colo está configurado en mayúsculas y la cuenta de Google en minúsculas → igual es Colo.
 9. El email de Colo todavía no se configuró → Colo entra como cliente (RF-7). Al configurarlo, en su
@@ -167,6 +174,8 @@ la reserva, la política de faltas y los descuentos.
 
 ## Dudas abiertas
 
+- (Resuelto 2026-11-21) Un invitado con el teléfono de otro invitado: RF-17 limita lo que puede ver y
+  hacer al dispositivo; el riesgo que queda (turnos nuevos que suman faltas) se acepta en D-12.
 - [NECESITA ACLARACIÓN] ¿Hace falta, ya en la primera versión, que un cliente pueda pedir que se borren
   sus datos (Ley 25.326 de protección de datos personales)? Propuesta: por ahora lo pide por WhatsApp y
   Colo lo resuelve; la pantalla llega con la spec de clientes.
