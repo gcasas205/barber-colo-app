@@ -253,7 +253,7 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 | # | Spec | Contenido | RF | MVP |
 |---|---|---|---|---|
 | 001 | `agenda-disponibilidad` | Horario semanal, paso de agenda, bloqueos, catálogo de servicios (precio y duración), anticipación mínima y horarios libres por servicio | 04–08, 37, 41–43 | ✅ |
-| 002 | `login-perfil` | Google, alta de cliente, teléfono, rol barbero | 01–03 | ✅ |
+| 002 | `login-perfil` | Google, alta de cliente, teléfono, rol barbero, **Ajustes de Colo (franjas, paso, bloqueos y servicios)** | 01–03, 04–05, 41–44 | ✅ |
 | 003 | `reserva-cancelacion` | Reservar, evitar doble reserva, cancelar y **reprogramar** en plazo o tarde, margen de 10 min, precio congelado, cancelación del barbero con motivo | 08–13, 39–40, P-05, P-07, P-14 | ✅ |
 | 004 | `turnos-manuales-enlace` | Carga manual, enlace secreto, mensaje para WhatsApp y vinculación de clientes | 14–18 | ✅ |
 | 005 | `pwa-notificaciones` | Manifest, instalación, permisos, Web Push con acciones y avisos dentro de la app | 34 + avisos de las demás | ✅ |

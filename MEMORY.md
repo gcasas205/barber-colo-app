@@ -24,5 +24,5 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.
 
 ## Próximos pasos
-1. Diseño (rama `design/arquitectura`): 1) arquitectura aprobada (`docs/diseno/01-arquitectura.md`), 2) base de datos aprobada (`docs/diseno/02-base-de-datos.md`, redundancia solo intencional: proyecciones que se recalculan y reconcilian), 3) backend aprobado (`docs/diseno/03-backend.md`), 4) interfaz con impeccable: `PRODUCT.md` completo, logo redibujado en `public/brand/`; dirección "chapa enlozada" aprobada: `DESIGN.md` ("La chapa del barrio"), componentes en `src/ui/`, prototipo en `/prototipo`. Diseño cerrado.
-2. Spec 001: agenda y disponibilidad.
+1. Diseño cerrado y en `main` (`docs/diseno/`, `DESIGN.md`, prototipo `/prototipo`, componentes `src/ui/`).
+2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec en borrador + clarificación; esperando aprobación. Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.
