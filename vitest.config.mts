@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
-// La lógica de negocio vive en src/domain y se prueba sin red ni base de datos.
+// La lógica de negocio vive en src/modules/*/domain y se prueba sin red ni base de datos.
 // Los tests corren con la zona horaria del local (constitución, principio 6) para
 // detectar cualquier cálculo que dependa por error de la zona del servidor.
 // `npm run test:tz` repite los tests de src/ con TEST_TZ=UTC y Asia/Tokyo (como un servidor

@@ -28,4 +28,4 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 
 ## Próximos pasos
 1. Diseño cerrado y en `main` (`docs/diseno/`, `DESIGN.md`, prototipo `/prototipo`, componentes `src/ui/`).
-2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec, plan y tareas aprobados. Hecho: T1 (Supabase ref `wzuteatyxtnivriuscei`, entorno `production` con `SUPABASE_DB_URL`), T2 (kernel en `src/shared/kernel`), T3 (validaciones), T4 (disponibilidad en `src/modules/schedule/domain/availability.ts`). Sigue T5. Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.
+2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec, plan y tareas aprobados. Hecho: T1 (Supabase ref `wzuteatyxtnivriuscei`, entorno `production` con `SUPABASE_DB_URL`), T2 (kernel en `src/shared/kernel`), T3 (validaciones), T4 (disponibilidad en `src/modules/schedule/domain/availability.ts`). T5 (test de arquitectura). Sigue T6 (migraciones + Supabase local). Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.

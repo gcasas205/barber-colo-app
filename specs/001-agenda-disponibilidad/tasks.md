@@ -10,7 +10,7 @@ Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
   - Hecho cuando: tests de franjas superpuestas, cierre antes de apertura, paso inválido, precio ≤ 0, duración no múltiplo, nombre duplicado y bloqueo vacío en verde.
 - [x] **T4. [agente] Disponibilidad: `bookingWindow`, `dayStarts`, `weekAvailability`, `nextDayWithRoom`.** RF-4 a RF-11, RNF-2
   - Hecho cuando: los 12 casos límite de la spec están como tabla de tests con `now` fijo y pasan en las tres zonas.
-- [ ] **T5. [agente] Test de arquitectura.** Constitución, principio 3
+- [x] **T5. [agente] Test de arquitectura.** Constitución, principio 3
   - Hecho cuando: el test pasa con el código actual y falla si se agrega a propósito un import prohibido (se prueba y se revierte).
 - [ ] **T6. [agente] Supabase local y migraciones (base, agenda, servicios, configuración inicial) con tests de integración.** RF-12 a RF-14, RNF-5
   - Hecho cuando: `supabase db reset` aplica todo desde cero; los tests de integración de restricciones, RLS y datos iniciales pasan; `supabase db advisors` sin hallazgos de seguridad; `app_server` solo puede leer y `anon` no ve `app` (S-3, S-4).
