@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CalendarPlus, Gift, House, Repeat2, Scissors, UserRound } from "lucide-react";
 import { AppHeader } from "@/ui/AppHeader";
-import { BottomNav } from "@/ui/BottomNav";
+import { AppShell } from "@/ui/AppShell";
 import { Button } from "@/ui/Button";
 import { Plate } from "@/ui/Plate";
 import { StatusMark } from "@/ui/StatusMark";
@@ -17,9 +17,10 @@ const NAV = [
 
 export default function ClientHome() {
   return (
-    <>
-      <AppHeader title="El Colo" unread={1} />
-      <main className="flex flex-1 flex-col gap-7 px-4 pb-8 pt-6">
+    <AppShell nav={NAV}>
+      <AppHeader title="Inicio" unread={1} />
+      <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 content-start gap-7 px-4 pb-8 pt-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start lg:gap-10 lg:px-8 lg:pt-10">
+        <div className="flex flex-col gap-7">
         <h1 className="text-[28px] font-bold leading-tight">Hola, Martín</h1>
 
         <Plate tone="esmalte" aria-labelledby="proximo" className="overflow-hidden">
@@ -67,6 +68,9 @@ export default function ClientHome() {
           <CalendarPlus aria-hidden size={22} strokeWidth={2.5} />
           Reservar turno
         </Link>
+        </div>
+
+        <div className="flex flex-col gap-7 lg:pt-[58px]">
 
         <section aria-labelledby="beneficios" className="flex flex-col gap-3">
           <h2 id="beneficios" className="text-[20px] font-bold">
@@ -100,8 +104,8 @@ export default function ClientHome() {
           </Plate>
         </section>
         <p className="text-[14px] text-tinta-suave">Datos de ejemplo.</p>
+        </div>
       </main>
-      <BottomNav items={NAV} />
-    </>
+    </AppShell>
   );
 }

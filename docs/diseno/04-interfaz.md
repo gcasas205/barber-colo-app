@@ -26,6 +26,13 @@ categoría). Los carteles esmaltados del barrio en los colores del poste de barb
 | Gesto distintivo | **El poste**: rayas que avanzan como un poste girando, solo en la carga, la confirmación de una reserva y el turno "ahora" del barbero |
 | Tema | Claro de día (luz del local, calle); oscuro según el sistema, con la misma estructura |
 
+**Web (≥ 1024 px):** la barra inferior pasa a ser un **riel lateral de esmalte** con la insignia, el
+nombre y las secciones (con el poste al pie), y cada pantalla usa el ancho en dos columnas: el barbero ve
+"Ahora" y "Para decidir" a la izquierda y la fila del día a la derecha; la reserva lleva el resumen
+fijo a la derecha; el inicio del cliente pone los beneficios al costado. Mismo mundo, mismos componentes.
+
+![Prototipo en web: hoy del barbero, reservar e inicio del cliente](assets/prototipo-web.png)
+
 **Prototipo navegable** (datos de ejemplo): `/prototipo`, `/prototipo/cliente`, `/prototipo/reservar`
 (con el flujo completo hasta la confirmación) y `/prototipo/barbero`. Los componentes base quedan en
 `src/ui/` y se reutilizan en las specs.

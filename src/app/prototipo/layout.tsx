@@ -6,5 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function PrototypeLayout({ children }: LayoutProps<"/prototipo">) {
-  return <div className="mx-auto flex min-h-dvh w-full max-w-xl flex-col bg-porcelana">{children}</div>;
+  return <div className="flex min-h-dvh w-full flex-col bg-porcelana">{children}</div>;
 }

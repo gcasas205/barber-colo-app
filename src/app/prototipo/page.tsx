@@ -10,7 +10,7 @@ const SCREENS = [
 
 export default function PrototypeIndex() {
   return (
-    <main className="flex flex-1 flex-col gap-8 px-5 py-10">
+    <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-8 px-5 py-10">
       <h1 className="letras-chapa text-[22px] text-tinta">Prototipo de diseño</h1>
       <ul className="flex flex-col gap-3">
         {SCREENS.map((s) => (

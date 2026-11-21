@@ -1,6 +1,6 @@
 import { BarChart3, CalendarDays, Check, Settings, Sun, UsersRound, X } from "lucide-react";
 import { AppHeader } from "@/ui/AppHeader";
-import { BottomNav } from "@/ui/BottomNav";
+import { AppShell } from "@/ui/AppShell";
 import { Button } from "@/ui/Button";
 import { Plate } from "@/ui/Plate";
 import { PoleBand } from "@/ui/PoleBand";
@@ -26,9 +26,9 @@ export default function BarberToday() {
   const billed = TODAY.filter((r) => r.status === "attended").reduce((sum, r) => sum + r.price, 0);
 
   return (
-    <>
+    <AppShell nav={NAV}>
       <AppHeader title="Hoy · Jue 26" unread={2}>
-        <dl className="grid grid-cols-3 gap-2 px-4 pb-4">
+        <dl className="mx-auto grid w-full max-w-6xl grid-cols-3 gap-2 px-4 pb-4 lg:gap-4 lg:px-8 lg:pb-6">
           {[
             { k: "Turnos", v: String(TODAY.length) },
             { k: "Cobrado", v: pesos(billed) },
@@ -36,13 +36,14 @@ export default function BarberToday() {
           ].map(({ k, v }) => (
             <div key={k} className="rounded-[10px] bg-[rgb(243_245_244/0.08)] px-3 py-2">
               <dt className="text-[13px] font-bold text-sobre-esmalte-suave">{k}</dt>
-              <dd className="cifra text-[19px] leading-tight">{v}</dd>
+              <dd className="cifra text-[19px] leading-tight lg:text-[26px]">{v}</dd>
             </div>
           ))}
         </dl>
       </AppHeader>
 
-      <main className="flex flex-1 flex-col gap-7 px-4 pb-8 pt-6">
+      <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 content-start gap-7 px-4 pb-8 pt-6 lg:grid-cols-2 lg:items-start lg:gap-10 lg:px-8 lg:pt-10">
+        <div className="flex flex-col gap-7">
         <Plate tone="esmalte" aria-labelledby="ahora" className="overflow-hidden">
           <PoleBand className="h-3" />
           <div className="flex flex-col gap-4 p-5">
@@ -106,6 +107,9 @@ export default function BarberToday() {
           </Plate>
         </section>
 
+        </div>
+
+        <div className="flex flex-col gap-7">
         <section aria-labelledby="despues" className="flex flex-col gap-3">
           <h2 id="despues" className="text-[20px] font-bold">
             Después
@@ -128,9 +132,9 @@ export default function BarberToday() {
           </Plate>
         </section>
         <p className="text-[14px] text-tinta-suave">Datos de ejemplo.</p>
+        </div>
       </main>
-      <BottomNav items={NAV} />
-    </>
+    </AppShell>
   );
 }
 

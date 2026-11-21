@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { CalendarCheck, CalendarPlus, House, Scissors, UserRound } from "lucide-react";
 import { AppHeader } from "@/ui/AppHeader";
-import { BottomNav } from "@/ui/BottomNav";
+import { AppShell } from "@/ui/AppShell";
 import { Button } from "@/ui/Button";
 import { Plate } from "@/ui/Plate";
 import { PoleBand } from "@/ui/PoleBand";
@@ -44,9 +44,9 @@ export default function BookPrototype() {
 
   if (booked && slot) {
     return (
-      <>
+      <AppShell nav={NAV}>
         <AppHeader title="Turno reservado" />
-        <main className="flex flex-1 flex-col gap-6 px-4 pb-8 pt-6">
+        <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-4 pb-8 pt-6 lg:pt-10">
           <Plate tone="esmalte" className="overflow-hidden" aria-live="polite">
             <PoleBand className="h-3" />
             <div className="flex flex-col gap-3 p-5">
@@ -75,14 +75,15 @@ export default function BookPrototype() {
           </Link>
           <p className="text-[14px] text-tinta-suave">Datos de ejemplo.</p>
         </main>
-      </>
+      </AppShell>
     );
   }
 
   return (
-    <>
+    <AppShell nav={NAV}>
       <AppHeader title="Reservar" back="/prototipo/cliente" />
-      <main className="flex flex-1 flex-col gap-7 px-4 pb-6 pt-6">
+      <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 content-start items-start lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-10 lg:px-8 lg:pt-10">
+      <main className="flex flex-col gap-7 px-4 pb-6 pt-6 lg:px-0 lg:pt-0">
         <fieldset className="flex flex-col gap-3">
           <legend className="mb-3 text-[20px] font-bold">¿Para quién es?</legend>
           <div className="grid grid-cols-2 gap-2 rounded-[var(--radius-chapa)] bg-esmalte-100 p-1.5">
@@ -110,7 +111,7 @@ export default function BookPrototype() {
 
         <fieldset className="flex flex-col">
           <legend className="mb-3 text-[20px] font-bold">Día</legend>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-6 lg:overflow-visible lg:px-0">
             {DAYS.map((d) => {
               const full = d.free === 0;
               const selected = d.id === dayId;
@@ -119,7 +120,7 @@ export default function BookPrototype() {
                 <label
                   key={d.id}
                   className={cx(
-                    "flex w-[78px] shrink-0 flex-col items-center gap-1.5 rounded-[var(--radius-chapa)] px-2 py-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-poste",
+                    "flex w-[78px] shrink-0 flex-col items-center gap-1.5 lg:w-auto rounded-[var(--radius-chapa)] px-2 py-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-poste",
                     full && "cursor-not-allowed opacity-60",
                     !full && "cursor-pointer",
                     selected
@@ -165,7 +166,7 @@ export default function BookPrototype() {
             groups[part].length ? (
               <div key={part} className="flex flex-col gap-2">
                 <p className="text-[15px] font-bold capitalize text-tinta-suave">{part}</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-5">
                   {groups[part].map((s) => (
                     <label
                       key={s}
@@ -195,8 +196,12 @@ export default function BookPrototype() {
         <p className="text-[14px] text-tinta-suave">Datos de ejemplo.</p>
       </main>
 
-      <div className="sticky bottom-[64px] z-10 border-t border-linea bg-chapa px-4 py-3 shadow-[0_-10px_20px_-16px_rgb(14_23_41/0.5)]">
-        <div className="mb-2 flex items-baseline justify-between gap-3">
+      <aside
+        aria-label="Resumen de la reserva"
+        className="sticky bottom-[64px] z-10 self-end border-t border-linea bg-chapa px-4 py-3 shadow-[0_-10px_20px_-16px_rgb(14_23_41/0.5)] lg:top-28 lg:bottom-auto lg:rounded-[var(--radius-chapa)] lg:border-0 lg:p-5 lg:shadow-[var(--shadow-chapa-clara)]"
+      >
+        <h2 className="mb-3 hidden text-[20px] font-bold lg:block">Tu reserva</h2>
+        <div className="mb-2 flex items-baseline justify-between gap-3 lg:mb-4 lg:flex-col lg:items-start lg:gap-1">
           <p className="font-bold">
             {slot ? `${day.short} ${day.day} · ${slot}` : "Elegí un horario"}
             <span className="font-normal text-tinta-suave"> · {who.id === "yo" ? "para vos" : "para Tomi"}</span>
@@ -207,8 +212,11 @@ export default function BookPrototype() {
           <CalendarCheck aria-hidden size={22} strokeWidth={2.5} />
           {slot ? `Reservar ${slot}` : "Reservar"}
         </Button>
+        <p className="mt-3 hidden text-[15px] text-tinta-suave lg:block">
+          Podés cancelar o cambiar el horario sin problema hasta 4 horas antes.
+        </p>
+      </aside>
       </div>
-      <BottomNav items={NAV} />
-    </>
+    </AppShell>
   );
 }
