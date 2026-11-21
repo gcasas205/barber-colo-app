@@ -243,6 +243,9 @@ enlace. El barbero ve igual el aviso dentro de la app.
 |---|---|---|
 | `domain_events` | ver diagrama | Se inserta en la misma transacción que el cambio (ADR-05). Índice parcial `(id) where dispatched_at is null` |
 | `event_deliveries` | `event_id`, `handler`, `processed_at`, `attempts`, `last_error` | PK `(event_id, handler)`: cada suscriptor procesa cada evento **una sola vez**. Cuando todos terminan, se completa `dispatched_at` |
+| `system_status` (1 fila) | `last_tick_at`, `last_tick_summary jsonb` | Salud del reloj: la usan `/api/health` y `tick-healthcheck` (agregada por el diseño del backend, §6) |
+| `used_action_tokens` | `token_id` (PK), `used_at`, `expires_at` | Tokens de acción de notificaciones de **un solo uso** (backend §7.3); se purgan al vencer |
+| `rate_limit_hits` | `key` (por ejemplo, `link:<ip>`), `window_start`, `count` | Límite de intentos fallidos en la página del enlace (backend §9) |
 
 El despachador toma eventos con `for update skip locked` (skill de Postgres, `lock-skip-locked`): si
 dos tics del cron se superponen, no procesan lo mismo ni se bloquean entre sí. Lo mismo para
@@ -341,9 +344,9 @@ muestra como "Ese horario ya no está disponible".
 | 001 agenda | extensiones (`btree_gist`, `pg_trgm`), esquemas `app`/`stats`, rol `app_server`, `schedule_*`, `weekly_ranges`, `rates` |
 | 002 login | `customers`, `acquisition_sources`, `conduct_records` (vacía) |
 | 003 reservas | tipos de turno, `appointments`, `appointment_history`, `appointment_policy`, `cancellation_reasons`, triggers, `domain_events`, `event_deliveries` |
-| 004 manuales | columna del enlace (`link_token_hash`) |
-| 005 PWA | `push_subscriptions`, `notifications`, `notification_settings` |
-| 006 confirmación | extensiones `pg_cron` y `pg_net`, tareas `tick` y `tick-healthcheck`, secretos en Vault |
+| 004 manuales | columna del enlace (`link_token_hash`), `rate_limit_hits` |
+| 005 PWA | `push_subscriptions`, `notifications`, `notification_settings`, `used_action_tokens` |
+| 006 confirmación | extensiones `pg_cron` y `pg_net`, `system_status`, tareas `tick` y `tick-healthcheck`, secretos en Vault |
 | 007 asistencia | `conduct_settings`, liquidación en `appointments`, `payment_method` |
 | 008 beneficios | `benefit_rules`, `countable_visits`, `settlement_discounts` |
 | 010 estadísticas | esquema `stats` con sus vistas, tarea `retention` |
