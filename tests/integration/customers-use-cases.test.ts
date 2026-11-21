@@ -4,7 +4,7 @@ import { enterAsDemo, enterAsGuest, listCustomers, saveProfile, setNickname } fr
 import { createCustomersStore } from "@/modules/customers/infrastructure/customers-store";
 import type { Actor } from "@/modules/identity";
 import { createDatabase, type Database } from "@/shared/db/client";
-import { purgeDemo } from "../../scripts/purge-demo";
+import { purgeDemo } from "../../scripts/purge-demo.mts";
 import { connect, createAuthUser, TEST_DATABASE_URL } from "./db";
 
 const APP_URL = TEST_DATABASE_URL.replace("postgres:postgres@", "app_server:local-test-only@");
@@ -30,7 +30,6 @@ beforeEach(clean);
 afterAll(async () => {
   await clean();
   await db.destroy();
-  await admin.query("alter role app_server password null");
   await admin.end();
 });
 

@@ -114,7 +114,6 @@ describe("permisos de app_server (RNF-3)", () => {
   });
   afterAll(async () => {
     await asApp.end();
-    await db.query("alter role app_server password null");
   });
 
   it("puede leer, crear y actualizar clientes, pero no borrarlos", () =>

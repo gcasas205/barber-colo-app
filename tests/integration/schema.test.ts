@@ -208,7 +208,6 @@ describe("seguridad (S-3, S-4)", () => {
     });
     afterAll(async () => {
       await asApp.end();
-      await db.query("alter role app_server password null");
     });
 
     it("puede leer la configuración y los servicios", async () => {

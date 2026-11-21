@@ -1,7 +1,7 @@
 /**
  * Borra los datos de prueba (spec 002, RF-25). Lo corre una persona antes de publicar la app real:
  *
- *   PURGE_DATABASE_URL="<conexión de postgres>" node --experimental-strip-types scripts/purge-demo.ts --yes
+ *   PURGE_DATABASE_URL="<conexión de postgres>" node --experimental-strip-types scripts/purge-demo.mts --yes
  *
  * Solo toca filas con is_demo = true (y lo que cuelga de ellas). Los usuarios de prueba de Supabase Auth
  * se borran después desde el panel (Authentication → Users).
@@ -35,7 +35,7 @@ export async function purgeDemo(client: pg.Client): Promise<PurgeCounts> {
 async function main() {
   const url = process.env.PURGE_DATABASE_URL;
   if (!url || !process.argv.includes("--yes")) {
-    console.error("Uso: PURGE_DATABASE_URL=… node --experimental-strip-types scripts/purge-demo.ts --yes");
+    console.error("Uso: PURGE_DATABASE_URL=… node --experimental-strip-types scripts/purge-demo.mts --yes");
     process.exit(1);
   }
   const client = new pg.Client({ connectionString: url });

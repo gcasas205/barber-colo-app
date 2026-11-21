@@ -2,14 +2,12 @@ import type { Metadata } from "next";
 import { LogOut } from "lucide-react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { Suspense } from "react";
 import { formatArPhone, getOwnProfile } from "@/modules/customers";
 import { getActor } from "@/server/auth/actor";
 import { queries } from "@/server/composition";
 import { customersStore } from "@/server/customers";
 import { Button } from "@/ui/Button";
 import { Plate } from "@/ui/Plate";
-import { BrandLoader } from "@/ui/brand/BrandLoader";
 import { DemoBanner } from "../_sesion/DemoBanner";
 import { SessionScreen } from "../_sesion/SessionScreen";
 import { signOut } from "../ingresar/actions";
@@ -25,21 +23,12 @@ export const metadata: Metadata = { title: "Mi perfil · El Colo", robots: { ind
 
 export default async function PerfilPage() {
   await connection(); // RNF-4: ver `instant` arriba
-  return (
-    <Suspense
-      fallback={
-        <SessionScreen>
-          <BrandLoader label="Cargando tu perfil…" />
-        </SessionScreen>
-      }
-    >
-      <Profile />
-    </Suspense>
-  );
+  // Sin <Suspense>: la ruta es bloqueante y el servidor la arma entera (menos de 30 ms). Un indicador de
+  // carga solo agregaría la demora con la que React reemplaza un fallback por el contenido.
+  return <Profile />;
 }
 
 async function Profile() {
-  await connection();
   const actor = await getActor();
   if (actor.kind === "none") redirect("/ingresar");
   if (actor.kind === "barber") redirect("/colo");

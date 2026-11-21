@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import { LogOut, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
-import { Suspense } from "react";
 import { listCustomers } from "@/modules/customers";
 import { getActor } from "@/server/auth/actor";
 import { customersStore } from "@/server/customers";
 import { Button } from "@/ui/Button";
 import { Plate } from "@/ui/Plate";
-import { BrandLoader } from "@/ui/brand/BrandLoader";
 import { DemoBanner } from "../_sesion/DemoBanner";
 import { SessionScreen } from "../_sesion/SessionScreen";
 import { signOut, signOutEverywhere } from "../ingresar/actions";
@@ -24,21 +22,12 @@ export const metadata: Metadata = { title: "Panel de Colo · El Colo", robots: {
 
 export default async function ColoPage() {
   await connection(); // RNF-4: ver `instant` arriba
-  return (
-    <Suspense
-      fallback={
-        <SessionScreen>
-          <BrandLoader label="Cargando clientes…" />
-        </SessionScreen>
-      }
-    >
-      <Panel />
-    </Suspense>
-  );
+  // Sin <Suspense>: la ruta es bloqueante y el servidor la arma entera (menos de 30 ms). Un indicador de
+  // carga solo agregaría la demora con la que React reemplaza un fallback por el contenido.
+  return <Panel />;
 }
 
 async function Panel() {
-  await connection();
   const actor = await getActor();
   if (actor.kind !== "barber") {
     // RF-8: sin rol de barbero, ningún dato.
