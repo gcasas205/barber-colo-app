@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-21T02:05:57.462531+00:00",
+  "title": "Design System: El Colo",
+  "extensions": {
+    "colorMeta": {
+      "esmalte-azul": {
+        "role": "primary",
+        "displayName": "Esmalte azul",
+        "canonical": "#1d2f52",
+        "tonalRamp": [
+          "#0e1729",
+          "#15223d",
+          "#1d2f52",
+          "#2a4170",
+          "#c9d3e6",
+          "#e6ebf4"
+        ]
+      },
+      "rojo-poste": {
+        "role": "secondary",
+        "displayName": "Rojo poste",
+        "canonical": "#b8262f",
+        "tonalRamp": [
+          "#951d25",
+          "#b8262f",
+          "#c03a43",
+          "#f9e3e4"
+        ]
+      },
+      "blanco-porcelana": {
+        "role": "neutral",
+        "displayName": "Blanco porcelana",
+        "canonical": "#f3f5f4"
+      },
+      "verde-farmacia": {
+        "role": "tertiary",
+        "displayName": "Verde farmacia",
+        "canonical": "#1d6b45"
+      },
+      "ambar-espera": {
+        "role": "tertiary",
+        "displayName": "Ámbar espera",
+        "canonical": "#8a5a00"
+      }
+    },
+    "typographyMeta": {
+      "cifra-display": {
+        "displayName": "Cifra display",
+        "purpose": "Horarios y montos destacados."
+      },
+      "letras-chapa": {
+        "displayName": "Letras de chapa",
+        "purpose": "Rótulo de la chapa superior, el riel y los días."
+      },
+      "body": {
+        "displayName": "Texto",
+        "purpose": "Todo el texto corrido, 17 px."
+      }
+    },
+    "shadows": [
+      {
+        "name": "chapa",
+        "value": "inset 0 0 0 5px #1d2f52, inset 0 0 0 7px rgb(243 245 244 / 0.3), 0 8px 18px -8px rgb(14 23 41 / 0.45)",
+        "purpose": "Chapas grandes de esmalte con la línea interior del cartel."
+      },
+      {
+        "name": "chapa-control",
+        "value": "inset 0 1px 0 rgb(255 255 255 / 0.14), 0 6px 14px -8px rgb(14 23 41 / 0.5)",
+        "purpose": "Botones en esmalte y elementos elegidos."
+      },
+      {
+        "name": "chapa-clara",
+        "value": "0 0 0 1px #d5dbe3 inset, 0 6px 14px -10px rgb(14 23 41 / 0.35)",
+        "purpose": "Chapas blancas de contenido."
+      }
+    ],
+    "motion": [
+      {
+        "name": "poste-gira",
+        "value": "1.6s linear infinite",
+        "purpose": "Rayas del poste (confirmación, Ahora)."
+      },
+      {
+        "name": "loader",
+        "value": "2.4s linear infinite; tic del bigote entre 62 % y 92 %",
+        "purpose": "Pantalla de carga con el logo."
+      },
+      {
+        "name": "control",
+        "value": "150ms ease-out; active scale 0.98",
+        "purpose": "Respuesta de botones."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón principal",
+      "kind": "button",
+      "refersTo": "button-principal",
+      "description": "La única acción principal de la pantalla.",
+      "html": "<button class=\"ds-btn-principal\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>Asistió</button>",
+      "css": ".ds-btn-principal{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border:0;border-radius:12px;background:#b8262f;color:#fff;font:700 17px/1 'Atkinson Hyperlegible Next Variable',system-ui,sans-serif;box-shadow:0 8px 16px -10px rgb(184 38 47/.8);transition:background-color .15s ease-out,transform .15s ease-out}.ds-btn-principal:hover{background:#951d25}.ds-btn-principal:active{transform:scale(.98)}.ds-btn-principal:focus-visible{outline:3px solid #b8262f;outline-offset:3px}"
+    },
+    {
+      "name": "Botón esmalte",
+      "kind": "button",
+      "refersTo": "button-esmalte",
+      "description": "Decisión afirmativa que no es la acción principal.",
+      "html": "<button class=\"ds-btn-esmalte\">Mantener</button>",
+      "css": ".ds-btn-esmalte{min-height:52px;padding:0 20px;border:0;border-radius:12px;background:#1d2f52;color:#f3f5f4;font:700 17px/1 'Atkinson Hyperlegible Next Variable',system-ui,sans-serif;box-shadow:inset 0 1px 0 rgb(255 255 255/.14),0 6px 14px -8px rgb(14 23 41/.5);transition:background-color .15s ease-out}.ds-btn-esmalte:hover{background:#2a4170}.ds-btn-esmalte:focus-visible{outline:3px solid #b8262f;outline-offset:3px}"
+    },
+    {
+      "name": "Botón secundario",
+      "kind": "button",
+      "refersTo": "button-secundario",
+      "description": "Alternativa a la acción principal.",
+      "html": "<button class=\"ds-btn-sec\">Liberar</button>",
+      "css": ".ds-btn-sec{min-height:52px;padding:0 20px;border:0;border-radius:12px;background:#fff;color:#15223d;font:700 17px/1 'Atkinson Hyperlegible Next Variable',system-ui,sans-serif;box-shadow:inset 0 0 0 2px #d5dbe3}.ds-btn-sec:hover{box-shadow:inset 0 0 0 2px #c9d3e6}.ds-btn-sec:focus-visible{outline:3px solid #b8262f;outline-offset:3px}"
+    },
+    {
+      "name": "Chapa de esmalte",
+      "kind": "card",
+      "refersTo": "chapa-esmalte",
+      "description": "Lo importante de la pantalla, con la línea interior del cartel.",
+      "html": "<section class=\"ds-chapa\"><h2>Tu próximo turno</h2><p class=\"ds-cifra\">Jue 26 · 16:00</p></section>",
+      "css": ".ds-chapa{border-radius:14px;padding:20px;background:#1d2f52;color:#f3f5f4;box-shadow:inset 0 0 0 5px #1d2f52,inset 0 0 0 7px rgb(243 245 244/.3),0 8px 18px -8px rgb(14 23 41/.45);font-family:'Atkinson Hyperlegible Next Variable',system-ui,sans-serif}.ds-chapa h2{margin:0 0 4px;font-size:17px;color:#b9c4da}.ds-cifra{margin:0;font-family:'Archivo Variable',system-ui,sans-serif;font-stretch:108%;font-weight:750;font-size:40px;line-height:1;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Estado confirmado",
+      "kind": "chip",
+      "refersTo": "estado-confirmado",
+      "description": "Estado con color, ícono y palabra.",
+      "html": "<span class=\"ds-estado\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg>Confirmado</span>",
+      "css": ".ds-estado{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border-radius:9999px;padding:4px 10px;background:#e2f1e8;color:#1d6b45;font:700 14px/1 'Atkinson Hyperlegible Next Variable',system-ui,sans-serif}"
+    },
+    {
+      "name": "Horario",
+      "kind": "custom",
+      "refersTo": "horario",
+      "description": "Opción de horario en la reserva.",
+      "html": "<label class=\"ds-horario\"><input type=\"radio\" name=\"h\">16:00</label>",
+      "css": ".ds-horario{display:grid;place-items:center;min-height:56px;min-width:110px;border-radius:12px;background:#fff;color:#15223d;box-shadow:0 0 0 1px #d5dbe3 inset,0 6px 14px -10px rgb(14 23 41/.35);font-family:'Archivo Variable',system-ui,sans-serif;font-stretch:108%;font-weight:750;font-size:21px;font-variant-numeric:tabular-nums;cursor:pointer}.ds-horario input{position:absolute;opacity:0}.ds-horario:has(input:checked){background:#1d2f52;color:#f3f5f4}.ds-horario:has(input:focus-visible){outline:3px solid #b8262f;outline-offset:3px}"
+    },
+    {
+      "name": "El poste",
+      "kind": "custom",
+      "refersTo": "poste",
+      "description": "Rayas que avanzan como un poste de barbero; solo carga, confirmación y Ahora.",
+      "html": "<div class=\"ds-poste\" aria-hidden=\"true\"></div>",
+      "css": ".ds-poste{height:12px;background-image:repeating-linear-gradient(-45deg,#b8262f 0 10px,#fff 10px 20px,#1d2f52 20px 30px,#fff 30px 40px);background-size:56.57px 56.57px;animation:ds-poste 1.6s linear infinite}@keyframes ds-poste{to{background-position:56.57px 0}}@media (prefers-reduced-motion:reduce){.ds-poste{animation:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La chapa del barrio",
+    "overview": "La app es la cartelería esmaltada de El Colo: carteles de chapa enlozada en los colores del poste de barbero. El mundo aporta tipografía, color, densidad y un gesto; la navegación y los controles son los de cualquier app.",
+    "keyCharacteristics": [
+      "Chapas de esmalte con línea interior",
+      "Tres voces de color",
+      "Letras de chapa ensanchadas y cifras tabulares",
+      "Texto de 17 px para baja visión",
+      "El poste que gira como único gesto"
+    ],
+    "rules": [
+      {
+        "name": "La regla de las tres voces",
+        "body": "Esmalte para marca y estructura, rojo poste para la única acción principal, estados solo cuando el dato es un estado.",
+        "section": "colors"
+      },
+      {
+        "name": "La regla del estado con nombre",
+        "body": "Color, ícono y palabra; nunca color solo.",
+        "section": "colors"
+      },
+      {
+        "name": "La regla de la letra de chapa",
+        "body": "Mayúsculas ensanchadas solo para rotular.",
+        "section": "typography"
+      },
+      {
+        "name": "La regla de la línea interior",
+        "body": "Solo en chapas grandes de esmalte.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Un solo botón rojo por pantalla",
+      "Estados con color, ícono y palabra",
+      "Objetivos de 52 px o más",
+      "Poste solo en carga, confirmación y Ahora"
+    ],
+    "donts": [
+      "Madera, pergamino o bigotes como ornamento",
+      "Fondo crema",
+      "Relieve o brillo metálico imitado",
+      "Rótulos chicos sobre los títulos"
+    ]
+  }
+}

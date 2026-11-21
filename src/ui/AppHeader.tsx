@@ -9,11 +9,14 @@ import { Badge } from "./brand/Badge";
  */
 export function AppHeader({
   title,
+  webTitle,
   back,
   unread = 0,
   children,
 }: {
   title: string;
+  /** Título en web, donde el riel lateral ya muestra la marca. */
+  webTitle?: string;
   back?: string;
   unread?: number;
   children?: ReactNode;
@@ -31,7 +34,10 @@ export function AppHeader({
             <Badge size={40} />
           </span>
         )}
-        <p className="letras-chapa min-w-0 flex-1 truncate text-[17px] lg:text-[20px]">{title}</p>
+        <p className="letras-chapa min-w-0 flex-1 truncate text-[17px] lg:text-[20px]">
+          <span className={webTitle ? "lg:hidden" : undefined}>{title}</span>
+          {webTitle ? <span className="hidden lg:inline">{webTitle}</span> : null}
+        </p>
         <Link
           href="#avisos"
           aria-label={unread ? `Avisos, ${unread} sin leer` : "Avisos"}

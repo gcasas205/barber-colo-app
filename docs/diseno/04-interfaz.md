@@ -1,6 +1,6 @@
 # Diseño 4 — Interfaz
 
-Estado: en revisión (UI-01 aprobada, UI-02 en revisión)
+Estado: aprobado (2026-11-20)
 Parte de: Diseño → 1. Arquitectura ✅ · 2. Base de datos ✅ · 3. Backend ✅ · **4. Interfaz**
 Entrada: [`PRODUCT.md`](../../PRODUCT.md) · Método: skill `impeccable`
 
@@ -9,7 +9,7 @@ Entrada: [`PRODUCT.md`](../../PRODUCT.md) · Método: skill `impeccable`
 
 ---
 
-## UI-02. Dirección visual: chapa enlozada (en revisión)
+## UI-02. Dirección visual: chapa enlozada ✅
 
 Elegida entre cuatro opciones (el turnero sorteado, chapa enlozada, el subte y el estándar de la
 categoría). Los carteles esmaltados del barrio en los colores del poste de barbero.
@@ -40,7 +40,7 @@ fijo a la derecha; el inicio del cliente pone los beneficios al costado. Mismo m
 **Dependencias nuevas:** `@fontsource-variable/archivo` y `@fontsource-variable/atkinson-hyperlegible-next`
 (fuentes autoalojadas: el build no depende de la red) y `lucide-react` (un solo sistema de íconos).
 
-**Pendiente para cerrar la dirección:** tu aprobación, la revisión final de impeccable y el `DESIGN.md`.
+**Cierre:** aprobada por el dueño del proyecto; revisión final de impeccable en [`revision-impeccable.md`](revision-impeccable.md) (4 correcciones aplicadas, veredicto *ship*); sistema documentado en [`DESIGN.md`](../../DESIGN.md) con la estrella del norte "La chapa del barrio" y su anexo `.impeccable/design.json`.
 
 ## UI-01. Pantalla de carga con el logo ✅
 

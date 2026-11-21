@@ -18,7 +18,7 @@ const NAV = [
 export default function ClientHome() {
   return (
     <AppShell nav={NAV}>
-      <AppHeader title="Inicio" unread={1} />
+      <AppHeader title="El Colo" webTitle="Inicio" unread={1} />
       <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 content-start gap-7 px-4 pb-8 pt-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-start lg:gap-10 lg:px-8 lg:pt-10">
         <div className="flex flex-col gap-7">
         <h1 className="text-[28px] font-bold leading-tight">Hola, Martín</h1>

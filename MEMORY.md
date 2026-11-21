@@ -16,11 +16,12 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - `npm run typecheck` corre `next typegen` antes de `tsc` para generar los tipos de rutas (`LayoutProps`, `PageProps`).
 
 ## Aprendizajes y errores a evitar
+- UI: seguir `DESIGN.md` (tres voces de color, un solo botón rojo por pantalla, estados con ícono y palabra, poste solo en carga/confirmación/Ahora). Al levantar `next start` para capturas, matar antes el puerto (`fuser -k`), o se sirve un build viejo.
 - Skills de terceros en `.claude/skills` (impeccable, vercel-react-best-practices, supabase, supabase-postgres-best-practices; lock en `skills-lock.json`): excluidas de ESLint. La skill next-best-practices no existe: usar `node_modules/next/dist/docs/`.
 - De Corralap: no cargar todos los datos en memoria para métricas (calcular en Postgres) y agrupar días en hora local, no UTC.
 - En los tests, ICU puede devolver la zona como `America/Buenos_Aires`: compará el desfase (180 min), no el nombre.
 - TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.
 
 ## Próximos pasos
-1. Diseño (rama `design/arquitectura`): 1) arquitectura aprobada (`docs/diseno/01-arquitectura.md`), 2) base de datos aprobada (`docs/diseno/02-base-de-datos.md`, redundancia solo intencional: proyecciones que se recalculan y reconcilian), 3) backend aprobado (`docs/diseno/03-backend.md`), 4) interfaz con impeccable: `PRODUCT.md` completo, logo redibujado en `public/brand/`; dirección visual "chapa enlozada" con prototipo en `/prototipo` (en revisión; falta revisión final de impeccable y DESIGN.md).
+1. Diseño (rama `design/arquitectura`): 1) arquitectura aprobada (`docs/diseno/01-arquitectura.md`), 2) base de datos aprobada (`docs/diseno/02-base-de-datos.md`, redundancia solo intencional: proyecciones que se recalculan y reconcilian), 3) backend aprobado (`docs/diseno/03-backend.md`), 4) interfaz con impeccable: `PRODUCT.md` completo, logo redibujado en `public/brand/`; dirección "chapa enlozada" aprobada: `DESIGN.md` ("La chapa del barrio"), componentes en `src/ui/`, prototipo en `/prototipo`. Diseño cerrado.
 2. Spec 001: agenda y disponibilidad.

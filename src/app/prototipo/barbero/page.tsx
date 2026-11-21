@@ -28,18 +28,11 @@ export default function BarberToday() {
   return (
     <AppShell nav={NAV}>
       <AppHeader title="Hoy · Jue 26" unread={2}>
-        <dl className="mx-auto grid w-full max-w-6xl grid-cols-3 gap-2 px-4 pb-4 lg:gap-4 lg:px-8 lg:pb-6">
-          {[
-            { k: "Turnos", v: String(TODAY.length) },
-            { k: "Cobrado", v: pesos(billed) },
-            { k: "Esperado", v: pesos(expected) },
-          ].map(({ k, v }) => (
-            <div key={k} className="rounded-[10px] bg-[rgb(243_245_244/0.08)] px-3 py-2">
-              <dt className="text-[13px] font-bold text-sobre-esmalte-suave">{k}</dt>
-              <dd className="cifra text-[19px] leading-tight lg:text-[26px]">{v}</dd>
-            </div>
-          ))}
-        </dl>
+        <p className="mx-auto w-full max-w-6xl px-4 pb-4 text-[16px] text-sobre-esmalte-suave lg:px-8 lg:pb-5 lg:text-[18px]">
+          <span className="cifra text-[20px] text-sobre-esmalte lg:text-[24px]">{TODAY.length}</span> turnos ·{" "}
+          <span className="cifra text-[20px] text-sobre-esmalte lg:text-[24px]">{pesos(billed)}</span> cobrado de{" "}
+          <span className="cifra text-[20px] text-sobre-esmalte lg:text-[24px]">{pesos(expected)}</span>
+        </p>
       </AppHeader>
 
       <main className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 content-start gap-7 px-4 pb-8 pt-6 lg:grid-cols-2 lg:items-start lg:gap-10 lg:px-8 lg:pt-10">

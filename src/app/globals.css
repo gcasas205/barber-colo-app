@@ -51,8 +51,8 @@
     --esmalte-200: #2f4268;
     --tinta: #eef1f6;
     --tinta-suave: #a7b2c7;
-    --poste: #d8434c;
-    --poste-oscuro: #b8262f;
+    --poste: #c03a43;
+    --poste-oscuro: #a8323a;
     --poste-claro: #3a1a20;
     --ok: #6fcf9b;
     --ok-fondo: #12301f;
@@ -97,8 +97,11 @@
   --radius-chapa: 14px;
   --radius-control: 12px;
 
-  --shadow-chapa: 0 1px 0 rgb(255 255 255 / 0.14) inset, 0 0 0 2px rgb(255 255 255 / 0.1) inset,
+  /* Chapa grande: la línea clara de borde interior de los carteles esmaltados, a 5 px del canto. */
+  --shadow-chapa: inset 0 0 0 5px var(--esmalte-800), inset 0 0 0 7px rgb(243 245 244 / 0.3),
     0 8px 18px -8px rgb(14 23 41 / 0.45);
+  /* Controles en esmalte (botones, selección): sin línea interior, para no recargar lo chico. */
+  --shadow-chapa-control: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 6px 14px -8px rgb(14 23 41 / 0.5);
   --shadow-chapa-clara: 0 0 0 1px var(--linea) inset, 0 6px 14px -10px rgb(14 23 41 / 0.35);
 }
 

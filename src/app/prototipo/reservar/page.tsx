@@ -92,7 +92,7 @@ export default function BookPrototype() {
                 key={p.id}
                 className={cx(
                   "flex min-h-[52px] cursor-pointer flex-col items-center justify-center rounded-[var(--radius-control)] text-center has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-poste",
-                  person === p.id ? "bg-esmalte text-sobre-esmalte shadow-[var(--shadow-chapa)]" : "text-tinta",
+                  person === p.id ? "bg-esmalte text-sobre-esmalte shadow-[var(--shadow-chapa-control)]" : "text-tinta",
                 )}
               >
                 <input
@@ -124,7 +124,7 @@ export default function BookPrototype() {
                     full && "cursor-not-allowed opacity-60",
                     !full && "cursor-pointer",
                     selected
-                      ? "bg-esmalte text-sobre-esmalte shadow-[var(--shadow-chapa)]"
+                      ? "bg-esmalte text-sobre-esmalte shadow-[var(--shadow-chapa-control)]"
                       : "bg-chapa text-tinta shadow-[var(--shadow-chapa-clara)]",
                   )}
                 >
@@ -173,7 +173,7 @@ export default function BookPrototype() {
                       className={cx(
                         "cifra grid min-h-[56px] cursor-pointer place-items-center rounded-[var(--radius-control)] text-[21px] transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-poste",
                         slot === s
-                          ? "bg-esmalte text-sobre-esmalte shadow-[var(--shadow-chapa)]"
+                          ? "bg-esmalte text-sobre-esmalte shadow-[var(--shadow-chapa-control)]"
                           : "bg-chapa text-tinta shadow-[var(--shadow-chapa-clara)] hover:shadow-[inset_0_0_0_2px_var(--esmalte-200)]",
                       )}
                     >
