@@ -69,7 +69,7 @@ tests/integration/*.test.ts Contra el Postgres local de Supabase.
 | Migración | Contenido | Cubre |
 |---|---|---|
 | `…_base.sql` | Extensiones `btree_gist`; esquemas `app` y `stats`; rol `app_server` **sin contraseña** (la pone una persona, T1); permisos de uso; quita permisos de `anon` y `authenticated` sobre `app` | ADR-02, DB §5 |
-| `…_schedule.sql` | Tipo `app.timerange`; `schedule_settings` (1 fila: `step_minutes in (5,10,15,20,30,60)`, `min_notice_minutes`, `max_advance_days`, `contact_whatsapp`); `weekly_ranges` (`weekday 1–7`, `closes_at > opens_at`, exclusión GiST por día y rango); `schedule_blocks` (`period tstzrange`, no vacío, índice GiST); RLS con política solo para `app_server` | RF-12, RF-14, RNF-5 |
+| `…_schedule.sql` | `schedule_settings` (1 fila: `step_minutes in (5,10,15,20,30,60)`, `min_notice_minutes`, `max_advance_days`, `contact_whatsapp`); `weekly_ranges` (`weekday 1–7`, `closes_at > opens_at`, exclusión GiST por día y `tsrange` sobre una fecha fija); `schedule_blocks` (`period tstzrange`, no vacío, índice GiST); RLS con política solo para `app_server` | RF-12, RF-14, RNF-5 |
 | `…_services.sql` | `services` (`price_cents > 0`, `duration_minutes > 0`, `counts_for_benefits`, `position`, `deactivated_at`); índice único parcial por `lower(trim(name))` entre activos; RLS | RF-13, RF-2 |
 | `…_initial_config.sql` | **Datos iniciales** de la spec (franjas, paso, anticipación, contacto, tres servicios). Es una migración y no `seed.sql`, porque tiene que existir también en producción | Definiciones de la spec |
 

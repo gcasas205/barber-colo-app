@@ -14,6 +14,8 @@ export default defineConfig({
   },
   test: {
     include: ["src/**/*.test.ts", "tests/**/*.test.ts"],
+    // Los de integración necesitan la base local: corren con `npm run test:integration`.
+    exclude: ["tests/integration/**", "node_modules/**"],
     environment: "node",
   },
 });

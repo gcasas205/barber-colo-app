@@ -23,9 +23,10 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - Skills de terceros en `.claude/skills` (impeccable, vercel-react-best-practices, supabase, supabase-postgres-best-practices; lock en `skills-lock.json`): excluidas de ESLint. La skill next-best-practices no existe: usar `node_modules/next/dist/docs/`.
 - De Corralap: no cargar todos los datos en memoria para métricas (calcular en Postgres) y agrupar días en hora local, no UTC.
 - `npm test` corre la suite y además `test:tz` (src/ con TEST_TZ=UTC y Asia/Tokyo). Para días, usar `LocalDate` del kernel, nunca `Date`.
+- Base local: `npm run db:start` (puerto 54332, no el 54322 por defecto) y `npm run test:integration`. En este entorno cloud hay que levantar `dockerd` antes. Nada de tipos de rango propios: `db advisors` marca sus constructores y no se pueden modificar.
 - En los tests, ICU puede devolver la zona como `America/Buenos_Aires`: compará el desfase (180 min), no el nombre.
 - TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.
 
 ## Próximos pasos
 1. Diseño cerrado y en `main` (`docs/diseno/`, `DESIGN.md`, prototipo `/prototipo`, componentes `src/ui/`).
-2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec, plan y tareas aprobados. Hecho: T1 (Supabase ref `wzuteatyxtnivriuscei`, entorno `production` con `SUPABASE_DB_URL`), T2 (kernel en `src/shared/kernel`), T3 (validaciones), T4 (disponibilidad en `src/modules/schedule/domain/availability.ts`). T5 (test de arquitectura). Sigue T6 (migraciones + Supabase local). Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.
+2. Spec 001 (rama `spec/001-agenda-disponibilidad`): spec, plan y tareas aprobados. Hecho: T1 (Supabase ref `wzuteatyxtnivriuscei`, entorno `production` con `SUPABASE_DB_URL`), T2 (kernel en `src/shared/kernel`), T3 (validaciones), T4 (disponibilidad en `src/modules/schedule/domain/availability.ts`). T5 (test de arquitectura). T6 (migraciones en `supabase/migrations`, tests en `tests/integration`). Sigue T7. Decisiones: sin pantallas de Colo (pasan a 002), página pública sin login, franjas provisorias L-S 10–13 y 14–20, feriados se bloquean a mano.
