@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { queries } from "@/server/composition";
-import { localDateOf } from "@/shared/kernel";
 import { BrandLoader } from "@/ui/brand/BrandLoader";
-import { BookingView } from "./_reservar/BookingView";
+import { BookingClient } from "./_reservar/BookingClient";
 import { NoServices, SoonNotice } from "./_reservar/Notices";
 import { PublicHeader } from "./_reservar/PublicHeader";
-import { parseBookingSearch } from "./_reservar/search";
 
 export const metadata: Metadata = {
   title: "Horarios libres · El Colo, Barbería y Peluquería",
@@ -15,10 +13,11 @@ export const metadata: Metadata = {
 };
 
 /**
- * Página pública (spec 001). La cabecera sale en el prerenderizado; los horarios dependen de "ahora"
- * y de la dirección, así que se calculan en cada pedido detrás de Suspense (ADR-11).
+ * Página pública (spec 001, cambio 01). La cabecera y el pie salen en el prerenderizado; la foto de la
+ * agenda se pide una vez por visita detrás de Suspense, con el loader de El Colo mientras llega (RF-19).
+ * Después, todo se calcula en el dispositivo (RF-15).
  */
-export default function Home({ searchParams }: PageProps<"/">) {
+export default function Home() {
   return (
     <div className="flex min-h-dvh flex-col">
       <PublicHeader />
@@ -30,35 +29,22 @@ export default function Home({ searchParams }: PageProps<"/">) {
             </div>
           }
         >
-          <Availability searchParams={searchParams} />
+          <Schedule />
         </Suspense>
       </main>
     </div>
   );
 }
 
-async function Availability({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
-  const search = parseBookingSearch(await searchParams);
+async function Schedule() {
   await connection(); // "ahora" es el del pedido, nunca el del build
-  const now = new Date();
   const q = queries();
-
-  const services = await q.listServices();
-  if (services.length === 0) return <NoServices whatsapp={await q.contactWhatsapp()} />;
-
-  // Un servicio desconocido o desactivado en la dirección cae en el primero (caso límite 12).
-  const service = services.find((s) => s.slug === search.servicio) ?? services[0]!;
-  const availability = await q.getAvailability({
-    serviceMinutes: service.durationMinutes,
-    now,
-    day: search.dia,
-    weekOf: search.semana,
-  });
-
+  const [services, snapshot] = await Promise.all([q.listServices(), q.getScheduleSnapshot(new Date())]);
+  if (services.length === 0) return <NoServices whatsapp={snapshot.contactWhatsapp} />;
   return (
     <>
-      <SoonNotice whatsapp={availability.contactWhatsapp} />
-      <BookingView services={services} service={service} availability={availability} today={localDateOf(now)} />
+      <SoonNotice whatsapp={snapshot.contactWhatsapp} />
+      <BookingClient services={services} snapshot={snapshot} />
     </>
   );
 }

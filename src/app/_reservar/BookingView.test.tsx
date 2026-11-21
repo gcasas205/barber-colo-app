@@ -1,22 +1,10 @@
-import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { Service } from "@/modules/pricing";
 import type { Availability } from "@/modules/schedule";
 import { instantAt, localDate } from "@/shared/kernel";
-import { BookingView } from "./BookingView";
+import { BookingView, type BookingActions } from "./BookingView";
 import { NoServices } from "./Notices";
-
-vi.mock("next/link", () => ({
-  default: ({ href, children, ...rest }: { href: string; children: ReactNode; scroll?: boolean }) => {
-    delete rest.scroll; // prop de next/link, no es un atributo de <a>
-    return (
-      <a href={href} {...rest}>
-        {children}
-      </a>
-    );
-  },
-}));
 
 const corte: Service = {
   id: "1", slug: "corte", name: "Corte", description: "Corte de pelo",
@@ -47,9 +35,10 @@ const base: Availability = {
   nextWeek: d("2026-11-30"),
 };
 
+const actions: BookingActions = { onService: () => {}, onDay: () => {}, onWeek: () => {} };
 const render = (a: Partial<Availability> = {}, service = corte) =>
   renderToStaticMarkup(
-    <BookingView services={[corte, claritos]} service={service} availability={{ ...base, ...a }} today={d("2026-11-24")} />,
+    <BookingView services={[corte, claritos]} service={service} availability={{ ...base, ...a }} today={d("2026-11-24")} actions={actions} />,
   );
 
 describe("BookingView", () => {
@@ -58,7 +47,11 @@ describe("BookingView", () => {
     expect(html).toContain("Corte de pelo · 30 min");
     expect(html).toContain("$ 18.000");
     expect(html).toContain("Reflejos · 2 h");
-    expect(html).toMatch(/href="\/\?servicio=corte&amp;dia=2026-11-26" aria-current="true"/);
+    expect(html).toMatch(/aria-pressed="true"[^>]*>.{0,200}Corte</);
+  });
+
+  it("no usa enlaces: elegir no cambia la dirección (RF-15)", () => {
+    expect(render()).not.toContain("<a ");
   });
 
   it("agrupa los horarios por franja (RF-7)", () => {
@@ -68,20 +61,23 @@ describe("BookingView", () => {
     expect(html.indexOf("10:15")).toBeLessThan(html.indexOf("De 14:00 a 20:00"));
   });
 
-  it("muestra la semana con la cantidad de libres, sin lugar y días fuera de la ventana (RF-4, RF-5)", () => {
+  it("muestra la semana con la cantidad de libres y navegación (RF-4)", () => {
     const html = render();
     expect(html).toContain("34 libres");
-    expect(html).toContain("Sin lugar");
-    expect(html).toContain('aria-label="lunes 23 de noviembre, fuera de fecha"');
-    expect(html).toContain('aria-current="date"');
     expect(html).toContain('aria-label="Semana siguiente"');
     expect(html).not.toContain('aria-label="Semana anterior"');
   });
 
-  it("un día sin lugar ofrece ir al próximo con lugar (RF-6)", () => {
+  it("los días sin lugar o fuera de la ventana no se pueden elegir (RF-5)", () => {
+    const html = render();
+    expect(html).toMatch(/<span role="img" aria-label="domingo 29 de noviembre, sin lugar"/);
+    expect(html).toMatch(/<span role="img" aria-label="lunes 23 de noviembre, fuera de fecha"/);
+    expect(html).toMatch(/<button[^>]*aria-label="jueves 26 de noviembre, 34 horarios libres"/);
+  });
+
+  it("un día elegido sin lugar ofrece ir al próximo con lugar (RF-6)", () => {
     const html = render({ day: d("2026-11-29"), starts: [], nextDayWithRoom: d("2026-11-30") });
     expect(html).toContain("Ese día no hay lugar para corte.");
-    expect(html).toContain('href="/?servicio=corte&amp;dia=2026-11-30"');
     expect(html).toContain("Ver el lunes 30 de noviembre");
   });
 
