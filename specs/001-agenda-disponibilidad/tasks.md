@@ -34,7 +34,7 @@ Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
   - Hecho cuando: tests del componente en verde; en el navegador, elegir servicio, día o semana no cambia la dirección ni pide nada al servidor.
 - [x] **T14. [agente] Tema claro/oscuro/automático, pie con WhatsApp e Instagram e ícono de la app.** RF-17, RF-18, RF-20
   - Hecho cuando: el tema elegido se recuerda y abre sin parpadeo (captura); el detector de impeccable sin hallazgos en los tres temas; el ícono aparece en la pestaña.
-- [ ] **T15. [agente] Región São Paulo y test de velocidad.** RNF-3
+- [x] **T15. [agente] Región São Paulo y test de velocidad.** RNF-3
   - Hecho cuando: `vercel.json` con `gru1`; el test de velocidad local da < 2 s la carga y < 200 ms los cambios.
 - [ ] **T16. [persona] Verificación en producción.** RNF-3, RF-15, RF-17
   - Hecho cuando: después del deploy, el test de velocidad contra producción cumple RNF-3 y Gonzalo confirma en su celular que se siente rápida y que el tema se recuerda.
