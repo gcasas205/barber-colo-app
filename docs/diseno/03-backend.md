@@ -1,6 +1,6 @@
 # Diseño 3 — Backend
 
-Estado: borrador (pendiente de aprobación)
+Estado: aprobado (2026-11-20)
 Parte de: Diseño → 1. Arquitectura ✅ · 2. Base de datos ✅ · **3. Backend** · 4. Interfaz
 Entrada: [`01-arquitectura.md`](01-arquitectura.md), [`02-base-de-datos.md`](02-base-de-datos.md), [`casos-de-uso.md`](../casos-de-uso.md)
 
