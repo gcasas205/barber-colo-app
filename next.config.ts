@@ -24,6 +24,12 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    // Las pantallas con sesión son dinámicas y Next no las guarda en el navegador (0 s por defecto): cada
+    // toque de pestaña iba al servidor aunque la pantalla se acabara de ver. Con 30 s, volver es inmediato.
+    // Lo que cambia datos invalida igual: las acciones llaman a revalidatePath o router.refresh.
+    staleTimes: { dynamic: 30 },
+  },
   poweredByHeader: false,
   turbopack: {
     rules: {
