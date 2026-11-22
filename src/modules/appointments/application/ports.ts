@@ -1,4 +1,5 @@
 import type { Interval, ScheduleConfig, WeeklyRange } from "@/modules/schedule";
+import type { LocalDate } from "@/shared/kernel";
 import type { ActiveStatus, AppointmentStatus } from "../domain/policy";
 
 export type Appointment = {
@@ -72,8 +73,9 @@ export interface AppointmentsTx {
   unseenBarberNotice(customerId: string): Promise<BarberNotice | null>;
   markNoticeSeen(eventId: string, customerId: string, at: Date): Promise<void>;
   agenda(range: Interval): Promise<AgendaItem[]>;
-  agendaSeenAt(userId: string): Promise<Date | null>;
-  setAgendaSeen(userId: string, at: Date): Promise<void>;
+  /** Cuándo vio Colo por última vez la agenda de cada día. */
+  agendaSeen(userId: string): Promise<Map<LocalDate, Date>>;
+  setAgendaSeen(userId: string, day: LocalDate, at: Date): Promise<void>;
 }
 
 export type AppointmentsDeps = { transaction<T>(fn: (tx: AppointmentsTx) => Promise<T>): Promise<T> };

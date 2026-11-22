@@ -27,6 +27,8 @@ export type BookingActions = {
   onService: (serviceId: string) => void;
   onDay: (day: LocalDate) => void;
   onWeek: (weekOf: LocalDate) => void;
+  /** Spec 004, RF-6: elegir un horario para reservar o reprogramar. Sin esto, los horarios solo se muestran. */
+  onStart?: (start: Date) => void;
 };
 
 export type BookingViewProps = {
@@ -37,10 +39,23 @@ export type BookingViewProps = {
   actions: BookingActions;
   /** Bloqueos con aviso para los clientes (spec 003, RF-14). */
   notices?: BlockNotice[];
+  /** Spec 004: el horario elegido (milisegundos), resaltado. */
+  selectedStart?: number | null;
+  /** Spec 004, RF-16: al reprogramar, el servicio no se cambia. */
+  serviceLocked?: boolean;
 };
 
-/** Página pública de horarios libres (spec 001). Presentación pura: recibe todo calculado. */
-export function BookingView({ services, service, availability, today, actions, notices = [] }: BookingViewProps) {
+/** Horarios libres (spec 001; desde la 004, en /turnos y con horarios para elegir). Presentación pura. */
+export function BookingView({
+  services,
+  service,
+  availability,
+  today,
+  actions,
+  notices = [],
+  selectedStart = null,
+  serviceLocked = false,
+}: BookingViewProps) {
   const a = availability;
   return (
     <>
@@ -49,7 +64,7 @@ export function BookingView({ services, service, availability, today, actions, n
           Servicio
         </h2>
         <ul className="grid gap-2 sm:grid-cols-3">
-          {services.map((s) => {
+          {(serviceLocked ? [service] : services).map((s) => {
             const selected = s.id === service.id;
             return (
               <li key={s.id} className="flex">
@@ -94,7 +109,7 @@ export function BookingView({ services, service, availability, today, actions, n
         <>
           <WeekPicker availability={a} actions={actions} />
           <WeekNotices items={weekNotices(a.week.map((d) => d.date), notices)} />
-          <DaySlots availability={a} service={service} today={today} actions={actions} />
+          <DaySlots availability={a} service={service} today={today} actions={actions} selectedStart={selectedStart} />
         </>
       )}
     </>
@@ -215,11 +230,13 @@ function DaySlots({
   service,
   today,
   actions,
+  selectedStart,
 }: {
   availability: Availability;
   service: Service;
   today: LocalDate;
   actions: BookingActions;
+  selectedStart: number | null;
 }) {
   const dayName = a.day === today ? `Hoy, ${formatDayLong(a.day)}` : capitalize(formatDayLong(a.day));
   return (
@@ -247,14 +264,32 @@ function DaySlots({
               De {formatMinute(g.opensAt)} a {formatMinute(g.closesAt)}
             </h3>
             <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-5">
-              {g.starts.map((s) => (
-                <li
-                  key={s.label}
-                  className="cifra grid min-h-[56px] place-items-center rounded-[var(--radius-control)] bg-chapa text-[21px] text-tinta shadow-[var(--shadow-chapa-clara)]"
-                >
-                  {s.label}
-                </li>
-              ))}
+              {g.starts.map((s) =>
+                actions.onStart ? (
+                  <li key={s.label} className="flex">
+                    <button
+                      type="button"
+                      aria-pressed={selectedStart === s.start.getTime()}
+                      aria-label={`${s.label}, elegir este horario`}
+                      onClick={() => actions.onStart?.(s.start)}
+                      className={cx(
+                        "cifra grid min-h-[56px] w-full place-items-center rounded-[var(--radius-control)] text-[21px]",
+                        selectedStart === s.start.getTime() ? SELECTED : IDLE,
+                        FOCUS,
+                      )}
+                    >
+                      {s.label}
+                    </button>
+                  </li>
+                ) : (
+                  <li
+                    key={s.label}
+                    className="cifra grid min-h-[56px] place-items-center rounded-[var(--radius-control)] bg-chapa text-[21px] text-tinta shadow-[var(--shadow-chapa-clara)]"
+                  >
+                    {s.label}
+                  </li>
+                ),
+              )}
             </ul>
           </div>
         ))

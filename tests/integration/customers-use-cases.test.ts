@@ -16,7 +16,7 @@ let db: Database;
 let store: ReturnType<typeof createCustomersStore>;
 
 async function clean() {
-  await admin.query(`delete from app.phone_changes; delete from app.guest_devices; delete from app.user_activity;
+  await admin.query(`delete from app.appointments; delete from app.agenda_views; delete from app.phone_changes; delete from app.guest_devices; delete from app.user_activity;
     delete from app.demo_accounts; delete from app.customers where linked_to is not null; delete from app.customers; delete from app.guest_attempts;
     delete from auth.users where email is null or email like '%@x.test'`);
 }

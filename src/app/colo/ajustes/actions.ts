@@ -51,7 +51,7 @@ const invalid = () => failed({ form: settingsError("TRY_AGAIN") });
 /** RF-2: sin rol de barbero no se guarda nada y se va a la pantalla que corresponde. */
 async function barber(): Promise<Actor> {
   const actor = await getActor();
-  if (actor.kind !== "barber") redirect(actor.kind === "none" ? "/ingresar" : "/");
+  if (actor.kind !== "barber") redirect(actor.kind === "none" ? "/" : "/turnos");
   return actor;
 }
 

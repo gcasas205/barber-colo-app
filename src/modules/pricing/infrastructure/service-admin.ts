@@ -14,16 +14,7 @@ export function createServiceAdmin(db: Database): ServiceAdmin {
     async listAll() {
       const rows = await db
         .selectFrom("app.services")
-        .select([
-          "id",
-          "name",
-          "description",
-          "duration_minutes",
-          "price_cents",
-          "counts_for_benefits",
-          "position",
-          "deactivated_at",
-        ])
+        .select(["id", "name", "description", "duration_minutes", "price_cents", "counts_for_benefits", "position", "deactivated_at"])
         .orderBy((eb) => eb("deactivated_at", "is not", null))
         .orderBy("position")
         .orderBy("id")
@@ -79,9 +70,7 @@ export function createServiceAdmin(db: Database): ServiceAdmin {
             })
             .where("id", "=", Number(id))
             .executeTakeFirst();
-          return Number(result.numUpdatedRows) > 0
-            ? ("ok" as const)
-            : ("NOT_FOUND" as const);
+          return Number(result.numUpdatedRows) > 0 ? ("ok" as const) : ("NOT_FOUND" as const);
         },
         (e) => (isNameTaken(e) ? ("NAME_TAKEN" as const) : undefined),
       );
@@ -100,9 +89,7 @@ export function createServiceAdmin(db: Database): ServiceAdmin {
             })
             .where("id", "=", Number(id))
             .executeTakeFirst();
-          return Number(result.numUpdatedRows) > 0
-            ? ("ok" as const)
-            : ("NOT_FOUND" as const);
+          return Number(result.numUpdatedRows) > 0 ? ("ok" as const) : ("NOT_FOUND" as const);
         },
         (e) => (isNameTaken(e) ? ("NAME_TAKEN" as const) : undefined),
       );

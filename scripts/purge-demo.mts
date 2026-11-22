@@ -19,6 +19,9 @@ export async function purgeDemo(client: pg.Client): Promise<PurgeCounts> {
     await client.query("update app.customers set phone_e164 = null where is_demo and role <> 'guest'");
     await client.query("update app.customers set linked_to = null where linked_to in (select id from app.customers where is_demo)");
     // 2. Lo que cuelga de los clientes y cuentas de prueba.
+    // Spec 004: los turnos de los clientes de prueba (y su historial) se van con ellos.
+    await client.query("delete from app.appointments where customer_id in (select id from app.customers where is_demo)");
+    await client.query("delete from app.agenda_views where auth_user_id in (select auth_user_id from app.demo_accounts)");
     await client.query("delete from app.phone_changes where customer_id in (select id from app.customers where is_demo)");
     await client.query("delete from app.guest_devices where customer_id in (select id from app.customers where is_demo)");
     await client.query("delete from app.user_activity where auth_user_id in (select auth_user_id from app.demo_accounts)");

@@ -45,10 +45,12 @@ create index appointment_events_appointment_idx on app.appointment_events (appoi
 create index appointment_events_actor_user_idx on app.appointment_events (actor_user_id);
 create index appointment_events_at_idx on app.appointment_events (at desc);
 
--- RF-22, RF-23: hasta cuándo vio Colo la agenda (por cuenta, no por dispositivo: clarificación 6).
+-- RF-22, RF-23: hasta cuándo vio Colo la agenda de cada día (por cuenta, no por dispositivo: clarificación 6).
 create table app.agenda_views (
-  auth_user_id uuid primary key references auth.users (id) on delete cascade,
-  seen_at timestamptz not null
+  auth_user_id uuid not null references auth.users (id) on delete cascade,
+  day date not null,
+  seen_at timestamptz not null,
+  primary key (auth_user_id, day)
 );
 
 alter table app.appointments enable row level security;

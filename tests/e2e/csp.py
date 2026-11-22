@@ -1,4 +1,4 @@
-"""CSP con nonce en las pantallas con sesión (spec 002, RNF-4). Uso: python3 -I tests/e2e/csp.py (app en :3100, base local limpia)."""
+"""CSP con nonce en las pantallas (spec 002, RNF-4; desde la 004, todas). Uso: python3 -I tests/e2e/csp.py (app en :3100)."""
 from playwright.sync_api import sync_playwright
 B = "http://localhost:3100"
 def ok(c, m): print(("✓ " if c else "✗ ") + m)
@@ -12,11 +12,12 @@ with sync_playwright() as p:
     first = {}
     pg2 = ctx.new_page(); pg2.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
     pg2.on("domcontentloaded", lambda: first.update(theme=pg2.evaluate("document.documentElement.dataset.theme")))
-    pg2.goto(B + "/ingresar", wait_until="networkidle")
-    ok(first.get("theme") == "dark", "el tema elegido abre sin parpadeo en /ingresar (script autorizado por hash)")
+    pg2.goto(B + "/", wait_until="networkidle")
+    ok(first.get("theme") == "dark", "el tema elegido abre sin parpadeo en el ingreso (script autorizado por hash)")
     pg2.click("button:has-text('Cliente de prueba 1')"); pg2.click("button[type=submit]:has-text('Ingresar')")
-    pg2.wait_for_url("**/perfil"); pg2.wait_for_selector("main:visible h1")
-    ok(pg2.locator("form").count() > 0, "el perfil funciona con la CSP estricta (formularios y scripts de Next con nonce)")
+    pg2.wait_for_url("**/turnos"); pg2.wait_for_selector("main:visible h1")
+    pg2.wait_for_load_state("networkidle")
+    ok(pg2.locator("main:visible button[aria-label$='elegir este horario']").count() > 0, "los turnos funcionan con la CSP estricta (scripts de Next con nonce)")
     # Un script inyectado (sin nonce) no corre
     # Así llega un ataque real: HTML inyectado con un manejador de eventos o un <script> sin nonce.
     pg2.evaluate("""() => { document.body.insertAdjacentHTML('beforeend', '<img src="x" onerror="window.__inyectado = 1">'); }""")

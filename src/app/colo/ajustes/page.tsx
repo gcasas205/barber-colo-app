@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { ChevronLeft } from "lucide-react";
-import Link from "next/link";
 import { connection } from "next/server";
 import { listAllServices } from "@/modules/pricing";
 import { getScheduleSettings } from "@/modules/schedule";
@@ -10,6 +8,7 @@ import { localDateOf } from "@/shared/kernel";
 import { DemoBanner } from "../../_sesion/DemoBanner";
 import { NoAccess } from "../../_sesion/NoAccess";
 import { SessionScreen } from "../../_sesion/SessionScreen";
+import { ColoNav } from "../ColoNav";
 import { BlocksSection } from "./BlocksSection";
 import { BookingSection } from "./BookingSection";
 import { HoursSection } from "./HoursSection";
@@ -39,10 +38,8 @@ export default async function SettingsPage() {
 
   return (
     <SessionScreen banner={actor.demo ? <DemoBanner /> : null}>
+      <ColoNav current="/colo/ajustes" />
       <div className="flex flex-col gap-3">
-        <Link href="/colo" className="inline-flex items-center gap-1 self-start font-bold underline decoration-2 underline-offset-4">
-          <ChevronLeft aria-hidden size={20} strokeWidth={2.5} /> Panel de Colo
-        </Link>
         <h1 className="text-[28px] font-bold leading-tight">Ajustes</h1>
         <p className="text-tinta-suave">Lo que guardes se ve en la página de horarios la próxima vez que alguien la abra.</p>
         <nav aria-label="Secciones de Ajustes">

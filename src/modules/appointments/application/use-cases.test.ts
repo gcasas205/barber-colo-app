@@ -4,6 +4,7 @@ import type { Interval, WeeklyRange } from "@/modules/schedule";
 import { localDate } from "@/shared/kernel";
 import type { AgendaItem, Appointment, AppointmentEvent, AppointmentsDeps, ServiceInfo } from "./ports";
 import {
+  barberFreeStarts,
   book,
   cancelByBarber,
   cancelByCustomer,
@@ -33,7 +34,7 @@ function memory() {
     appts: [] as Appointment[],
     events: [] as (AppointmentEvent & { id: string; seen?: Date })[],
     blocks: [] as Interval[],
-    seen: new Map<string, Date>(),
+    seen: new Map<string, Map<string, Date>>(),
     customers: new Map([
       ["c1", { name: "Lucas", nickname: "el de la moto", phone: "+5491138163491", isGuest: false }],
       ["c2", { name: "Ana", nickname: null, phone: "+5491100000000", isGuest: true }],
@@ -84,8 +85,8 @@ function memory() {
               const last = [...state.events].reverse().find((e) => e.appointmentId === a.id && e.actor === "customer" && e.kind !== "cancelled");
               return { ...a, customer: state.customers.get(a.customerId)!, lastCustomerChangeAt: last?.at ?? null };
             }),
-        agendaSeenAt: async (u) => state.seen.get(u) ?? null,
-        setAgendaSeen: async (u, when) => void state.seen.set(u, when),
+        agendaSeen: async (u) => new Map(state.seen.get(u) ?? []) as never,
+        setAgendaSeen: async (u, day, when) => void state.seen.set(u, new Map(state.seen.get(u) ?? []).set(day, when)),
       }),
   };
   return { state, deps };
@@ -237,17 +238,20 @@ describe("Colo (RF-20 a RF-25)", () => {
     expect(mine.appointment?.status).toBe("confirmed");
   });
 
-  it("la agenda marca nuevos los cambios del cliente desde la visita anterior; solo Colo la ve", async () => {
+  it("la agenda marca nuevos los cambios del cliente desde la visita anterior a ese día; solo Colo la ve", async () => {
     const m = await booked();
     const day = localDate("2026-11-25");
     expect(await getDayAgenda(m.deps, lucas, day, at("09:00"))).toEqual({ ok: false, error: "NOT_ALLOWED" });
+    // Abrir otro día no lo marca como visto, pero avisa que hay nuevos ahí.
+    const other = await getDayAgenda(m.deps, colo, localDate("2026-11-24"), at("09:00", "2026-11-24"));
+    expect(other.ok && other.value.newElsewhere).toEqual([{ date: "2026-11-25", count: 1 }]);
     const first = await getDayAgenda(m.deps, colo, day, at("09:00"));
-    expect(first.ok && first.value.map((i) => [i.customer.nickname, i.isNew])).toEqual([["el de la moto", true]]);
+    expect(first.ok && first.value.items.map((i) => [i.customer.nickname, i.isNew])).toEqual([["el de la moto", true]]);
     const again = await getDayAgenda(m.deps, colo, day, at("09:01"));
-    expect(again.ok && again.value[0]!.isNew).toBe(false);
+    expect(again.ok && again.value.items[0]!.isNew).toBe(false);
     await rescheduleByCustomer(m.deps, lucas, m.appt.id, at("17:00"), false, at("09:02"));
     const third = await getDayAgenda(m.deps, colo, day, at("09:03"));
-    expect(third.ok && third.value[0]!.isNew).toBe(true);
+    expect(third.ok && third.value.items[0]!.isNew).toBe(true);
   });
 
   it("los cancelados no aparecen en la agenda y un cliente no cancela como Colo", async () => {
@@ -255,6 +259,18 @@ describe("Colo (RF-20 a RF-25)", () => {
     expect(await cancelByBarber(m.deps, lucas, m.appt.id, "Motivo", at("09:00"))).toEqual({ ok: false, error: "NOT_ALLOWED" });
     await cancelByCustomer(m.deps, lucas, m.appt.id, false, at("09:00"));
     const agenda = await getDayAgenda(m.deps, colo, localDate("2026-11-25"), at("09:01"));
-    expect(agenda.ok && agenda.value).toEqual([]);
+    expect(agenda.ok && agenda.value.items).toEqual([]);
+  });
+});
+
+describe("barberFreeStarts (RF-25)", () => {
+  it("lista los horarios libres del día para mover el turno, sin el suyo y sin anticipación mínima", async () => {
+    const m = await booked();
+    const r = await barberFreeStarts(m.deps, colo, m.appt.id, localDate("2026-11-25"), at("09:50"));
+    const labels = r.ok ? r.value.map((s) => s.label) : [];
+    expect(labels[0]).toBe("10:00");
+    expect(labels).not.toContain("16:00");
+    expect(labels).toContain("16:15"); // su propio horario no ocupa
+    expect(await barberFreeStarts(m.deps, lucas, m.appt.id, localDate("2026-11-25"), at("09:50"))).toEqual({ ok: false, error: "NOT_ALLOWED" });
   });
 });

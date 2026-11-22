@@ -16,11 +16,11 @@ describe("cabeceras de seguridad (S-5)", () => {
     expect(h["x-frame-options"]).toBe("DENY");
     expect(h["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(h["permissions-policy"]).toMatch(/camera=\(\)/);
-    expect(await headersFor("/prototipo/reservar")).toEqual(h);
+    expect(await headersFor("/prototipo/reservar")).toMatchObject(h);
   });
 
-  it("las pantallas con sesión no reciben la CSP fija: la suya, con nonce, la pone el proxy (RNF-4 de la 002)", async () => {
-    for (const path of ["/ingresar", "/perfil", "/colo", "/auth/callback"]) {
+  it("las pantallas no reciben la CSP fija: la suya, con nonce, la pone el proxy (RNF-4 de la 002; spec 004: todas)", async () => {
+    for (const path of ["/", "/turnos", "/ingresar", "/perfil", "/colo", "/colo/ajustes", "/auth/callback"]) {
       const h = await headersFor(path);
       expect(h["content-security-policy"]).toBeUndefined();
       expect(h["x-frame-options"]).toBe("DENY");
@@ -28,7 +28,7 @@ describe("cabeceras de seguridad (S-5)", () => {
   });
 
   it("la CSP solo permite recursos propios y nadie puede embeber la app", async () => {
-    const csp = (await headersFor("/"))["content-security-policy"] ?? "";
+    const csp = (await headersFor("/prototipo/reservar"))["content-security-policy"] ?? "";
     for (const directive of [
       "default-src 'self'",
       "object-src 'none'",

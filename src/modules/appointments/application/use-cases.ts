@@ -157,22 +157,43 @@ export async function rescheduleByCustomer(
   });
 }
 
-/** RF-21 a RF-23: la agenda de un día; "Nuevo" según la visita anterior, y queda vista. */
+/** Días con turnos nuevos que Colo todavía no vio (para avisarle desde la agenda de otro día). */
+export type NewElsewhere = { date: LocalDate; count: number };
+const AHEAD_DAYS = 90;
+
+/**
+ * RF-21 a RF-23: la agenda de un día. "Nuevo" = el cliente reservó o movió el turno después de la última vez
+ * que Colo abrió ESE día; al abrirlo, queda visto. También cuenta los turnos nuevos de otros días.
+ */
 export async function getDayAgenda(
   deps: AppointmentsDeps,
   actor: Actor,
   date: LocalDate,
   now: Date,
-): Promise<Result<(AgendaItem & { isNew: boolean })[], "NOT_ALLOWED">> {
+): Promise<Result<{ items: (AgendaItem & { isNew: boolean })[]; newElsewhere: NewElsewhere[] }, "NOT_ALLOWED">> {
   if (actor.kind !== "barber") return NOT_ALLOWED;
   return deps.transaction(async (tx) => {
-    const [items, seenAt] = await Promise.all([tx.agenda({ start: instantAt(date, 0), end: instantAt(addDays(date, 1), 0) }), tx.agendaSeenAt(actor.userId)]);
-    await tx.setAgendaSeen(actor.userId, now);
-    return ok(
-      items
-        .filter(isActive)
-        .map((i) => ({ ...i, isNew: !!i.lastCustomerChangeAt && (!seenAt || i.lastCustomerChangeAt.getTime() > seenAt.getTime()) })),
-    );
+    const today = localDateOf(now);
+    const [items, upcoming, seen] = await Promise.all([
+      tx.agenda({ start: instantAt(date, 0), end: instantAt(addDays(date, 1), 0) }),
+      tx.agenda({ start: instantAt(today, 0), end: instantAt(addDays(today, AHEAD_DAYS), 0) }),
+      tx.agendaSeen(actor.userId),
+    ]);
+    const isNew = (i: AgendaItem) => {
+      const day = localDateOf(i.start);
+      const seenAt = seen.get(day);
+      return isActive(i) && !!i.lastCustomerChangeAt && (!seenAt || i.lastCustomerChangeAt.getTime() > seenAt.getTime());
+    };
+    await tx.setAgendaSeen(actor.userId, date, now);
+    const counts = new Map<LocalDate, number>();
+    for (const i of upcoming) {
+      const day = localDateOf(i.start);
+      if (day !== date && isNew(i)) counts.set(day, (counts.get(day) ?? 0) + 1);
+    }
+    return ok({
+      items: items.filter(isActive).map((i) => ({ ...i, isNew: isNew(i) })),
+      newElsewhere: [...counts].sort(([a], [b]) => (a < b ? -1 : 1)).map(([d, count]) => ({ date: d, count })),
+    });
   });
 }
 
@@ -222,5 +243,25 @@ export async function rescheduleByBarber(
     if ((await tx.move(a.id, period, initialStatus(newStart, now), a.customerReschedules)) === "OVERLAP") return err("SLOT_TAKEN" as const);
     await tx.addEvent({ appointmentId: a.id, at: now, actor: "barber", actorUserId: actor.userId, kind: "rescheduled", from: a, to: period, late: false, reason: reason.value });
     return ok(undefined);
+  });
+}
+
+/** RF-25: horarios a los que Colo puede mover un turno un día dado (sin anticipación mínima ni ventana). */
+export async function barberFreeStarts(
+  deps: AppointmentsDeps,
+  actor: Actor,
+  id: string,
+  date: LocalDate,
+  now: Date,
+): Promise<Result<{ start: Date; label: string }[], "NOT_ALLOWED" | "NOT_FOUND">> {
+  if (actor.kind !== "barber") return NOT_ALLOWED;
+  return deps.transaction(async (tx) => {
+    const a = await tx.get(id);
+    if (!a || !isActive(a)) return err("NOT_FOUND" as const);
+    const ctx = await tx.slotContext({ start: instantAt(date, 0), end: instantAt(addDays(date, 1), 0) }, a.id);
+    const minutes = Math.round((a.end.getTime() - a.start.getTime()) / MINUTE);
+    const config = { ...ctx.config, minNoticeMinutes: 0, maxAdvanceDays: 3650 };
+    const starts = dayStarts({ date, ranges: ctx.ranges, config, serviceMinutes: minutes, occupations: ctx.occupations, now });
+    return ok(starts.filter((s) => s.start.getTime() !== a.start.getTime()).map((s) => ({ start: s.start, label: s.label })));
   });
 }

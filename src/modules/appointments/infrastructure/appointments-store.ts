@@ -1,19 +1,13 @@
 import { sql } from "kysely";
 import type { Interval } from "@/modules/schedule";
+import type { LocalDate } from "@/shared/kernel";
 import type { Database } from "@/shared/db/client";
 import { guarded } from "@/shared/db/guarded";
 import type { AppointmentStatus } from "../domain/policy";
-import type {
-  AgendaItem,
-  Appointment,
-  AppointmentsTx,
-  BarberNotice,
-} from "../application/ports";
+import type { AgendaItem, Appointment, AppointmentsTx, BarberNotice } from "../application/ports";
 
-const range = (i: Interval) =>
-  sql<string>`tstzrange(${i.start}, ${i.end}, '[)')`;
-const isUuid = (id: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+const range = (i: Interval) => sql<string>`tstzrange(${i.start}, ${i.end}, '[)')`;
+const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 /** La restricción de exclusión frenó el turno (RF-12). */
 const isOverlap = (e: unknown) => (e as { code?: string }).code === "23P01";
 
@@ -48,10 +42,7 @@ const toAppointment = (r: Row): Appointment => ({
  * Turnos (spec 004). `db` es la transacción que abre `src/server/appointments.ts`. Lee clientes y servicios
  * solo para mostrar (nombre del servicio, datos del cliente en la agenda) y para bloquear la fila del cliente.
  */
-export function createAppointmentsStore(db: Database): Omit<
-  AppointmentsTx,
-  "lockScheduleShared" | "slotContext" | "service"
-> & {
+export function createAppointmentsStore(db: Database): Omit<AppointmentsTx, "lockScheduleShared" | "slotContext" | "service"> & {
   activeIntervals(r: Interval, exclude: string | null): Promise<Interval[]>;
   upcomingActive(now: Date): Promise<{ id: string; start: Date; end: Date; customerName: string; serviceName: string }[]>;
 } {
@@ -76,10 +67,7 @@ export function createAppointmentsStore(db: Database): Omit<
     async activeIntervals(r, exclude) {
       let q = db
         .selectFrom("app.appointments")
-        .select([
-          sql<Date>`lower(period)`.as("start"),
-          sql<Date>`upper(period)`.as("end"),
-        ])
+        .select([sql<Date>`lower(period)`.as("start"), sql<Date>`upper(period)`.as("end")])
         .where("status", "in", ACTIVE)
         .where(sql<boolean>`period && ${range(r)}`);
       if (exclude && isUuid(exclude)) q = q.where("id", "<>", exclude);
@@ -99,7 +87,13 @@ export function createAppointmentsStore(db: Database): Omit<
         .where(sql<boolean>`upper(a.period) > ${now}`)
         .orderBy(sql`lower(a.period)`)
         .execute();
-      return rows.map((r) => ({ id: r.id, start: new Date(r.start), end: new Date(r.end), customerName: r.full_name, serviceName: r.service_name }));
+      return rows.map((r) => ({
+        id: r.id,
+        start: new Date(r.start),
+        end: new Date(r.end),
+        customerName: r.full_name,
+        serviceName: r.service_name,
+      }));
     },
 
     async lockCustomer(customerId) {
@@ -127,10 +121,7 @@ export function createAppointmentsStore(db: Database): Omit<
 
     async get(id) {
       if (!isUuid(id)) return null;
-      const row = await base()
-        .where("a.id", "=", id)
-        .forUpdate("a")
-        .executeTakeFirst();
+      const row = await base().where("a.id", "=", id).forUpdate("a").executeTakeFirst();
       return row ? toAppointment(row as Row) : null;
     },
 
@@ -177,11 +168,7 @@ export function createAppointmentsStore(db: Database): Omit<
     },
 
     async setStatus(id, status) {
-      await db
-        .updateTable("app.appointments")
-        .set({ status, updated_at: new Date() })
-        .where("id", "=", id)
-        .execute();
+      await db.updateTable("app.appointments").set({ status, updated_at: new Date() }).where("id", "=", id).execute();
     },
 
     async addEvent(e) {
@@ -239,12 +226,7 @@ export function createAppointmentsStore(db: Database): Omit<
         .updateTable("app.appointment_events")
         .set({ seen_by_customer_at: at })
         .where("id", "=", eventId)
-        .where("appointment_id", "in", (eb) =>
-          eb
-            .selectFrom("app.appointments")
-            .select("id")
-            .where("customer_id", "=", customerId),
-        )
+        .where("appointment_id", "in", (eb) => eb.selectFrom("app.appointments").select("id").where("customer_id", "=", customerId))
         .execute();
     },
 
@@ -276,28 +258,25 @@ export function createAppointmentsStore(db: Database): Omit<
           phone: x.phone_e164,
           isGuest: x.role === "guest",
         },
-        lastCustomerChangeAt: x.last_customer_change_at
-          ? new Date(x.last_customer_change_at)
-          : null,
+        lastCustomerChangeAt: x.last_customer_change_at ? new Date(x.last_customer_change_at) : null,
       }));
     },
 
-    async agendaSeenAt(userId) {
-      const row = await db
+    async agendaSeen(userId) {
+      const rows = await db
         .selectFrom("app.agenda_views")
-        .select("seen_at")
+        .select([sql<string>`to_char(day, 'YYYY-MM-DD')`.as("day"), "seen_at"])
         .where("auth_user_id", "=", userId)
-        .executeTakeFirst();
-      return row ? new Date(row.seen_at) : null;
+        .where("day", ">=", sql<Date>`current_date - 1`)
+        .execute();
+      return new Map(rows.map((r) => [r.day as LocalDate, new Date(r.seen_at)]));
     },
 
-    async setAgendaSeen(userId, at) {
+    async setAgendaSeen(userId, day, at) {
       await db
         .insertInto("app.agenda_views")
-        .values({ auth_user_id: userId, seen_at: at })
-        .onConflict((oc) =>
-          oc.column("auth_user_id").doUpdateSet({ seen_at: at }),
-        )
+        .values({ auth_user_id: userId, day, seen_at: at })
+        .onConflict((oc) => oc.columns(["auth_user_id", "day"]).doUpdateSet({ seen_at: at }))
         .execute();
     },
   };

@@ -12,11 +12,11 @@ Estado: aprobado (2026-11-22) · Plan: [`plan.md`](plan.md)
   - Hecho cuando: tests en memoria y de integración (casos 1, 9, 10, 13, 15).
 - [x] **T5. [agente] Choques con Ajustes.** RF-27
   - Hecho cuando: tests en memoria e integración (caso 11).
-- [ ] **T6. [agente] Ingreso como principal y pantalla de turnos.** RF-1 a RF-20, RNF-1, RNF-5
+- [x] **T6. [agente] Ingreso como principal y pantalla de turnos.** RF-1 a RF-20, RNF-1, RNF-5
   - Hecho cuando: tests de componentes, cabeceras y capturas en 360 px.
-- [ ] **T7. [agente] Agenda de Colo.** RF-21 a RF-26
+- [x] **T7. [agente] Agenda de Colo.** RF-21 a RF-26
   - Hecho cuando: tests de componentes y capturas.
-- [ ] **T8. [agente] e2e, velocidad y validación.** Criterios de finalización
+- [x] **T8. [agente] e2e, velocidad y validación.** Criterios de finalización
   - Hecho cuando: `tests/e2e/turnos.py` y los e2e anteriores en verde en local; validación RF por RF.
 - [ ] **T9. [persona] Despliegue y verificación en producción.**
   - Hecho cuando: Gonzalo aprueba el deploy y el e2e pasa en producción.

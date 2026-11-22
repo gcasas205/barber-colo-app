@@ -39,6 +39,7 @@ export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface AppAgendaViews {
   auth_user_id: string;
+  day: Timestamp;
   seen_at: Timestamp;
 }
 

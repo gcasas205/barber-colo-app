@@ -87,7 +87,7 @@ describe("turnos contra la base (spec 004)", () => {
     if (!r.ok) throw new Error();
     expect((await rescheduleByCustomer(appointmentsDeps(db), a, r.value.id, at("16:15"), false, at("08:30"))).ok).toBe(true);
     const agenda = await getDayAgenda(appointmentsDeps(db), colo, localDate("2026-11-25"), at("08:40"));
-    expect(agenda.ok && agenda.value.map((i) => [i.customer.name, i.isNew, i.start.getTime()])).toEqual([["Ana Cinco", true, at("16:15").getTime()]]);
+    expect(agenda.ok && agenda.value.items.map((i) => [i.customer.name, i.isNew, i.start.getTime()])).toEqual([["Ana Cinco", true, at("16:15").getTime()]]);
     expect((await cancelByBarber(appointmentsDeps(db), colo, r.value.id, "Me enfermé", at("09:00"))).ok).toBe(true);
     const mine = await getMyAppointment(appointmentsDeps(db), a, at("09:01"));
     expect(mine).toEqual({ appointment: null, notice: expect.objectContaining({ kind: "cancelled", reason: "Me enfermé", fromStart: at("16:15") }) });

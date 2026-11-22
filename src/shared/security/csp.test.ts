@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { themeBootScript } from "@/shared/theme";
-import { publicCsp, sessionCsp, SESSION_ROUTES, THEME_SCRIPT_HASH } from "./csp";
+import { publicCsp, sessionCsp, STATIC_ROUTES, THEME_SCRIPT_HASH } from "./csp";
 
 const directive = (csp: string, name: string) => csp.split("; ").find((d) => d.startsWith(`${name} `)) ?? "";
 
@@ -30,14 +30,14 @@ describe("CSP de las pantallas con sesión (RNF-4)", () => {
   });
 });
 
-describe("CSP de la página pública", () => {
-  it("sigue siendo la fija de la 001 (prerenderizada: no puede llevar nonce)", () => {
+describe("CSP fija (solo el prototipo estático desde la spec 004)", () => {
+  it("es la de la 001 (prerenderizada: no puede llevar nonce)", () => {
     expect(directive(publicCsp(false), "script-src")).toBe("script-src 'self' 'unsafe-inline'");
   });
 });
 
-describe("rutas con sesión", () => {
-  it("son las que tienen datos personales", () => {
-    expect(SESSION_ROUTES).toEqual(["ingresar", "perfil", "colo", "auth"]);
+describe("rutas estáticas", () => {
+  it("solo el prototipo de diseño se sirve sin la CSP con nonce", () => {
+    expect(STATIC_ROUTES).toEqual(["prototipo"]);
   });
 });

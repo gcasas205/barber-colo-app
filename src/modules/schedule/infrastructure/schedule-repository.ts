@@ -66,3 +66,16 @@ export function createBlockOccupations(db: Database): OccupationSource {
     },
   };
 }
+
+/** Spec 004, RF-26: los bloqueos de un día para la agenda de Colo, con o sin aviso. */
+export function createBlockList(db: Database) {
+  return async (range: Interval): Promise<{ start: Date; end: Date; notice: string | null }[]> => {
+    const rows = await db
+      .selectFrom("app.schedule_blocks")
+      .select(["notice", sql<Date>`lower(period)`.as("start"), sql<Date>`upper(period)`.as("end")])
+      .where(sql<boolean>`period && tstzrange(${range.start}, ${range.end}, '[)')`)
+      .orderBy(sql`lower(period)`)
+      .execute();
+    return rows.map((r) => ({ start: new Date(r.start), end: new Date(r.end), notice: r.notice }));
+  };
+}

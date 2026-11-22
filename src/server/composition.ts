@@ -4,6 +4,7 @@ import { appointmentOccupations } from "./appointments";
 import { listServices } from "@/modules/pricing";
 import { createServiceCatalog } from "@/modules/pricing/infrastructure/service-repository";
 import {
+  createBlockList,
   createBlockOccupations,
   createScheduleRepository,
 } from "@/modules/schedule/infrastructure/schedule-repository";
@@ -25,5 +26,7 @@ export function queries(db: Database = database()) {
     contactWhatsapp: async () => (await schedule.settings()).contactWhatsapp,
     getAvailability: (query: AvailabilityQuery) => getAvailability({ schedule, occupations }, query),
     getScheduleSnapshot: (now: Date) => getScheduleSnapshot({ schedule, occupations }, now),
+    /** Spec 004, RF-26: solo para la agenda de Colo (la página llama antes a getActor). */
+    blocksOn: createBlockList(db),
   };
 }

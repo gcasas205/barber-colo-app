@@ -2,12 +2,15 @@ import { createHash } from "node:crypto";
 import { themeBootScript } from "../theme"; // relativo: también lo importa next.config.ts
 
 /**
- * Content Security Policy (S-5 de la 001, RNF-4 de la 002). Lo usan next.config.ts (página pública) y
- * src/proxy.ts (pantallas con sesión). Nunca se importa desde el navegador.
+ * Content Security Policy (S-5 de la 001, RNF-4 de la 002). Lo usan next.config.ts (prototipo estático) y
+ * src/proxy.ts (todas las pantallas). Nunca se importa desde el navegador.
  */
 
-/** Pantallas con sesión y datos personales: CSP con nonce por pedido. */
-export const SESSION_ROUTES = ["ingresar", "perfil", "colo", "auth"] as const;
+/**
+ * Desde la spec 004 todas las pantallas tienen sesión (la principal es el ingreso) y llevan la CSP con
+ * nonce del proxy. La CSP fija queda solo para el prototipo de diseño, que es estático.
+ */
+export const STATIC_ROUTES = ["prototipo"] as const;
 
 /** El script del tema va en el layout compartido (sin nonce): se autoriza solo ese texto exacto. */
 export const THEME_SCRIPT_HASH = `sha256-${createHash("sha256").update(themeBootScript).digest("base64")}`;

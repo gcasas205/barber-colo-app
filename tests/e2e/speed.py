@@ -6,6 +6,13 @@ from playwright.sync_api import sync_playwright
 
 BASE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:3100/"
 RUNS = 5
+
+def enter(pg, base):
+    """Spec 004: los horarios están en /turnos, con sesión. Entra con el cliente de prueba 1 (sin turno)."""
+    pg.goto(base.rstrip("/") + "/", wait_until="networkidle")
+    pg.click("button:has-text('Cliente de prueba 1')"); pg.click("button[type=submit]:has-text('Ingresar')")
+    pg.wait_for_url("**/turnos", wait_until="commit"); pg.wait_for_selector("#titulo-horarios")
+
 with sync_playwright() as p:
     b = p.chromium.launch()
     loads, service, day, week = [], [], [], []
@@ -17,8 +24,10 @@ with sync_playwright() as p:
         cdp.send("Network.setCacheDisabled", {"cacheDisabled": True})  # cada corrida como primera visita
         cdp.send("Network.emulateNetworkConditions", {"offline": False, "latency": 150, "downloadThroughput": 200_000, "uploadThroughput": 93_750})
         cdp.send("Emulation.setCPUThrottlingRate", {"rate": 4})
+        # Spec 004: se mide la carga de /turnos con la sesión ya abierta.
+        enter(pg, BASE); pg.wait_for_load_state("load")
         t = time.perf_counter()
-        pg.goto(BASE, wait_until="commit")
+        pg.goto(BASE.rstrip("/") + "/turnos", wait_until="commit")
         pg.wait_for_selector("#titulo-horarios")
         loads.append(time.perf_counter() - t)
         pg.wait_for_load_state("load")  # que termine de hidratar antes de tocar
