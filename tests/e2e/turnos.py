@@ -79,6 +79,7 @@ with sync_playwright() as p:
     # Cliente 1: reserva (con datos si faltan), ve "Tu turno", reprograma.
     ctx1, c1 = login(b, "Cliente de prueba 1", (360, 800))
     ok("/turnos" in c1.url, "RF-2, RF-5: el cliente entra directo a los turnos")
+    account_phone = None  # el celular de esta cuenta, para probar el caso 12
     cancel_existing(c1)
     first = pick(c1, day, 1)
     fill_contact(c1, "Cliente Uno", "11 5555-0101")
@@ -87,6 +88,8 @@ with sync_playwright() as p:
     card = c1.inner_text("main:visible")
     ok(first in card and "Reservado" in card, f"RF-8: 'Tu turno' con el horario {first} y estado Reservado")
     c1.screenshot(path=f"{SHOTS}/tu-turno-360.png", full_page=True)
+    c1.goto(B + "/perfil", wait_until="networkidle"); account_phone = c1.input_value("input[name=phone]:visible")
+    c1.goto(B + "/turnos", wait_until="networkidle")
     c1.locator("main:visible button:has-text('Cambiar horario')").click()
     second = pick(c1, day, 3)
     c1.locator("main:visible #titulo-confirmar ~ * button:has-text('Cambiar horario'), main:visible button:has-text('Cambiar horario')").last.click()
@@ -149,7 +152,7 @@ with sync_playwright() as p:
         g.goto(B + "/", wait_until="networkidle"); g.click("button:has-text('Entrar como invitado')"); g.wait_for_url("**/turnos")
         ok(True, "RF-4: el invitado entra con un toque")
         pick(g, day, 0)
-        g.locator("main:visible label:has-text('Tu celular') input").fill("11 5555-0101")
+        g.locator("main:visible label:has-text('Tu celular') input").fill(account_phone)
         g.locator("main:visible label:has-text('Tu nombre') input").fill("Invitado Prueba")
         g.locator("main:visible button:has-text('Reservar')").click()
         g.locator("main:visible").locator("text=tiene una cuenta").wait_for(timeout=10000)

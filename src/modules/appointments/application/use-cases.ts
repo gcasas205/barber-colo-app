@@ -163,7 +163,8 @@ const AHEAD_DAYS = 90;
 
 /**
  * RF-21 a RF-23: la agenda de un día. "Nuevo" = el cliente reservó o movió el turno después de la última vez
- * que Colo abrió ESE día; al abrirlo, queda visto. También cuenta los turnos nuevos de otros días.
+ * que Colo vio ESE día. También cuenta los turnos nuevos de otros días. Solo lee: el día queda visto con
+ * `markAgendaSeen` cuando Colo lo tiene en pantalla (así se pueden precargar los días vecinos).
  */
 export async function getDayAgenda(
   deps: AppointmentsDeps,
@@ -184,7 +185,6 @@ export async function getDayAgenda(
       const seenAt = seen.get(day);
       return isActive(i) && !!i.lastCustomerChangeAt && (!seenAt || i.lastCustomerChangeAt.getTime() > seenAt.getTime());
     };
-    await tx.setAgendaSeen(actor.userId, date, now);
     const counts = new Map<LocalDate, number>();
     for (const i of upcoming) {
       const day = localDateOf(i.start);
@@ -195,6 +195,12 @@ export async function getDayAgenda(
       newElsewhere: [...counts].sort(([a], [b]) => (a < b ? -1 : 1)).map(([d, count]) => ({ date: d, count })),
     });
   });
+}
+
+/** RF-23: Colo tiene el día en pantalla; desde ahora sus turnos dejan de ser nuevos. */
+export async function markAgendaSeen(deps: AppointmentsDeps, actor: Actor, date: LocalDate, now: Date): Promise<void> {
+  if (actor.kind !== "barber") return;
+  await deps.transaction((tx) => tx.setAgendaSeen(actor.userId, date, now));
 }
 
 type BarberChangeError = "NOT_ALLOWED" | "NOT_FOUND" | "REASON_LENGTH" | "ENDED";

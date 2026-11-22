@@ -32,6 +32,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - En los tests, ICU puede devolver la zona como `America/Buenos_Aires`: compará el desfase (180 min), no el nombre.
 - Vercel crea las funciones en `iad1` (Washington) si no se configura: siempre `regions` al lado de la base. **Verificar la región de Supabase, no suponerla** (la primera base quedó en us-east-1 y cada pedido cruzaba el continente: 1,9 s → 0,75 s al mudarla a sa-east-1). Proyecto nuevo = correr también el `alter role app_server` (si no, EAUTHQUERY en el pooler).
 - Un error de Postgres (23505, 23P01) aborta la transacción y Kysely no la confirma: usar `guarded()` (savepoint) de `src/shared/db/guarded.ts`.
+- Pantallas 100% dinámicas: con `partialPrefetching` los enlaces precargan solo la parte fija, sin datos. Para que se sienta rápido: cambiar dentro de la pantalla con una acción del servidor y precargar los vecinos (agenda), y respuesta inmediata con `useLinkStatus` (pestañas). Precargar nunca puede tener efectos (por eso `markAgendaSeen` va aparte).
 - e2e: `has-text` no distingue mayúsculas y busca por partes ("Tu turno" encuentra "Reservá tu turno"): usar `text-is`. Con 4G lento, esperar la hidratación antes de tocar botones que completan formularios.
 - `gh` con GraphQL no anda en esta sesión: usar `env -u GH_TOKEN gh api repos/...` (REST) para PRs y checks.
 - TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.

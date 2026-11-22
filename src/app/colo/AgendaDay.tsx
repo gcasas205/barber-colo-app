@@ -27,7 +27,18 @@ export type AgendaBlock = { start: number; end: number; notice: string | null; a
 const hour = (ms: number) => formatMinute(minuteOfDayOf(new Date(ms)));
 
 /** RF-21 a RF-26: la agenda de un día. */
-export function AgendaDay({ day, turnos, blocks }: { day: LocalDate; turnos: AgendaTurno[]; blocks: AgendaBlock[] }) {
+export function AgendaDay({
+  day,
+  turnos,
+  blocks,
+  onChanged,
+}: {
+  day: LocalDate;
+  turnos: AgendaTurno[];
+  blocks: AgendaBlock[];
+  /** Después de cancelar o mover (con el día destino, si es otro). */
+  onChanged: (otherDay?: LocalDate) => void;
+}) {
   return (
     <div className="flex flex-col gap-4">
       {blocks.length > 0 ? (
@@ -47,7 +58,7 @@ export function AgendaDay({ day, turnos, blocks }: { day: LocalDate; turnos: Age
         <ul className="flex flex-col gap-3" aria-label="Turnos del día">
           {turnos.map((t) => (
             <li key={t.id}>
-              <TurnoItem t={t} day={day} />
+              <TurnoItem t={t} day={day} onChanged={onChanged} />
             </li>
           ))}
         </ul>
@@ -56,7 +67,7 @@ export function AgendaDay({ day, turnos, blocks }: { day: LocalDate; turnos: Age
   );
 }
 
-function TurnoItem({ t, day }: { t: AgendaTurno; day: LocalDate }) {
+function TurnoItem({ t, day, onChanged }: { t: AgendaTurno; day: LocalDate; onChanged: (otherDay?: LocalDate) => void }) {
   const [mode, setMode] = useState<"idle" | "cancel" | "move">("idle");
   const who = t.customer.nickname ? `${t.customer.name} (${t.customer.nickname})` : t.customer.name;
   return (
@@ -112,14 +123,26 @@ function TurnoItem({ t, day }: { t: AgendaTurno; day: LocalDate }) {
           </Button>
         </div>
       ) : (
-        <ChangeForm t={t} day={day} mode={mode} onClose={() => setMode("idle")} />
+        <ChangeForm t={t} day={day} mode={mode} onClose={() => setMode("idle")} onChanged={onChanged} />
       )}
     </Plate>
   );
 }
 
 /** RF-24 y RF-25: el motivo es obligatorio y le llega al cliente. */
-function ChangeForm({ t, day, mode, onClose }: { t: AgendaTurno; day: LocalDate; mode: "cancel" | "move"; onClose: () => void }) {
+function ChangeForm({
+  t,
+  day,
+  mode,
+  onClose,
+  onChanged,
+}: {
+  t: AgendaTurno;
+  day: LocalDate;
+  mode: "cancel" | "move";
+  onClose: () => void;
+  onChanged: (otherDay?: LocalDate) => void;
+}) {
   const [reason, setReason] = useState("");
   const [moveDay, setMoveDay] = useState<string>(day);
   const [starts, setStarts] = useState<{ start: number; label: string }[] | null>(null);
@@ -184,7 +207,10 @@ function ChangeForm({ t, day, mode, onClose }: { t: AgendaTurno; day: LocalDate;
             run(async () => {
               const r = mode === "cancel" ? await cancelTurnoAction(t.id, reason) : await moveTurnoAction(t.id, target, reason);
               setResult(r);
-              if (r.ok) onClose();
+              if (r.ok) {
+                onClose();
+                onChanged(mode === "move" && target ? localDateOf(new Date(target)) : undefined);
+              }
             })
           }
         >
