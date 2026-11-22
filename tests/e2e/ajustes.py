@@ -141,7 +141,7 @@ with sync_playwright() as p:
         servicios.locator(f"li:has(p:text-is('{nombre}'), span:text-is('{nombre}')) button:has-text('Dejar de ofrecer')").click(); servicios.locator(f"text={nombre} ya no se ofrece").wait_for(timeout=8000)
 
     # RF-22 a RF-24: días a futuro y WhatsApp.
-    reservas = main.locator("[aria-labelledby=titulo-reserva-form]")
+    reservas = main.locator("[aria-labelledby=titulo-reservas]")
     reservas.locator("label:has-text('WhatsApp') input").fill("123")
     reservas.locator("button:has-text('Guardar reservas')").click()
     reservas.locator("text=celular argentino").wait_for(timeout=8000); ok(True, "RF-24: WhatsApp mal escrito, error junto al campo")

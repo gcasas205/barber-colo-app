@@ -3,7 +3,7 @@
 import { CalendarCheck2, Clock3, Megaphone, MessageCircle, Sparkles } from "lucide-react";
 import { useId, useState, useTransition } from "react";
 import { formatArPhone } from "@/modules/customers";
-import { formatMinute, formatPesos, localDateOf, minuteOfDayOf, type LocalDate } from "@/shared/kernel";
+import { formatDayLong, formatMinute, formatPesos, localDateOf, minuteOfDayOf, type LocalDate } from "@/shared/kernel";
 import { Button } from "@/ui/Button";
 import { Field, TextInput } from "@/ui/Field";
 import { Plate } from "@/ui/Plate";
@@ -103,7 +103,8 @@ function TurnoItem({ t, day, onChanged }: { t: AgendaTurno; day: LocalDate; onCh
           </p>
           {t.customer.phone ? (
             <a
-              href={whatsappHref(t.customer.phone)}
+              href={whatsappHref(t.customer.phone, `Hola ${t.customer.name.replace(/ \(demo\)$/, "").split(" ")[0]}, te escribo por tu turno del ${formatDayLong(localDateOf(new Date(t.start)))} a las ${hour(t.start)}.`)}
+              aria-label={`Escribirle por WhatsApp a ${t.customer.name} (${formatArPhone(t.customer.phone)})`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex min-h-[44px] items-center gap-1.5 self-start font-bold underline decoration-2 underline-offset-4"
