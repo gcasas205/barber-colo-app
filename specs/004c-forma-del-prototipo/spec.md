@@ -1,6 +1,6 @@
 # Spec 004c — La forma del prototipo en las pantallas reales
 
-Estado: borrador
+Estado: aprobada (2026-11-22)
 
 Origen: `DESIGN.md` (navegación, layout web), `docs/diseno/04-interfaz.md`, el prototipo (`/prototipo`,
 `docs/diseno/assets/prototipo-*.png`) y las respuestas de Gonzalo del 2026-11-22: pasada visual antes de la 005;
