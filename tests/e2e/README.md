@@ -22,6 +22,9 @@ npm run build && npx next start -p 3100
 | `speed_login.py` | Velocidad del ingreso con 4G lento simulado (RNF-6 de la 002) |
 | `turnos.py [URL]` | Spec 004: ingreso como principal, reservar, reprogramar, cancelar, agenda de Colo, choques con Ajustes, aviso al cliente y velocidad. En producción no crea invitados y deja todo cancelado |
 | `pestanas.py [URL]` | Pestañas del panel de Colo: la marcada es siempre la de la pantalla, al ir y volver (celular simulado, con y sin 4G lento) |
+| `speed_pestanas.py [URL] [--lento]` | Del toque a la pantalla nueva en las pestañas de Colo (primera visita y vueltas) |
+| `speed_cliente.py [URL]` | Del toque a la pantalla nueva entre Turnos y Mi perfil, con 4G simulado |
+| `agenda_fresca.py` | Solo local: la agenda guardada se pone al día al volver (entra un turno mientras Colo está en Clientes) |
 | `ajustes.py [URL]` | Ajustes de Colo, avisos en la página pública y velocidad (spec 003). Con la URL de producción no crea servicios y deja todo como estaba |
 
 `login.py`, `csp.py` y `speed_login.py` esperan la base sin clientes: antes de correrlos,

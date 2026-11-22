@@ -30,7 +30,7 @@ export default async function AgendaPage({ searchParams }: PageProps<"/colo">) {
   return (
     <SessionScreen banner={actor.demo ? <DemoBanner /> : null}>
       <ColoNav current="/colo" />
-      <AgendaScreen initial={data} today={today} />
+      <AgendaScreen initial={data} today={today} renderedAt={now.getTime()} />
       <ColoSignOut />
     </SessionScreen>
   );

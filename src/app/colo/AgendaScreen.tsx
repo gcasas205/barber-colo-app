@@ -16,6 +16,8 @@ export type AgendaData = {
 
 const ARROW =
   "grid min-h-[52px] min-w-[52px] place-items-center rounded-[var(--radius-control)] bg-chapa shadow-[inset_0_0_0_2px_var(--linea)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-poste active:scale-[0.97]";
+/** Una agenda armada hace menos que esto no se vuelve a pedir al mostrarse. */
+const FRESH_MS = 5_000;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /**
@@ -23,7 +25,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
  * siguiente se precargan de fondo, así las flechas responden al instante. El día en pantalla se marca
  * como visto (RF-23); precargar no lo marca.
  */
-export function AgendaScreen({ initial, today }: { initial: AgendaData; today: LocalDate }) {
+export function AgendaScreen({ initial, today, renderedAt }: { initial: AgendaData; today: LocalDate; renderedAt: number }) {
   const cache = useRef(new Map<LocalDate, AgendaData>([[initial.day, initial]]));
   const loading = useRef(new Map<LocalDate, Promise<AgendaData | null>>());
   const [data, setData] = useState(initial);
@@ -46,13 +48,26 @@ export function AgendaScreen({ initial, today }: { initial: AgendaData; today: L
   }, []);
 
   const day = data.day;
+  // Las pestañas vuelven a mostrar la agenda guardada al instante (Next conserva la pantalla y el router la
+  // guarda `staleTimes.dynamic`): al volver a verla, el día se pide de nuevo de fondo y los demás se olvidan,
+  // así un turno que entró mientras Colo estaba en otra pestaña aparece enseguida.
+  const shownOnce = useRef(false);
+  useEffect(() => {
+    const again = shownOnce.current || Date.now() - renderedAt > FRESH_MS;
+    shownOnce.current = true;
+    if (!again) return;
+    cache.current = new Map(cache.current.has(day) ? [[day, cache.current.get(day)!]] : []);
+    void load(day, true).then((d) => d && setData((cur) => (cur.day === d.day ? d : cur)));
+    // Solo al mostrarse: el cambio de día tiene su propio efecto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // El día en pantalla: queda visto, la dirección lo recuerda y se precargan los vecinos.
   useEffect(() => {
     void markAgendaSeenAction(day);
     window.history.replaceState(null, "", day === today ? "/colo" : `/colo?dia=${day}`);
+    // Dos días para cada lado: tocando la flecha seguido, el siguiente ya está.
     const id = window.setTimeout(() => {
-      void load(addDays(day, 1));
-      void load(addDays(day, -1));
+      for (const n of [1, -1, 2, -2]) void load(addDays(day, n));
     }, 150);
     return () => window.clearTimeout(id);
   }, [day, today, load]);
