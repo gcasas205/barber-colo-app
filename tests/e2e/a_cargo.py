@@ -66,8 +66,17 @@ def pick(pg, d, nth=0):
     starts = m.locator("button[aria-label$='elegir este horario']")
     label = starts.nth(nth).inner_text().strip()
     starts.nth(nth).click()
-    m.locator("#titulo-confirmar").wait_for()
+    m.locator(f"aside:has-text('{label}')").wait_for()
     return label
+
+def who(pg, label):
+    """El botón de "¿Para quién es?" (spec 004c: opciones lado a lado)."""
+    return main_(pg).locator(f"[role=radiogroup] [role=radio]:has-text('{label}')")
+
+def book(pg):
+    """Reservar desde el resumen y volver a Inicio (spec 004c)."""
+    main_(pg).locator("aside button:has-text('Reservar')").click()
+    pg.wait_for_url("**/turnos*", timeout=15000); main_(pg).locator("[role=status]").wait_for(timeout=10000)
 
 with sync_playwright() as p:
     b = p.chromium.launch()
@@ -77,8 +86,13 @@ with sync_playwright() as p:
     cancel_all(pg)
     for name in (HIJO, "Tomi", "Tomi", "Tomi"): remove_child(pg, name)
 
-    # RF-1 a RF-4: Mi perfil, agregar y editar.
+    # RF-1 a RF-4: Mi perfil, agregar y editar. Personas a cargo pide el perfil completo: si falta el celular
+    # (base local recién creada), se carga uno.
     pg.goto(B + "/perfil", wait_until="networkidle")
+    if main_(pg).locator("text=Todavía no cargaste").count():
+        main_(pg).locator("input[name=phone]").fill("11 5555-0101")
+        main_(pg).locator("button[type=submit]:has-text('Guardar')").click(); pg.wait_for_url("**/turnos*")
+        pg.goto(B + "/perfil", wait_until="networkidle")
     sec = main_(pg).locator("section[aria-labelledby=titulo-a-cargo]")
     ok(sec.count() == 1, "RF-1: Mi perfil muestra 'Personas a cargo'")
     sec.locator("button:has-text('Agregar persona')").click()
@@ -100,35 +114,33 @@ with sync_playwright() as p:
     pg.goto(B + "/perfil", wait_until="networkidle")
     ok(main_(pg).locator(f"p:text-is('{HIJO}')").count() == 1, "RF-4: lo editado queda guardado")
 
-    # RF-8 a RF-13: reservar para el hijo y para el titular, seguidos.
-    pg.goto(B + "/turnos", wait_until="networkidle")
+    # RF-8 a RF-13: reservar para el hijo y para el titular, seguidos (en Reservar; spec 004c).
+    pg.goto(B + "/reservar", wait_until="networkidle")
     m = main_(pg)
-    ok(m.locator("h2:text-is('¿Para quién es el turno?')").count() == 1, "RF-8: pregunta para quién es el turno")
-    m.locator(f"[aria-labelledby=titulo-para-quien] button:has-text('{HIJO}')").click()
-    hijo_hora = pick(pg, day, 0)
-    ok(main_(pg).locator(f"#titulo-confirmar:text-is('Reserva para {HIJO}')").count() == 1, "RF-9: el resumen dice para quién")
-    main_(pg).locator("button:has-text('Reservar')").last.click()
-    main_(pg).locator(f"text=Reservaste el turno de {HIJO}").wait_for(timeout=10000); ok(True, "RF-9: reserva para la persona a cargo")
-    m = main_(pg)
-    ok(m.locator("h2:text-is('Reservá otro turno')").count() == 1, "RF-13: sigue ofreciendo reservar")
-    hijo_btn = m.locator(f"[aria-labelledby=titulo-para-quien] button:has-text('{HIJO}')")
+    ok(m.locator("h2:text-is('¿Para quién es?')").count() == 1, "RF-8: pregunta para quién es el turno")
+    who(pg, f"Para {HIJO}").click()
+    pick(pg, day, 0)
+    ok(f"para {HIJO}" in main_(pg).locator("aside").inner_text(), "RF-9: el resumen dice para quién")
+    book(pg)
+    ok(f"Reservaste el turno de {HIJO}" in main_(pg).inner_text(), "RF-9: reserva para la persona a cargo")
+    ok(main_(pg).locator("a:has-text('Reservar turno')").count() == 1, "RF-13: sigue ofreciendo reservar")
+    pg.goto(B + "/reservar", wait_until="networkidle")
+    hijo_btn = who(pg, f"Para {HIJO}")
     ok(hijo_btn.is_disabled() and "Ya tiene turno" in hijo_btn.inner_text(), "RF-8: quien ya tiene turno no se puede elegir, con el motivo")
-    m.locator("[aria-labelledby=titulo-para-quien] button:has-text('Vos')").click()
+    who(pg, "Para mí").click()
     pick(pg, day, 1)
-    main_(pg).locator("button:has-text('Reservar')").last.click()
-    main_(pg).locator("text=Reservaste tu turno").wait_for(timeout=10000)
-    pg.goto(B + "/turnos", wait_until="networkidle")
+    book(pg)
     m = main_(pg)
-    ok(m.locator("h1:text-is('Tus turnos')").count() == 1 and m.locator("article").count() == 2, "RF-10, RF-12: dos turnos de la cuenta a la vez, seguidos")
-    ok(m.locator(f"text=Para {HIJO}").count() == 1 and m.locator("text=Para vos").count() == 1, "RF-12: cada turno dice para quién es")
+    ok(m.locator("article").count() == 2, "RF-10, RF-12: dos turnos de la cuenta a la vez, seguidos")
+    ok(m.locator(f"article[aria-label='Turno de {HIJO}']").count() == 1 and m.locator("article[aria-label='Tu próximo turno']").count() == 1, "RF-12: cada turno dice para quién es")
     # La cuenta puede tener otras personas a cargo (en producción las carga quien prueba): con alguien libre se
-    # sigue ofreciendo reservar, solo para quien no tiene turno; si todos tienen, no.
-    free = [x.strip() for x in m.locator("[aria-labelledby=titulo-para-quien] button:not([disabled])").all_inner_texts()]
+    # sigue ofreciendo reservar; si todos tienen, no.
+    free = [x.strip() for x in m.locator("section[aria-label] h2").all_inner_texts()]
     if free:
-        ok(m.locator("h2:text-is('Reservá otro turno')").count() == 1 and "Vos" not in free and HIJO not in free,
-           f"RF-13: con otras personas libres ({', '.join(free)}) se ofrece reservar solo para ellas")
+        ok(m.locator("a:has-text('Reservar turno')").count() == 1 and "Vos" not in free and HIJO not in free,
+           f"RF-13: con otras personas libres ({', '.join(free)}) se ofrece reservar")
     else:
-        ok(m.locator("h2:text-is('Reservá otro turno')").count() == 0, "RF-13: si todos tienen turno, no se ofrece reservar")
+        ok(m.locator("a:has-text('Reservar turno')").count() == 0, "RF-13: si todos tienen turno, no se ofrece reservar")
     pg.screenshot(path=f"{SHOTS}/a-cargo-turnos.png", full_page=True)
 
     # RF-6: no se quita a quien tiene un turno futuro.

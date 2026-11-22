@@ -31,7 +31,7 @@ with sync_playwright() as p:
         # Ya en la página: el navegador guarda lo que precarga mientras la persona completa el formulario.
         cdp.send("Network.setCacheDisabled", {"cacheDisabled": False}); pg.wait_for_timeout(1500)
         t = time.perf_counter(); pg.click("button:has-text('Entrar como invitado')")
-        pg.wait_for_selector("main:visible h1:text-is('Reservá tu turno')"); guest.append(time.perf_counter() - t)
+        pg.wait_for_selector("main:visible h1:text-is('Hola')"); guest.append(time.perf_counter() - t)
         ctx.close()
 
         ctx, pg, cdp = throttled(b)

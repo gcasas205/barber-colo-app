@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { ChevronLeft, LogOut } from "lucide-react";
-import Link from "next/link";
+import { LogOut } from "lucide-react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getMyAppointments } from "@/modules/appointments";
@@ -13,7 +12,7 @@ import { customersStore } from "@/server/customers";
 import { Button } from "@/ui/Button";
 import { Plate } from "@/ui/Plate";
 import { DemoBanner } from "../_sesion/DemoBanner";
-import { SessionScreen } from "../_sesion/SessionScreen";
+import { AppFrame } from "../_sesion/AppFrame";
 import { signOut } from "../ingresar/actions";
 import { Dependents, type DependentItem } from "./Dependents";
 import { ProfileForm } from "./ProfileForm";
@@ -56,11 +55,6 @@ async function Profile() {
   );
   if (!profile && actor.kind !== "guest") redirect("/");
   const demo = actor.kind === "customer" && actor.demo;
-  const back = (
-    <Link href="/turnos" className="inline-flex items-center gap-1 self-start font-bold underline decoration-2 underline-offset-4">
-      <ChevronLeft aria-hidden size={20} strokeWidth={2.5} /> Volver a los turnos
-    </Link>
-  );
   const salir = (
     <form action={signOut}>
       <Button type="submit" variant="texto">
@@ -71,8 +65,7 @@ async function Profile() {
 
   if (actor.kind === "guest") {
     return (
-      <SessionScreen>
-        {back}
+      <AppFrame area="cliente" current="/perfil" width="angosto">
         <h1 className="text-[28px] font-bold leading-tight">{profile ? `Hola, ${profile.fullName}` : "Hola"}</h1>
         <Plate className="flex flex-col gap-3 p-5">
           <p className="font-bold">Entraste como invitado</p>
@@ -86,13 +79,12 @@ async function Profile() {
           <p className="text-tinta-suave">Como invitado no acumulás visitas para los descuentos. Podés crear tu cuenta cuando quieras.</p>
         </Plate>
         {salir}
-      </SessionScreen>
+      </AppFrame>
     );
   }
 
   return (
-    <SessionScreen banner={demo ? <DemoBanner /> : null}>
-      {back}
+    <AppFrame area="cliente" current="/perfil" width="angosto" banner={demo ? <DemoBanner /> : null}>
       <h1 className="text-[28px] font-bold leading-tight">Mi perfil</h1>
       <ProfileForm
         complete={actor.profileComplete}
@@ -106,6 +98,6 @@ async function Profile() {
       />
       {actor.customerId && actor.profileComplete ? <Dependents items={items} upcoming={upcoming} limit={DEPENDENTS_LIMIT} /> : null}
       {salir}
-    </SessionScreen>
+    </AppFrame>
   );
 }

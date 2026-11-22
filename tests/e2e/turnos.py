@@ -35,15 +35,20 @@ def login(b, account, viewport=(390, 844)):
     return ctx, pg
 
 def cancel_existing(pg):
-    """Deja al cliente sin turno (de una corrida anterior)."""
+    """Deja al cliente sin turno (de una corrida anterior). Inicio (004c): una chapa por turno."""
+    if "/turnos" not in pg.url: pg.goto(B + "/turnos", wait_until="networkidle")
     main = pg.locator("main:visible")
-    if main.locator("h1:text-is('Tu turno')").count():
-        main.locator("button:has-text('Cancelar turno')").click()
+    while main.locator("button:has-text('Cancelar turno')").count():
+        main.locator("button:has-text('Cancelar turno')").first.click()
         main.locator("button:has-text('Sí, cancelar')").click()
-        main.locator("text=Cancelaste tu turno").wait_for(timeout=10000)
+        main.locator("text=Cancelaste").wait_for(timeout=10000)
+        pg.goto(B + "/turnos", wait_until="networkidle")
 
 def pick(pg, d, nth=0):
-    """Elige el día `d` (pasando de semana si hace falta) y el horario número `nth`."""
+    """En Reservar (004c), elige el día `d` (pasando de semana si hace falta) y el horario número `nth`."""
+    if "/reservar" not in pg.url:
+        pg.locator("nav[aria-label=Secciones]:visible a:has-text('Reservar')").click(); pg.wait_for_url("**/reservar*")
+        pg.locator("main:visible #titulo-reservar").wait_for()
     main = pg.locator("main:visible")
     for _ in range(3):
         btn = main.locator(f"button[aria-label^='{day_label(d)},']")
@@ -53,16 +58,19 @@ def pick(pg, d, nth=0):
     starts = main.locator("button[aria-label$='elegir este horario']")
     label = starts.nth(nth).inner_text().strip()
     starts.nth(nth).click()
-    main.locator("#titulo-confirmar").wait_for()
+    main.locator(f"aside:has-text('{label}')").wait_for()
     return label
 
-def fill_contact(pg, name, phone):
-    main = pg.locator("main:visible")
-    if main.locator("label:has-text('Tu nombre') input").count():
-        main.locator("label:has-text('Tu nombre') input").fill(name)
-        main.locator("label:has-text('Tu celular') input").fill(phone)
-        return True
-    return False
+def reserve(pg, name=None, phone=None, expect_home=True):
+    """Toca "Reservar" en el resumen; si pide nombre y celular (RF-11 de la 004c), los carga y vuelve a tocar."""
+    aside = pg.locator("main:visible aside")
+    aside.locator("button:has-text('Reservar')").click()
+    if name and aside.locator("label:has-text('Tu nombre') input").count():
+        aside.locator("label:has-text('Tu nombre') input").fill(name)
+        aside.locator("label:has-text('Tu celular') input").fill(phone)
+        aside.locator("button:has-text('Reservar')").click()
+    if expect_home:
+        pg.wait_for_url("**/turnos*", timeout=15000); pg.locator("main:visible [role=status]").wait_for(timeout=10000)
 
 with sync_playwright() as p:
     b = p.chromium.launch()
@@ -82,34 +90,33 @@ with sync_playwright() as p:
     account_phone = None  # el celular de esta cuenta, para probar el caso 12
     cancel_existing(c1)
     first = pick(c1, day, 1)
-    fill_contact(c1, "Cliente Uno", "11 5555-0101")
-    c1.locator("main:visible button:has-text('Reservar')").click()
-    c1.locator("main:visible h1:text-is('Tu turno')").wait_for(timeout=10000)
-    card = c1.inner_text("main:visible")
-    ok(first in card and "Reservado" in card, f"RF-8: 'Tu turno' con el horario {first} y estado Reservado")
+    reserve(c1, "Cliente Uno", "11 5555-0101")
+    card = c1.inner_text("main:visible article[aria-label='Tu próximo turno']")
+    ok(first in card and "Reservado" in card and "Reservaste tu turno" in c1.inner_text("main:visible"), f"RF-8: 'Tu próximo turno' con el horario {first} y estado Reservado")
     c1.screenshot(path=f"{SHOTS}/tu-turno-360.png", full_page=True)
     c1.goto(B + "/perfil", wait_until="networkidle"); account_phone = c1.input_value("input[name=phone]:visible")
     c1.goto(B + "/turnos", wait_until="networkidle")
-    c1.locator("main:visible button:has-text('Cambiar horario')").click()
+    c1.locator("main:visible a:has-text('Cambiar horario')").click(); c1.wait_for_url("**/reservar?cambiar=*")
+    c1.locator("main:visible h1:text-is('Elegí el horario nuevo')").wait_for()
     second = pick(c1, day, 3)
-    c1.locator("main:visible #titulo-confirmar ~ * button:has-text('Cambiar horario'), main:visible button:has-text('Cambiar horario')").last.click()
-    c1.locator("main:visible").locator("text=tu turno pasó").wait_for(timeout=10000)
+    c1.locator("main:visible aside button:has-text('Cambiar horario')").click()
+    c1.wait_for_url("**/turnos*"); c1.locator("main:visible").locator("text=tu turno pasó").wait_for(timeout=10000)
     ok(second in c1.inner_text("main:visible"), f"RF-16: el turno pasó a las {second}")
 
     # Cliente 2: reserva otro horario del mismo día (para que Colo lo cancele).
     ctx2, c2 = login(b, "Cliente de prueba 2")
     cancel_existing(c2)
     taken = pick(c2, day, 5)
-    fill_contact(c2, "Cliente Dos", "11 5555-0102")
-    c2.locator("main:visible button:has-text('Reservar')").click()
-    c2.locator("main:visible h1:text-is('Tu turno')").wait_for(timeout=10000)
+    reserve(c2, "Cliente Dos", "11 5555-0102")
     ok(True, f"cliente 2 reservó a las {taken}")
     # RF-10: con un turno, no se ofrece reservar otro.
-    ok(c2.locator("main:visible button[aria-label$='elegir este horario']").count() == 0, "RF-10: con un turno futuro no se puede reservar otro")
+    ok(c2.locator("main:visible a:has-text('Reservar turno')").count() == 0, "RF-10: con un turno futuro, Inicio no ofrece reservar")
+    c2.goto(B + "/reservar", wait_until="networkidle")
+    ok(c2.locator("main:visible button[aria-label$='elegir este horario']").count() == 0 and "Ya tenés un turno" in c2.inner_text("main:visible"), "RF-10: ni en Reservar")
 
     # Colo: agenda con "Nuevo", choque con Ajustes y cancelación con motivo.
     ctxc, colo = login(b, "Colo (barbero)", (360, 800))
-    ok("/colo" in colo.url and colo.locator("main:visible nav[aria-label='Panel de Colo']").count() == 1, "RF-21: Colo entra a la agenda")
+    ok("/colo" in colo.url and colo.locator("nav[aria-label=Secciones]:visible").count() == 1, "RF-21: Colo entra a la agenda")
     colo.goto(f"{B}/colo?dia={day.isoformat()}", wait_until="networkidle")
     agenda = colo.inner_text("main:visible")
     ok(second in agenda and taken in agenda and "Nuevo" in agenda, "RF-22: la agenda del día muestra los dos turnos, marcados Nuevo")
@@ -139,12 +146,12 @@ with sync_playwright() as p:
     ok("Colo canceló tu turno" in aviso and "Prueba de la app" in aviso, "RF-20: el cliente ve que Colo canceló y el motivo")
     c2.locator("main:visible button:has-text('Entendido')").click(); c2.wait_for_timeout(1200)
     ok("Colo canceló" not in c2.inner_text("main:visible"), "RF-20: el aviso se cierra")
-    ok(c2.locator("main:visible button[aria-label$='elegir este horario']").count() > 0, "el cliente 2 vuelve a poder reservar")
+    ok(c2.locator("main:visible a:has-text('Reservar turno')").count() == 1, "el cliente 2 vuelve a poder reservar")
 
     # RF-14: el cliente 1 cancela a tiempo.
     c1.goto(B + "/turnos", wait_until="networkidle")
     cancel_existing(c1)
-    ok(c1.locator("main:visible h1:text-is('Reservá tu turno')").count() == 1, "RF-14: cancelado; vuelve a 'Reservá tu turno'")
+    ok(c1.locator("main:visible a:has-text('Reservar turno')").count() == 1 and c1.locator("main:visible article").count() == 0, "RF-14: cancelado; Inicio ofrece reservar")
 
     # Invitado (solo local: en producción no se crean invitados reales).
     if not PROD:
@@ -152,15 +159,13 @@ with sync_playwright() as p:
         g.goto(B + "/", wait_until="networkidle"); g.click("button:has-text('Entrar como invitado')"); g.wait_for_url("**/turnos")
         ok(True, "RF-4: el invitado entra con un toque")
         pick(g, day, 0)
-        g.locator("main:visible label:has-text('Tu celular') input").fill(account_phone)
-        g.locator("main:visible label:has-text('Tu nombre') input").fill("Invitado Prueba")
-        g.locator("main:visible button:has-text('Reservar')").click()
+        reserve(g, "Invitado Prueba", account_phone, expect_home=False)
         g.locator("main:visible").locator("text=tiene una cuenta").wait_for(timeout=10000)
         ok(True, "RF-11, caso 12: con el celular de una cuenta no reserva")
         phone = f"11 6{int(time.time()) % 1000:03d}-{int(time.time() * 7) % 10000:04d}"
-        g.locator("main:visible label:has-text('Tu celular') input").fill(phone)
-        g.locator("main:visible button:has-text('Reservar')").click()
-        g.locator("main:visible h1:text-is('Tu turno')").wait_for(timeout=10000)
+        g.locator("main:visible aside label:has-text('Tu celular') input").fill(phone)
+        g.locator("main:visible aside button:has-text('Reservar')").click()
+        g.wait_for_url("**/turnos*"); g.locator("main:visible article").first.wait_for(timeout=10000)
         ok(True, "RF-7: el invitado reserva cargando nombre y celular")
         cancel_existing(g)
 
@@ -181,11 +186,11 @@ with sync_playwright() as p:
         pg.wait_for_url("**/turnos", timeout=30000, wait_until="commit"); pg.locator("main:visible h1").first.wait_for(timeout=30000)
         cancel_existing(pg)
         pick(pg, target_day(4), i)
-        # El resumen se desplaza suave hasta verse: se mide desde que el botón está quieto (una persona toca ahí).
-        reservar = pg.locator("main:visible button:has-text('Reservar')")
-        reservar.scroll_into_view_if_needed(); pg.wait_for_timeout(1500)
+        # El resumen está fijo abajo (004c): se mide del toque a Inicio con el turno.
+        reservar = pg.locator("main:visible aside button:has-text('Reservar')")
+        pg.wait_for_timeout(500)
         t = time.perf_counter(); reservar.click()
-        pg.locator("main:visible h1:text-is('Tu turno')").wait_for(timeout=20000); books.append(time.perf_counter() - t)
+        pg.locator("main:visible article[aria-label='Tu próximo turno']").wait_for(timeout=20000); books.append(time.perf_counter() - t)
         cancel_existing(pg)
         ctx.close()
     e, k = statistics.median(entries), statistics.median(books)

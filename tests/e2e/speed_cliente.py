@@ -1,4 +1,4 @@
-"""Velocidad del cliente entre Turnos y Mi perfil: del toque a la pantalla nueva, con 4G simulado.
+"""Velocidad del cliente entre Inicio y Mi perfil: del toque a la pantalla nueva, con 4G simulado.
 Uso: python3 -I tests/e2e/speed_cliente.py [URL]"""
 import sys
 from playwright.sync_api import sync_playwright
@@ -7,7 +7,7 @@ JS = """(text) => new Promise((resolve) => {
   const vis = (e) => e.getClientRects().length > 0;
   const title = () => [...document.querySelectorAll('h1')].filter(vis).map(e => e.textContent).join('|');
   const before = title(); const t0 = performance.now();
-  const link = [...document.querySelectorAll('a')].find(a => vis(a) && a.textContent.includes(text));
+  const link = [...document.querySelectorAll('nav[aria-label=Secciones] a')].find(a => vis(a) && a.textContent.includes(text));
   const obs = new MutationObserver(() => { if (title() !== before) { obs.disconnect(); resolve(Math.round(performance.now() - t0)); } });
   obs.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true });
   link.click(); setTimeout(() => { obs.disconnect(); resolve(-1); }, 15000);
@@ -19,7 +19,7 @@ with sync_playwright() as p:
     cdp = ctx.new_cdp_session(pg); cdp.send("Network.enable")
     cdp.send("Network.emulateNetworkConditions", {"offline": False, "latency": 150, "downloadThroughput": 200_000, "uploadThroughput": 93_750})
     times = []
-    for link, url in [("Mi perfil", "/perfil"), ("Volver a los turnos", "/turnos")] * 3:
+    for link, url in [("Mi perfil", "/perfil"), ("Inicio", "/turnos"), ("Reservar", "/reservar"), ("Inicio", "/turnos")] * 2:
         ms = pg.evaluate(JS, link); pg.wait_for_url("**" + url); pg.wait_for_timeout(1200); times.append(ms)
         print(f"  → {url:8s} {ms} ms")
     b.close()

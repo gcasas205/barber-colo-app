@@ -16,7 +16,7 @@ with sync_playwright() as p:
     ok(first.get("theme") == "dark", "el tema elegido abre sin parpadeo en el ingreso (script autorizado por hash)")
     pg2.click("button:has-text('Cliente de prueba 1')"); pg2.click("button[type=submit]:has-text('Ingresar')")
     pg2.wait_for_url("**/turnos"); pg2.wait_for_selector("main:visible h1")
-    pg2.wait_for_load_state("networkidle")
+    pg2.goto(B + "/reservar", wait_until="networkidle")
     ok(pg2.locator("main:visible button[aria-label$='elegir este horario']").count() > 0, "los turnos funcionan con la CSP estricta (scripts de Next con nonce)")
     # Un script inyectado (sin nonce) no corre
     # Así llega un ataque real: HTML inyectado con un manejador de eventos o un <script> sin nonce.

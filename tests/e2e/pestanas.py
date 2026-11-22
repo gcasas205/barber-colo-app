@@ -16,9 +16,9 @@ with sync_playwright() as p:
             cdp.send("Network.emulateNetworkConditions", {"offline": False, "latency": 150, "downloadThroughput": 200_000, "uploadThroughput": 93_750})
             cdp.send("Emulation.setCPUThrottlingRate", {"rate": 4})
         for tab in ["Clientes", "Agenda", "Clientes", "Ajustes", "Agenda", "Ajustes", "Clientes", "Agenda", "Agenda"]:
-            pg.locator("main:visible nav a", has_text=tab).tap()
+            pg.locator("nav[aria-label=Secciones]:visible a", has_text=tab).tap()
             pg.wait_for_url("**" + PATH[tab] + "*", timeout=20000); pg.wait_for_timeout(2500 if throttle else 800)
-            active = [a.inner_text().strip() for a in pg.locator("main:visible nav a.bg-esmalte").all()]
+            active = [a.inner_text().strip() for a in pg.locator("nav[aria-label=Secciones]:visible a[data-on]").all()]
             ok = active == [tab]
             print(("✓" if ok else "✗"), "red lenta" if throttle else "normal", "→", tab, "marcada:", active)
             if not ok: bad.append(tab)

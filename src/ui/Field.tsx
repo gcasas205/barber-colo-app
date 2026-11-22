@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import type { ComponentProps, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 import { ChevronDown } from "lucide-react";
 import { cx } from "./cx";
 
@@ -16,7 +16,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   );
 }
 
-export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+export function TextInput({ className, ...rest }: ComponentProps<"input">) {
   // Safari centra el valor de fecha y hora y les da otra altura: se alinean como el resto de los campos.
   return <input className={cx(control, "[&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-left", className)} {...rest} />;
 }

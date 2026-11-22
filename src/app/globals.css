@@ -150,6 +150,9 @@
   html {
     -webkit-tap-highlight-color: transparent;
     text-size-adjust: 100%;
+    /* 004c, RNF-2: lo que recibe el foco no queda tapado por la chapa de arriba ni por la barra de abajo. */
+    scroll-padding-top: 8rem;
+    scroll-padding-bottom: 5.5rem;
   }
   body {
     background: var(--porcelana);

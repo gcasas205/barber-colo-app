@@ -10,7 +10,7 @@ JS = """(tab) => new Promise((resolve) => {
   const title = () => { const m = [...document.querySelectorAll('main')].find(e => e.offsetParent !== null || e.getClientRects().length);
                         return m ? (m.querySelector('h1,h2')?.textContent ?? '') : ''; };
   const before = title(); const t0 = performance.now();
-  const link = [...document.querySelectorAll('main nav a')].find(a => a.offsetParent !== null && a.textContent.includes(tab));
+  const link = [...document.querySelectorAll('nav[aria-label=Secciones] a')].find(a => a.getClientRects().length && a.textContent.includes(tab));
   const obs = new MutationObserver(() => { if (title() !== before) { obs.disconnect(); resolve(Math.round(performance.now() - t0)); } });
   obs.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true });
   link.click();

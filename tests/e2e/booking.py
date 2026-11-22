@@ -1,4 +1,4 @@
-"""Pruebas de punta a punta de la página de horarios (cambio 01; desde la spec 004, en /turnos). Uso: python3 -I tests/e2e/booking.py [URL]"""
+"""Pruebas de punta a punta de la página de horarios (cambio 01; desde la spec 004c, en /reservar). Uso: python3 -I tests/e2e/booking.py [URL]"""
 import sys
 from playwright.sync_api import sync_playwright
 
@@ -11,10 +11,10 @@ def check(cond, msg):
 
 
 def enter(pg, base):
-    """Spec 004: los horarios están en /turnos, con sesión. Entra con el cliente de prueba 1 (sin turno)."""
+    """Spec 004c: los horarios están en Reservar, con sesión. Entra con el cliente de prueba 1 (sin turno)."""
     pg.goto(base.rstrip("/") + "/", wait_until="networkidle")
     pg.click("button:has-text('Cliente de prueba 1')"); pg.click("button[type=submit]:has-text('Ingresar')")
-    pg.wait_for_url("**/turnos", wait_until="commit"); pg.wait_for_selector("#titulo-horarios")
+    pg.wait_for_url("**/turnos", wait_until="commit"); pg.goto(base.rstrip("/") + "/reservar", wait_until="commit"); pg.wait_for_selector("#titulo-horarios")
 
 with sync_playwright() as p:
     b = p.chromium.launch()
