@@ -1,6 +1,8 @@
 import type { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { book, cancelByBarber, getDayAgenda, getMyAppointment, markAgendaSeen, rescheduleByCustomer } from "@/modules/appointments";
+import { book, cancelByBarber, cancelByCustomer, getDayAgenda, getMyAppointments, hasUpcomingAppointment, markAgendaSeen, rescheduleByCustomer } from "@/modules/appointments";
+import { addDependent, removeDependent } from "@/modules/customers";
+import { createCustomersStore } from "@/modules/customers/infrastructure/customers-store";
 import type { Actor } from "@/modules/identity";
 import { appointmentsDeps } from "@/server/appointments";
 import { queries } from "@/server/composition";
@@ -74,8 +76,8 @@ describe("turnos contra la base (spec 004)", () => {
     const r = await book(appointmentsDeps(db), a, { serviceId: corte, start: at("16:00") }, now);
     expect(r.ok).toBe(true);
     await admin.query("update app.services set price_cents = 2500000 where name = 'Corte'");
-    const mine = await getMyAppointment(appointmentsDeps(db), a, now);
-    expect(mine.appointment).toMatchObject({ priceCents: 1_800_000, serviceName: "Corte", status: "reserved" });
+    const mine = await getMyAppointments(appointmentsDeps(db), a, now);
+    expect(mine.appointments[0]).toMatchObject({ priceCents: 1_800_000, serviceName: "Corte", status: "reserved" });
     const snapshot = await queries(db).getScheduleSnapshot(now);
     expect(snapshot.occupations).toContainEqual([at("16:00").getTime(), at("16:30").getTime()]);
     expect(JSON.stringify(snapshot)).not.toContain("Ana");
@@ -92,13 +94,51 @@ describe("turnos contra la base (spec 004)", () => {
     const seen = await getDayAgenda(appointmentsDeps(db), colo, localDate("2026-11-25"), at("08:42"));
     expect(seen.ok && seen.value.items[0]!.isNew).toBe(false);
     expect((await cancelByBarber(appointmentsDeps(db), colo, r.value.id, "Me enfermé", at("09:00"))).ok).toBe(true);
-    const mine = await getMyAppointment(appointmentsDeps(db), a, at("09:01"));
-    expect(mine).toEqual({ appointment: null, notice: expect.objectContaining({ kind: "cancelled", reason: "Me enfermé", fromStart: at("16:15") }) });
+    const mine = await getMyAppointments(appointmentsDeps(db), a, at("09:01"));
+    expect(mine).toEqual({ appointments: [], notice: expect.objectContaining({ kind: "cancelled", reason: "Me enfermé", fromStart: at("16:15"), isSelf: true }) });
     const { rows } = await admin.query("select actor, kind, late from app.appointment_events order by at");
     expect(rows).toEqual([
       { actor: "customer", kind: "booked", late: false },
       { actor: "customer", kind: "rescheduled", late: false },
       { actor: "barber", kind: "cancelled", late: false },
     ]);
+  });
+});
+
+describe("personas a cargo contra la base (spec 004b)", () => {
+  async function holder(name: string, phone: string): Promise<Actor> {
+    phone = phone.slice(0, -4) + String((Number(phone.slice(-4)) + Number(RUN)) % 10000).padStart(4, "0");
+    const userId = await createAuthUser(admin, { email: `titular-${RUN}-${Math.random().toString(36).slice(2, 8)}@example.com` });
+    const { rows } = await admin.query(
+      "insert into app.customers (role, account_user_id, full_name, phone_e164) values ('holder', $1, $2, $3) returning id",
+      [userId, name, phone],
+    );
+    return { kind: "customer", userId, customerId: rows[0].id, profileComplete: true, demo: false };
+  }
+
+  it("casos 1, 3 y 9: reserva para el hijo, la agenda lo muestra a cargo del titular y no se lo quita con turno futuro", async () => {
+    const papa = await holder("Lucas Seis", "+5491170000006");
+    const store = createCustomersStore(db);
+    const hijo = await addDependent({ store }, papa, { name: "Tomi", birthday: null });
+    expect(hijo.ok).toBe(true);
+    const hijoId = hijo.ok ? hijo.value.id : "";
+
+    expect((await book(appointmentsDeps(db), papa, { serviceId: corte, start: at("16:00") }, now)).ok).toBe(true);
+    const r = await book(appointmentsDeps(db), papa, { serviceId: corte, start: at("16:30"), forCustomerId: hijoId }, now);
+    expect(r.ok && r.value).toMatchObject({ customerName: "Tomi" });
+
+    const mine = await getMyAppointments(appointmentsDeps(db), papa, now);
+    expect(mine.appointments.map((a) => [a.customerName, a.isSelf])).toEqual([["Lucas Seis", true], ["Tomi", false]]);
+
+    const agenda = await getDayAgenda(appointmentsDeps(db), colo, localDate("2026-11-25"), at("08:01"));
+    const item = agenda.ok ? agenda.value.items.find((i) => i.customer.name === "Tomi") : undefined;
+    expect(item?.customer).toMatchObject({ holderName: "Lucas Seis", phone: expect.stringMatching(/^\+549117/) });
+
+    expect(await hasUpcomingAppointment(appointmentsDeps(db), hijoId, now)).toBe(true);
+    expect(await removeDependent({ store }, papa, hijoId, now)).toEqual({ ok: false, error: "HAS_UPCOMING" });
+    expect((await cancelByCustomer(appointmentsDeps(db), papa, r.ok ? r.value.id : "", false, now)).ok).toBe(true);
+    expect(await removeDependent({ store }, papa, hijoId, now)).toEqual({ ok: true, value: undefined });
+    const { rows } = await admin.query("select full_name from app.customers where id = $1", [hijoId]);
+    expect(rows[0].full_name).toBe("Cliente dado de baja"); // RF-5: el historial queda, sin datos
   });
 });

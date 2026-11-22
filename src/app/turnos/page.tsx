@@ -3,7 +3,7 @@ import { UserRound } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { getMyAppointment } from "@/modules/appointments";
+import { getMyAppointments } from "@/modules/appointments";
 import { formatArPhone, getOwnProfile } from "@/modules/customers";
 import { appointmentsDeps } from "@/server/appointments";
 import { getActor } from "@/server/auth/actor";
@@ -36,11 +36,12 @@ export default async function TurnosPage() {
   const [services, snapshot, mine, profile] = await Promise.all([
     q.listServices(),
     q.getScheduleSnapshot(now),
-    getMyAppointment(appointmentsDeps(), actor, now),
+    getMyAppointments(appointmentsDeps(), actor, now),
     getOwnProfile({ store: customersStore() }, actor),
   ]);
 
-  const turno: MyTurno | null = mine.appointment ? toTurnoView(mine.appointment) : null;
+  const own = mine.appointments.find((a) => a.isSelf); // T3 muestra todos
+  const turno: MyTurno | null = own ? toTurnoView(own) : null;
   const n = mine.notice;
   const notice: NoticeView | null = n
     ? { eventId: n.eventId, kind: n.kind, serviceName: n.serviceName, fromStart: n.fromStart.getTime(), toStart: n.toStart?.getTime() ?? null, reason: n.reason }

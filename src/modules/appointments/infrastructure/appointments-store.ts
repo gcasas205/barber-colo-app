@@ -18,6 +18,7 @@ type Row = {
   customer_id: string;
   service_id: number;
   service_name: string;
+  customer_name: string;
   start: Date;
   end: Date;
   status: AppointmentStatus;
@@ -28,6 +29,7 @@ type Row = {
 const toAppointment = (r: Row): Appointment => ({
   id: r.id,
   customerId: r.customer_id,
+  customerName: r.customer_name,
   serviceId: String(r.service_id),
   serviceName: r.service_name,
   start: new Date(r.start),
@@ -50,11 +52,13 @@ export function createAppointmentsStore(db: Database): Omit<AppointmentsTx, "loc
     db
       .selectFrom("app.appointments as a")
       .innerJoin("app.services as s", "s.id", "a.service_id")
+      .innerJoin("app.customers as c", "c.id", "a.customer_id")
       .select([
         "a.id",
         "a.customer_id",
         "a.service_id",
         "s.name as service_name",
+        "c.full_name as customer_name",
         sql<Date>`lower(a.period)`.as("start"),
         sql<Date>`upper(a.period)`.as("end"),
         "a.status",
@@ -81,8 +85,6 @@ export function createAppointmentsStore(db: Database): Omit<AppointmentsTx, "loc
     /** Spec 004, RF-27: turnos activos que todavía no terminaron, para avisar a Colo en Ajustes. */
     async upcomingActive(now) {
       const rows = await base()
-        .innerJoin("app.customers as c", "c.id", "a.customer_id")
-        .select("c.full_name")
         .where("a.status", "in", ACTIVE)
         .where(sql<boolean>`upper(a.period) > ${now}`)
         .orderBy(sql`lower(a.period)`)
@@ -91,7 +93,7 @@ export function createAppointmentsStore(db: Database): Omit<AppointmentsTx, "loc
         id: r.id,
         start: new Date(r.start),
         end: new Date(r.end),
-        customerName: r.full_name,
+        customerName: r.customer_name,
         serviceName: r.service_name,
       }));
     },
@@ -188,21 +190,25 @@ export function createAppointmentsStore(db: Database): Omit<AppointmentsTx, "loc
         .execute();
     },
 
-    async unseenBarberNotice(customerId): Promise<BarberNotice | null> {
-      if (!isUuid(customerId)) return null;
+    async unseenBarberNotice(customerIds): Promise<BarberNotice | null> {
+      const ids = customerIds.filter(isUuid);
+      if (ids.length === 0) return null;
       const row = await db
         .selectFrom("app.appointment_events as e")
         .innerJoin("app.appointments as a", "a.id", "e.appointment_id")
         .innerJoin("app.services as s", "s.id", "a.service_id")
+        .innerJoin("app.customers as c", "c.id", "a.customer_id")
         .select([
           "e.id",
           "e.kind",
           "e.reason",
+          "a.customer_id",
+          "c.full_name as customer_name",
           "s.name as service_name",
           sql<Date>`lower(e.from_period)`.as("from_start"),
           sql<Date | null>`lower(e.to_period)`.as("to_start"),
         ])
-        .where("a.customer_id", "=", customerId)
+        .where("a.customer_id", "in", ids)
         .where("e.actor", "=", "barber")
         .where("e.kind", "in", ["cancelled", "rescheduled"])
         .where("e.seen_by_customer_at", "is", null)
@@ -211,6 +217,8 @@ export function createAppointmentsStore(db: Database): Omit<AppointmentsTx, "loc
       if (!row || row.kind === "booked") return null;
       return {
         eventId: String(row.id),
+        customerId: row.customer_id,
+        customerName: row.customer_name,
         kind: row.kind,
         serviceName: row.service_name,
         fromStart: new Date(row.from_start),
@@ -219,25 +227,47 @@ export function createAppointmentsStore(db: Database): Omit<AppointmentsTx, "loc
       };
     },
 
-    async markNoticeSeen(eventId, customerId, at) {
-      if (!/^\d{1,18}$/.test(eventId) || !isUuid(customerId)) return;
-      // Solo los avisos de turnos del propio cliente.
+    async markNoticeSeen(eventId, customerIds, at) {
+      const ids = customerIds.filter(isUuid);
+      if (!/^\d{1,18}$/.test(eventId) || ids.length === 0) return;
+      // Solo los avisos de turnos de la cuenta.
       await db
         .updateTable("app.appointment_events")
         .set({ seen_by_customer_at: at })
         .where("id", "=", eventId)
-        .where("appointment_id", "in", (eb) => eb.selectFrom("app.appointments").select("id").where("customer_id", "=", customerId))
+        .where("appointment_id", "in", (eb) => eb.selectFrom("app.appointments").select("id").where("customer_id", "in", ids))
         .execute();
+    },
+
+    /** Spec 004b: el titular y sus personas a cargo activas, titular primero. */
+    async accountMembers(accountUserId) {
+      if (!isUuid(accountUserId)) return [];
+      const rows = await db
+        .selectFrom("app.customers")
+        .select(["id", "full_name", "role"])
+        .where("account_user_id", "=", accountUserId)
+        .where("role", "in", ["holder", "dependent"])
+        .where("anonymized_at", "is", null)
+        .where("linked_to", "is", null)
+        .orderBy(sql`role = 'holder'`, "desc")
+        .orderBy("created_at")
+        .execute();
+      return rows.map((r) => ({ customerId: r.id, name: r.full_name, isHolder: r.role === "holder" }));
     },
 
     async agenda(r): Promise<AgendaItem[]> {
       const rows = await base()
-        .innerJoin("app.customers as c", "c.id", "a.customer_id")
+        // Spec 004b, RF-16: de una persona a cargo, el titular de la cuenta y su celular.
+        .leftJoin("app.customers as h", (j) =>
+          j.onRef("h.account_user_id", "=", "c.account_user_id").on("h.role", "=", "holder").on("c.role", "=", "dependent"),
+        )
         .select([
           "c.full_name",
           "c.nickname",
           "c.phone_e164",
           "c.role",
+          "h.full_name as holder_name",
+          "h.phone_e164 as holder_phone",
           (eb) =>
             eb
               .selectFrom("app.appointment_events as e")
@@ -255,8 +285,9 @@ export function createAppointmentsStore(db: Database): Omit<AppointmentsTx, "loc
         customer: {
           name: x.full_name,
           nickname: x.nickname,
-          phone: x.phone_e164,
+          phone: x.phone_e164 ?? x.holder_phone,
           isGuest: x.role === "guest",
+          holderName: x.holder_name,
         },
         lastCustomerChangeAt: x.last_customer_change_at ? new Date(x.last_customer_change_at) : null,
       }));

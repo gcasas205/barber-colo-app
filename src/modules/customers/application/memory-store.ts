@@ -4,16 +4,17 @@ import { PhoneConflictError } from "./ports";
 
 /** Implementación en memoria para los tests de los casos de uso. Imita las reglas de la base. */
 export function memoryStore() {
-  const customers = new Map<string, CustomerRow & { linkedTo: string | null }>();
+  const customers = new Map<string, CustomerRow & { linkedTo: string | null; anonymized?: boolean }>();
   const devices = new Map<string, string>();
   const demo = new Map<string, { kind: DemoKind; customerId: string | null }>();
   const attempts: { ipHash: string; at: Date }[] = [];
   const phoneChanges: { customerId: string; oldPhone: string | null; newPhone: string; changedBy: string }[] = [];
+  const upcoming = new Set<string>(); // ids con turno futuro (lo arma el test)
   let seq = 0;
   let clock = Date.parse("2026-11-21T12:00:00Z");
   const nextId = () => `c${++seq}`;
 
-  const active = () => [...customers.values()].filter((c) => !c.linkedTo);
+  const active = () => [...customers.values()].filter((c) => !c.linkedTo && !c.anonymized);
   const tx: CustomersTx = {
     lockPhoneOwner: async (phone) => active().find((c) => c.phone === phone) ?? null,
     getCustomer: async (id) => customers.get(id) ?? null,
@@ -51,7 +52,18 @@ export function memoryStore() {
       c.nickname = nickname;
       return true;
     },
+    lockHolder: async (account) => active().find((c) => c.role === "holder" && c.accountUserId === account) ?? null,
+    listDependents: async (account) => active().filter((c) => c.role === "dependent" && c.accountUserId === account),
+    createDependent: async (d) => {
+      const id = nextId();
+      customers.set(id, { id, role: "dependent", accountUserId: d.accountUserId, fullName: d.fullName, phone: null, birthday: d.birthday, nickname: null, isDemo: d.isDemo, createdAt: new Date(clock++), linkedTo: null });
+      return id;
+    },
+    updateDependent: async (id, d) => void Object.assign(customers.get(id)!, { fullName: d.fullName, birthday: d.birthday }),
+    lockDependent: async (account, id) => active().find((c) => c.id === id && c.role === "dependent" && c.accountUserId === account) ?? null,
+    hasUpcomingAppointment: async (id) => upcoming.has(id),
+    anonymize: async (id) => void Object.assign(customers.get(id)!, { anonymized: true, fullName: "Cliente dado de baja", birthday: null, nickname: null }),
   };
   const store: CustomersStore = { transaction: (fn) => fn(tx) };
-  return { store, customers, devices, demo, attempts, phoneChanges, tx };
+  return { store, customers, devices, demo, attempts, phoneChanges, tx, upcoming };
 }
