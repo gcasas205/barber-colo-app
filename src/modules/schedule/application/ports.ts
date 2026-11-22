@@ -14,6 +14,8 @@ export interface ScheduleRepository {
  */
 export interface OccupationSource {
   occupations(range: Interval): Promise<Interval[]>;
+  /** Bloqueos con aviso para los clientes que se superponen con `range` (spec 003, RF-14). */
+  notices(range: Interval): Promise<{ start: Date; end: Date; text: string }[]>;
 }
 
 /** Bloqueo cargado, para la lista de Ajustes (RF-12). */

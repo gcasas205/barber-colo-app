@@ -1,10 +1,11 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Megaphone } from "lucide-react";
 import type { Service } from "@/modules/pricing";
-import type { Availability, Start } from "@/modules/schedule";
+import { weekNotices, type Availability, type BlockNotice, type DayNotice, type Start } from "@/modules/schedule";
 import {
   dayOfMonth,
   daysBetween,
   formatDayLong,
+  formatDayShort,
   formatDuration,
   formatMinute,
   formatPesos,
@@ -34,10 +35,12 @@ export type BookingViewProps = {
   availability: Availability;
   today: LocalDate;
   actions: BookingActions;
+  /** Bloqueos con aviso para los clientes (spec 003, RF-14). */
+  notices?: BlockNotice[];
 };
 
 /** Página pública de horarios libres (spec 001). Presentación pura: recibe todo calculado. */
-export function BookingView({ services, service, availability, today, actions }: BookingViewProps) {
+export function BookingView({ services, service, availability, today, actions, notices = [] }: BookingViewProps) {
   const a = availability;
   return (
     <>
@@ -80,11 +83,17 @@ export function BookingView({ services, service, availability, today, actions }:
             No hay lugar para {service.name.toLowerCase()} en los próximos {daysBetween(a.window.first, a.window.last)} días
           </h2>
           <p className="text-tinta-suave">Escribile a Colo y vemos si se puede hacer un hueco.</p>
+          {[...new Set(notices.map((n) => n.text))].map((text) => (
+            <p key={text} className="inline-flex items-center gap-2 font-bold">
+              <Megaphone aria-hidden size={20} strokeWidth={2.5} /> Aviso de Colo: {text}
+            </p>
+          ))}
           <ContactLink number={a.contactWhatsapp} />
         </Plate>
       ) : (
         <>
           <WeekPicker availability={a} actions={actions} />
+          <WeekNotices items={weekNotices(a.week.map((d) => d.date), notices)} />
           <DaySlots availability={a} service={service} today={today} actions={actions} />
         </>
       )}
@@ -165,6 +174,26 @@ function WeekPicker({ availability: a, actions }: { availability: Availability; 
             </li>
           );
         })}
+      </ul>
+    </section>
+  );
+}
+
+/** RF-14: los avisos de Colo para los días de la semana que se está viendo. */
+function WeekNotices({ items }: { items: DayNotice[] }) {
+  if (items.length === 0) return null;
+  return (
+    <section aria-label="Avisos de Colo" className="flex flex-col gap-2 rounded-[var(--radius-chapa)] bg-chapa px-4 py-3 shadow-[inset_0_0_0_2px_var(--linea)]">
+      <h3 className="inline-flex items-center gap-2 text-[15px] font-bold">
+        <Megaphone aria-hidden size={18} strokeWidth={2.5} /> Avisos de Colo
+      </h3>
+      <ul className="flex flex-col gap-1">
+        {items.map((n) => (
+          <li key={`${n.date}-${n.kind === "hours" ? n.from : "dia"}-${n.text}`} className="text-[15px]">
+            <span className="font-bold">{capitalize(formatDayShort(n.date))}</span> ·{" "}
+            {n.kind === "closed" ? `Cerrado: ${n.text}` : `${formatMinute(n.from)} a ${formatMinute(n.to)}: ${n.text}`}
+          </li>
+        ))}
       </ul>
     </section>
   );

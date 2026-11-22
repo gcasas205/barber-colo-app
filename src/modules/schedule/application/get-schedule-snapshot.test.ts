@@ -15,7 +15,10 @@ describe("getScheduleSnapshot (RF-15)", () => {
           settings: async () => ({ config: { stepMinutes: 15, minNoticeMinutes: 30, maxAdvanceDays: 30 }, contactWhatsapp: "+5491138163491" }),
           weeklyRanges: async () => [{ weekday: 4, opensAt: 600, closesAt: 780 }],
         },
-        occupations: { occupations: async (range) => (asked.push(range), [block]) },
+        occupations: {
+          occupations: async (range) => (asked.push(range), [block]),
+          notices: async () => [{ ...block, text: "Trámite" }],
+        },
       },
       at("2026-11-24", 540),
     );
@@ -24,6 +27,7 @@ describe("getScheduleSnapshot (RF-15)", () => {
       config: { stepMinutes: 15, minNoticeMinutes: 30, maxAdvanceDays: 30 },
       ranges: [{ weekday: 4, opensAt: 600, closesAt: 780 }],
       occupations: [[block.start.getTime(), block.end.getTime()]],
+      notices: [{ start: block.start.getTime(), end: block.end.getTime(), text: "Trámite" }],
       contactWhatsapp: "+5491138163491",
     });
     // Toda la ventana y un día más: si la página queda abierta después de medianoche, la ventana se corre un día.
@@ -33,7 +37,7 @@ describe("getScheduleSnapshot (RF-15)", () => {
 
   it("vuelve a armar la entrada del cálculo con fechas", () => {
     const input = snapshotInput(
-      { serverNow: 0, config: { stepMinutes: 15, minNoticeMinutes: 30, maxAdvanceDays: 30 }, ranges: [], occupations: [[1000, 2000]], contactWhatsapp: "" },
+      { serverNow: 0, config: { stepMinutes: 15, minNoticeMinutes: 30, maxAdvanceDays: 30 }, ranges: [], occupations: [[1000, 2000]], notices: [], contactWhatsapp: "" },
       30,
       new Date(5000),
     );

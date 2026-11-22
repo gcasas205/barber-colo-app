@@ -26,6 +26,7 @@ function deps(blocks: Interval[] = []) {
       asked.push(range);
       return blocks.filter((b) => b.start < range.end && range.start < b.end);
     },
+    notices: async () => [],
   };
   return { deps: { schedule, occupations }, asked };
 }

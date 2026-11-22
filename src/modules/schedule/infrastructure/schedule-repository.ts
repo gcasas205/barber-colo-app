@@ -41,7 +41,7 @@ export function createScheduleRepository(db: Database): ScheduleRepository {
   };
 }
 
-/** En la spec 001, las ocupaciones son los bloqueos que se superponen con el rango pedido. */
+/** Las ocupaciones son los bloqueos que se superponen con el rango pedido; los avisos, los que tienen texto. */
 export function createBlockOccupations(db: Database): OccupationSource {
   return {
     async occupations(range: Interval): Promise<Interval[]> {
@@ -52,6 +52,17 @@ export function createBlockOccupations(db: Database): OccupationSource {
         .orderBy(sql`lower(period)`)
         .execute();
       return rows.map((r) => ({ start: new Date(r.start), end: new Date(r.end) }));
+    },
+
+    async notices(range: Interval) {
+      const rows = await db
+        .selectFrom("app.schedule_blocks")
+        .select(["notice", sql<Date>`lower(period)`.as("start"), sql<Date>`upper(period)`.as("end")])
+        .where("notice", "is not", null)
+        .where(sql<boolean>`period && tstzrange(${range.start}, ${range.end}, '[)')`)
+        .orderBy(sql`lower(period)`)
+        .execute();
+      return rows.map((r) => ({ start: new Date(r.start), end: new Date(r.end), text: r.notice! }));
     },
   };
 }

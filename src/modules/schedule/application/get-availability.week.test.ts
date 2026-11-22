@@ -14,7 +14,7 @@ const deps = {
     settings: async () => ({ config: { stepMinutes: 15, minNoticeMinutes: 30, maxAdvanceDays: 30 }, contactWhatsapp: "+5491100000000" }),
     weeklyRanges: async () => ranges,
   },
-  occupations: { occupations: async () => [] },
+  occupations: { occupations: async () => [], notices: async () => [] },
 };
 const now = instantAt(localDate("2026-11-24"), hm("09:00"));
 

@@ -109,13 +109,16 @@ describe("composición completa", () => {
 });
 
 describe("foto de la agenda desde la base (cambio 01)", () => {
-  it("trae configuración, franjas y bloqueos como lapsos, sin el motivo", async () => {
+  it("trae configuración, franjas, bloqueos como lapsos y solo los avisos públicos (spec 003, RF-14)", async () => {
     await admin.query("delete from app.schedule_blocks");
-    await admin.query("insert into app.schedule_blocks (period, notice) values ('[2026-11-26 10:00-03, 2026-11-26 11:00-03)', 'Turno con el médico')");
+    await admin.query(`insert into app.schedule_blocks (period, notice) values
+      ('[2026-11-26 10:00-03, 2026-11-26 11:00-03)', null),
+      ('[2026-11-27 10:00-03, 2026-11-27 11:00-03)', 'Trámite')`);
     const snapshot = await queries(db).getScheduleSnapshot(instantAt(localDate("2026-11-24"), 9 * 60));
     expect(snapshot.ranges).toHaveLength(12);
     expect(snapshot.config.stepMinutes).toBe(15);
-    expect(snapshot.occupations).toEqual([[Date.parse("2026-11-26T13:00:00Z"), Date.parse("2026-11-26T14:00:00Z")]]);
-    expect(JSON.stringify(snapshot)).not.toContain("médico");
+    expect(snapshot.occupations).toHaveLength(2);
+    expect(snapshot.notices).toEqual([{ start: Date.parse("2026-11-27T13:00:00Z"), end: Date.parse("2026-11-27T14:00:00Z"), text: "Trámite" }]);
+    expect(Object.keys(snapshot.notices[0]!)).toEqual(["start", "end", "text"]); // nada de quién lo cargó
   });
 });

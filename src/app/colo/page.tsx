@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { LogOut, ShieldAlert } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { listCustomers } from "@/modules/customers";
 import { getActor } from "@/server/auth/actor";
 import { customersStore } from "@/server/customers";
 import { Button } from "@/ui/Button";
-import { Plate } from "@/ui/Plate";
 import { DemoBanner } from "../_sesion/DemoBanner";
+import { NoAccess } from "../_sesion/NoAccess";
 import { SessionScreen } from "../_sesion/SessionScreen";
 import { signOut, signOutEverywhere } from "../ingresar/actions";
 import { CustomerList } from "./CustomerList";
@@ -29,21 +29,7 @@ export default async function ColoPage() {
 
 async function Panel() {
   const actor = await getActor();
-  if (actor.kind !== "barber") {
-    // RF-8: sin rol de barbero, ningún dato.
-    return (
-      <SessionScreen>
-        <Plate className="flex flex-col items-start gap-3 p-5" role="alert">
-          <h1 className="inline-flex items-center gap-2 text-[24px] font-bold leading-tight">
-            <ShieldAlert aria-hidden size={26} strokeWidth={2.5} /> No tenés acceso a esta pantalla
-          </h1>
-          <Link href={actor.kind === "none" ? "/ingresar" : "/"} className="font-bold underline decoration-2 underline-offset-4">
-            {actor.kind === "none" ? "Ingresar" : "Volver a los horarios"}
-          </Link>
-        </Plate>
-      </SessionScreen>
-    );
-  }
+  if (actor.kind !== "barber") return <NoAccess actor={actor} />; // RF-8: sin rol de barbero, ningún dato
 
   const list = await listCustomers({ store: customersStore() }, actor, null);
   const { items, next } = list.ok ? list.value : { items: [], next: null };
@@ -53,6 +39,12 @@ async function Panel() {
         <h1 className="text-[28px] font-bold leading-tight">Hola, Colo</h1>
         <p className="text-tinta-suave">Tus clientes, del más nuevo al más antiguo.</p>
       </div>
+      <Link
+        href="/colo/ajustes"
+        className="inline-flex min-h-[52px] items-center gap-2 self-start rounded-[var(--radius-control)] bg-chapa px-5 font-bold shadow-[inset_0_0_0_2px_var(--linea)] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-poste"
+      >
+        <Settings aria-hidden size={20} strokeWidth={2.5} /> Ajustes: horarios, bloqueos y servicios
+      </Link>
       <section aria-labelledby="titulo-clientes" className="flex flex-col gap-3">
         <h2 id="titulo-clientes" className="text-[20px] font-bold">
           Clientes

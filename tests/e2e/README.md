@@ -20,6 +20,7 @@ npm run build && npx next start -p 3100
 | `login.py` | Ingreso, perfil, invitado, panel de Colo, sobrenombre y accesos (spec 002) |
 | `csp.py` | CSP con nonce en las pantallas con sesión (RNF-4 de la 002) |
 | `speed_login.py` | Velocidad del ingreso con 4G lento simulado (RNF-6 de la 002) |
+| `ajustes.py [URL]` | Ajustes de Colo, avisos en la página pública y velocidad (spec 003). Con la URL de producción no crea servicios y deja todo como estaba |
 
 `login.py`, `csp.py` y `speed_login.py` esperan la base sin clientes: antes de correrlos,
 `delete from app.customers` y tablas relacionadas (ver `tests/integration/customers-use-cases.test.ts`).

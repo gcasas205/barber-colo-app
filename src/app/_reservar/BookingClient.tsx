@@ -39,6 +39,7 @@ export function BookingClient({ services, snapshot }: { services: Service[]; sna
       service={service}
       availability={availability}
       today={localDateOf(now)}
+      notices={snapshot.notices}
       actions={{
         onService: (id) => setServiceId(id), // se mantiene el día elegido
         onDay: (day) => setSelection({ day, weekOf: null }),

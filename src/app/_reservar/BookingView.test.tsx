@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { Service } from "@/modules/pricing";
-import type { Availability } from "@/modules/schedule";
+import type { Availability, BlockNotice } from "@/modules/schedule";
 import { instantAt, localDate } from "@/shared/kernel";
 import { BookingView, type BookingActions } from "./BookingView";
 import { NoServices } from "./Notices";
@@ -36,9 +36,16 @@ const base: Availability = {
 };
 
 const actions: BookingActions = { onService: () => {}, onDay: () => {}, onWeek: () => {} };
-const render = (a: Partial<Availability> = {}, service = corte) =>
+const render = (a: Partial<Availability> = {}, service = corte, notices: BlockNotice[] = []) =>
   renderToStaticMarkup(
-    <BookingView services={[corte, claritos]} service={service} availability={{ ...base, ...a }} today={d("2026-11-24")} actions={actions} />,
+    <BookingView
+      services={[corte, claritos]}
+      service={service}
+      availability={{ ...base, ...a }}
+      today={d("2026-11-24")}
+      actions={actions}
+      notices={notices}
+    />,
   );
 
 describe("BookingView", () => {
@@ -97,5 +104,26 @@ describe("BookingView", () => {
     const html = renderToStaticMarkup(<NoServices whatsapp="+5491138163491" />);
     expect(html).toContain("Por ahora no hay turnos online");
     expect(html).toContain("11 3816-3491");
+  });
+});
+
+describe("avisos de Colo (spec 003, RF-14)", () => {
+  const vacaciones: BlockNotice = { start: Date.parse("2026-11-28T03:00:00Z"), end: Date.parse("2026-12-05T03:00:00Z"), text: "Vacaciones" };
+  const tramite: BlockNotice = { start: Date.parse("2026-11-25T13:00:00Z"), end: Date.parse("2026-11-25T15:00:00Z"), text: "Trámite" };
+
+  it("lista los avisos de los días de la semana, cerrados y por horario", () => {
+    const html = render({}, corte, [vacaciones, tramite]);
+    expect(html).toContain("Avisos de Colo");
+    expect(html).toMatch(/Mié 25<\/span> · <!-- -->10:00 a 12:00: Trámite|Mié 25<\/span> · 10:00 a 12:00: Trámite/);
+    expect(html).toContain("Cerrado: Vacaciones");
+  });
+
+  it("sin avisos no muestra nada", () => {
+    expect(render()).not.toContain("Avisos de Colo");
+  });
+
+  it("si no hay lugar en toda la ventana, muestra el texto del aviso una sola vez", () => {
+    const html = render({ noRoomInWindow: true }, corte, [vacaciones, { ...vacaciones, start: vacaciones.start + 1 }]);
+    expect(html.match(/Aviso de Colo: Vacaciones/g)).toHaveLength(1);
   });
 });
