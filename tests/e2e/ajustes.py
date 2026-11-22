@@ -56,7 +56,7 @@ with sync_playwright() as p:
 
     ctx, pg = login(b, "Colo (barbero)", (360, 800))
     errs = []; pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
-    pg.click("main:visible a:has-text('Ajustes')"); pg.wait_for_selector("main:visible h1:has-text('Ajustes')")
+    pg.click("nav[aria-label=Secciones]:visible a:has-text('Ajustes')"); pg.wait_for_selector("main:visible h1:has-text('Ajustes')")
     ok(True, "RF-1: Ajustes se abre desde el panel de Colo")
     pg.screenshot(path=f"{SHOTS}/ajustes-360.png", full_page=True)
     main = pg.locator("main:visible")
@@ -160,7 +160,7 @@ with sync_playwright() as p:
     reservas.locator("label:has-text('Días a futuro') input").fill("29")
     asked = []
     pg.once("dialog", lambda d: (asked.append(d.message), d.dismiss()))
-    pg.click("main:visible a:has-text('Clientes')"); pg.wait_for_timeout(500)
+    pg.click("nav[aria-label=Secciones]:visible a:has-text('Clientes')"); pg.wait_for_timeout(500)
     ok(asked and "sin guardar" in asked[0] and pg.url.endswith("/colo/ajustes"), "RF-26: aviso antes de perder cambios sin guardar")
     reservas.locator("label:has-text('Días a futuro') input").fill("30")
     pg.screenshot(path=f"{SHOTS}/ajustes-360-final.png", full_page=True)

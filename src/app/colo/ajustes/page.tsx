@@ -7,8 +7,7 @@ import { scheduleAdminDeps, serviceAdminDeps } from "@/server/settings";
 import { localDateOf } from "@/shared/kernel";
 import { DemoBanner } from "../../_sesion/DemoBanner";
 import { NoAccess } from "../../_sesion/NoAccess";
-import { SessionScreen } from "../../_sesion/SessionScreen";
-import { ColoNav } from "../ColoNav";
+import { AppFrame } from "../../_sesion/AppFrame";
 import { BlocksSection } from "./BlocksSection";
 import { BookingSection } from "./BookingSection";
 import { HoursSection } from "./HoursSection";
@@ -37,8 +36,7 @@ export default async function SettingsPage() {
   const s = schedule.value;
 
   return (
-    <SessionScreen banner={actor.demo ? <DemoBanner /> : null}>
-      <ColoNav current="/colo/ajustes" />
+    <AppFrame area="colo" current="/colo/ajustes" banner={actor.demo ? <DemoBanner /> : null}>
       <div className="flex flex-col gap-3">
         <h1 className="text-[28px] font-bold leading-tight">Ajustes</h1>
         <p className="text-tinta-suave">Lo que guardes se ve en la página de horarios la próxima vez que alguien la abra.</p>
@@ -90,6 +88,6 @@ export default async function SettingsPage() {
         </h2>
         <BookingSection minNoticeMinutes={s.config.minNoticeMinutes} maxAdvanceDays={s.config.maxAdvanceDays} whatsapp={s.contactWhatsapp} />
       </section>
-    </SessionScreen>
+    </AppFrame>
   );
 }

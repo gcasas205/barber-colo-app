@@ -4,10 +4,10 @@ import { getActor } from "@/server/auth/actor";
 import { localDateOf, parseLocalDate } from "@/shared/kernel";
 import { DemoBanner } from "../_sesion/DemoBanner";
 import { NoAccess } from "../_sesion/NoAccess";
-import { SessionScreen } from "../_sesion/SessionScreen";
+import { AppFrame } from "../_sesion/AppFrame";
 import { agendaData } from "./agenda-data";
 import { AgendaScreen } from "./AgendaScreen";
-import { ColoNav, ColoSignOut } from "./ColoNav";
+import { ColoSignOut } from "./ColoNav";
 
 /** Con sesión y CSP con nonce: ruta bloqueante, sin <Suspense> (RNF-4 de la 002). */
 export const instant = false;
@@ -28,10 +28,9 @@ export default async function AgendaPage({ searchParams }: PageProps<"/colo">) {
   if (!data) return <NoAccess actor={actor} />;
 
   return (
-    <SessionScreen banner={actor.demo ? <DemoBanner /> : null}>
-      <ColoNav current="/colo" />
+    <AppFrame area="colo" current="/colo" banner={actor.demo ? <DemoBanner /> : null}>
       <AgendaScreen initial={data} today={today} renderedAt={now.getTime()} />
       <ColoSignOut />
-    </SessionScreen>
+    </AppFrame>
   );
 }

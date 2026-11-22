@@ -67,7 +67,7 @@ with sync_playwright() as p:
     pg = b.new_context(viewport={"width": 390, "height": 844}).new_page()
     pg.goto(B + "/", wait_until="networkidle")
     pg.click("button:has-text('Colo (barbero)')"); pg.click("button[type=submit]:has-text('Ingresar')"); pg.wait_for_url("**/colo")
-    pg.click("main:visible a:has-text('Clientes')"); pg.wait_for_selector("main:visible h1:has-text('Clientes')")
+    pg.click("nav[aria-label=Secciones]:visible a:has-text('Clientes')"); pg.wait_for_selector("main:visible h1:has-text('Clientes')")
     text = pg.inner_text("main:visible")
     ok("Martín" in text and "Cuenta" in text, "RF-19: Colo ve la lista de clientes")
     ok(pg.locator("text=Modo de prueba").count() > 0, "RF-22b: franja de prueba también en el panel")

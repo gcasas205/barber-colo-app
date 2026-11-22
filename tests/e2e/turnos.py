@@ -109,7 +109,7 @@ with sync_playwright() as p:
 
     # Colo: agenda con "Nuevo", choque con Ajustes y cancelación con motivo.
     ctxc, colo = login(b, "Colo (barbero)", (360, 800))
-    ok("/colo" in colo.url and colo.locator("main:visible nav[aria-label='Panel de Colo']").count() == 1, "RF-21: Colo entra a la agenda")
+    ok("/colo" in colo.url and colo.locator("nav[aria-label=Secciones]:visible").count() == 1, "RF-21: Colo entra a la agenda")
     colo.goto(f"{B}/colo?dia={day.isoformat()}", wait_until="networkidle")
     agenda = colo.inner_text("main:visible")
     ok(second in agenda and taken in agenda and "Nuevo" in agenda, "RF-22: la agenda del día muestra los dos turnos, marcados Nuevo")

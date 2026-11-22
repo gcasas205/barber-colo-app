@@ -1,6 +1,6 @@
 # Tareas — Spec 004c: La forma del prototipo en las pantallas reales
 
-- [ ] **T1. [agente] Marco común con barra inferior y riel; Colo lo usa.** RF-1 a RF-4, RF-15
+- [x] **T1. [agente] Marco común con barra inferior y riel; Colo lo usa.** RF-1 a RF-4, RF-15
   - Hecho cuando: tests de `NavLink` en verde; Colo navega con la barra y el riel; `pestanas.py` y `speed_pestanas.py` en verde.
 - [ ] **T2. [agente] Reservar como sección propia.** RF-9 a RF-14
   - Hecho cuando: `/reservar` con "¿Para quién es?" segmentado, resumen fijo o en columna, contacto, vuelta a Inicio y cambiar horario; `turnos.py` y `a_cargo.py` ajustados y en verde.

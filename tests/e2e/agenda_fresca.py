@@ -8,15 +8,15 @@ with sync_playwright() as p:
     b = p.chromium.launch(); ctx = b.new_context(viewport={"width": 390, "height": 844}, has_touch=True, is_mobile=True); pg = ctx.new_page()
     pg.goto(B + "/", wait_until="networkidle"); pg.click("button:has-text('Colo (barbero)')"); pg.click("button[type=submit]:has-text('Ingresar')")
     pg.wait_for_url("**/colo*"); pg.wait_for_load_state("networkidle"); pg.wait_for_timeout(800)
-    pg.locator("main:visible nav a", has_text="Clientes").tap(); pg.wait_for_url("**/colo/clientes"); pg.wait_for_timeout(800)
-    pg.locator("main:visible nav a", has_text="Agenda").tap(); pg.wait_for_url("**/colo"); pg.wait_for_timeout(800)
-    pg.locator("main:visible nav a", has_text="Clientes").tap(); pg.wait_for_url("**/colo/clientes"); pg.wait_for_timeout(800)
+    pg.locator("nav[aria-label=Secciones]:visible a", has_text="Clientes").tap(); pg.wait_for_url("**/colo/clientes"); pg.wait_for_timeout(800)
+    pg.locator("nav[aria-label=Secciones]:visible a", has_text="Agenda").tap(); pg.wait_for_url("**/colo"); pg.wait_for_timeout(800)
+    pg.locator("nav[aria-label=Secciones]:visible a", has_text="Clientes").tap(); pg.wait_for_url("**/colo/clientes"); pg.wait_for_timeout(800)
     cid = sql("insert into app.customers (role, full_name, phone_e164, is_demo) values ('guest', 'Fresco Prueba (demo)', '+5491179990001', true) returning id").splitlines()[0]
     aid = sql(f"""insert into app.appointments (customer_id, service_id, period, status, price_cents)
       values ('{cid}', (select id from app.services where name='Corte'),
       tstzrange((current_date + time '23:15') at time zone 'America/Argentina/Buenos_Aires', (current_date + time '23:45') at time zone 'America/Argentina/Buenos_Aires'), 'reserved', 1800000) returning id""").splitlines()[0]
     try:
-        pg.locator("main:visible nav a", has_text="Agenda").tap(); pg.wait_for_url("**/colo")
+        pg.locator("nav[aria-label=Secciones]:visible a", has_text="Agenda").tap(); pg.wait_for_url("**/colo")
         pg.locator("main:visible >> text=Fresco Prueba").first.wait_for(timeout=4000)
         print("✓ el turno nuevo aparece al volver a la agenda")
         ok = True
