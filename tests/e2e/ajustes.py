@@ -178,9 +178,16 @@ with sync_playwright() as p:
         pg.wait_for_selector("main:visible button:has-text('Guardar paso')"); opens.append(time.perf_counter() - t)
         pg.wait_for_load_state("load")
         paso = pg.locator("main:visible [aria-labelledby=titulo-paso]")
-        paso.locator("select").select_option("30")
-        t = time.perf_counter(); paso.locator("button:has-text('Guardar paso')").click(); saved(paso); saves.append(time.perf_counter() - t)
-        paso.locator("select").select_option("15"); paso.locator("button:has-text('Guardar paso')").click(); saved(paso)
+        original = paso.locator("select").input_value(); other = "30" if original != "30" else "15"
+        try:
+            paso.locator("select").select_option(other); paso.locator("text=Cambios sin guardar").wait_for()
+            t = time.perf_counter(); paso.locator("button:has-text('Guardar paso')").click(); saved(paso); saves.append(time.perf_counter() - t)
+        finally:
+            # Volver al paso original y esperar a que se guarde de verdad antes de cerrar.
+            paso.locator("select").select_option(original); paso.locator("text=Cambios sin guardar").wait_for()
+            paso.locator("button:has-text('Guardar paso')").click(); saved(paso)
+            pg.reload(wait_until="networkidle")
+            ok(pg.locator("main:visible [aria-labelledby=titulo-paso] select").input_value() == original, "el paso vuelve a quedar como estaba")
         ctx.close()
     o, s = statistics.median(opens), statistics.median(saves)
     print(f"   abrir Ajustes: {o * 1000:.0f} ms · guardar: {s * 1000:.0f} ms (medianas)")

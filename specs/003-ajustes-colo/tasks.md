@@ -18,5 +18,6 @@ Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
   - Hecho cuando: tests de componentes y capturas.
 - [x] **T8. [agente] e2e, velocidad y validación de la spec.** Criterios de finalización, RNF-5
   - Hecho cuando: `tests/e2e/ajustes.py` en verde en local; validación RF por RF.
-- [ ] **T9. [persona] Despliegue y verificación en producción.** Criterios de finalización
+- [x] **T9. [persona] Despliegue y verificación en producción.** Criterios de finalización
   - Hecho cuando: Gonzalo aprueba el deploy (migración) y el e2e pasa en producción; franjas definitivas cargadas.
+  - Hecho (2026-11-21): migración aplicada; `tests/e2e/ajustes.py https://barber-colo.vercel.app` en verde (abrir Ajustes 1,36 s y guardar 0,95 s con 4G lento). Las franjas definitivas las carga Colo desde Ajustes cuando las confirme.

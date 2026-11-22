@@ -1,7 +1,7 @@
 # Validación — Spec 003: Ajustes de Colo
 
 Fecha: 2026-11-21. Recorrido RF por RF contra los tests (en verde) y el e2e local `tests/e2e/ajustes.py`.
-Falta la verificación en producción (T9).
+En producción: el mismo e2e en verde después del deploy (T9).
 
 | RF | Cómo se verifica | Resultado |
 |---|---|---|
@@ -25,11 +25,11 @@ Falta la verificación en producción (T9).
 | RNF-2 | `settings.test.ts` y `notices.test.ts` corren en Buenos Aires, UTC y Tokio (`npm test`) | ✅ |
 | RNF-3 | Las validaciones son funciones puras del dominio, usadas por la pantalla (listas de opciones) y el servidor | ✅ |
 | RNF-4 | Errores junto al campo con `aria-describedby` y `aria-live`; capturas en 360 px | ✅ |
-| RNF-5 | e2e con 4G lento: ver la mediana en la salida (local) | ✅ |
+| RNF-5 | e2e con 4G lento en producción: abrir 1,36 s, guardar 0,95 s (medianas) | ✅ |
 | RNF-6 | Nada propio de Vercel | ✅ |
 
 **Casos límite:** 1 a 16 cubiertos (dominio, aplicación, integración o e2e).
 
-**Pendiente:** T9 (despliegue con la migración y e2e en producción).
+**Pendiente:** que Colo cargue sus franjas definitivas desde Ajustes.
 
-**Veredicto:** la spec se cumple en local; queda la verificación en producción.
+**Veredicto:** la spec se cumple, en local y en producción.
