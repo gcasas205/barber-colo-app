@@ -4,4 +4,4 @@
 - [x] **T2. [agente] Turnos para la cuenta: reservar para otro, turnos y avisos de la cuenta.** RF-8 a RF-15
 - [x] **T3. [agente] Pantallas: Mi perfil, Turnos y agenda.** RF-1, RF-6, RF-8, RF-12, RF-13, RF-16
 - [x] **T4. [agente] e2e y validación.**
-- [ ] **T5. [persona] Despliegue y verificación en producción.**
+- [x] **T5. [persona] Despliegue y verificación en producción.**
