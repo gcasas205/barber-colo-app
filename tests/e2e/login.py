@@ -23,7 +23,7 @@ with sync_playwright() as p:
     ok(pg.input_value("input[name=email]:visible") == "cliente1@example.com" and pg.input_value("input[name=password]:visible") != "", "RF-22: la cuenta de prueba completa el formulario")
     pg.click("button[type=submit]:has-text('Ingresar')"); pg.wait_for_url("**/turnos")
     ok(pg.locator("text=Modo de prueba").count() > 0, "RF-22b: franja 'Modo de prueba'")
-    ok(pg.locator("header >> text=Mi perfil").count() == 1, "con sesión, la chapa dice 'Mi perfil'")
+    ok(pg.locator("nav[aria-label=Secciones]:visible >> text=Mi perfil").count() == 1, "con sesión, las secciones llevan a 'Mi perfil' (004c)")
     # Perfil (RF-9 a RF-14): opcional desde la spec 004; los errores siguen junto a cada campo.
     pg.goto(B + "/perfil", wait_until="networkidle")
     pg.fill("input[name=name]:visible", "A"); pg.fill("input[name=phone]:visible", "4555-1234")

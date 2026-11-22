@@ -13,7 +13,7 @@ export function PrefetchNext() {
     router.prefetch("/turnos");
     router.prefetch("/colo");
     // El código de los componentes cliente de esas pantallas no viene con el prefetch de la ruta.
-    void import("../turnos/TurnosClient");
+    void import("../turnos/InicioClient");
     void import("../colo/AgendaDay");
   }, [router]);
   return null;

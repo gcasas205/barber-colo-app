@@ -9,7 +9,7 @@ import type { Actor } from "@/modules/identity";
 import { appointmentsDeps } from "@/server/appointments";
 import { getActor } from "@/server/auth/actor";
 import { customersStore } from "@/server/customers";
-import { toTurnoView, type TurnoView } from "./turno-view";
+import type { TurnoView } from "./turno-view";
 
 /** Lo que vuelve a la pantalla. Los códigos se pasan a palabras en el cliente (`turnosError`). */
 export type TurnoResult =
@@ -62,8 +62,13 @@ export async function bookAction(input: unknown): Promise<TurnoResult> {
   }
 
   const result = await book(appointmentsDeps(), actor, { serviceId, start: new Date(start), forCustomerId }, new Date());
-  if (result.ok) return done({ turno: toTurnoView(result.value, result.value.customerId === actor.customerId) ?? undefined });
-  revalidatePath("/turnos"); // RF-9: los horarios se actualizan
+  // 004c, RF-12: a Inicio con el turno nuevo. Redirigir desde la acción manda Inicio en la misma respuesta
+  // (un solo viaje al servidor, RNF-1 de la 004).
+  if (result.ok) {
+    revalidatePath("/turnos");
+    redirect(`/turnos?listo=reserva&turno=${encodeURIComponent(result.value.id)}`);
+  }
+  revalidatePath("/reservar"); // RF-9: los horarios se actualizan (004c: están en Reservar)
   if (typeof result.error === "object") return fail("HAS_UPCOMING");
   return fail(result.error);
 }
@@ -84,9 +89,13 @@ export async function rescheduleAction(id: unknown, start: unknown, confirmLate:
   const actor = await client();
   if (typeof id !== "string" || typeof start !== "number" || !Number.isInteger(start)) return fail("TRY_AGAIN");
   const result = await rescheduleByCustomer(appointmentsDeps(), actor, id, new Date(start), confirmLate === true, new Date());
-  if (result.ok) return done({ turno: toTurnoView(result.value, result.value.customerId === actor.customerId) ?? undefined });
+  if (result.ok) {
+    revalidatePath("/turnos"); // 004c, RF-13: a Inicio, en la misma respuesta
+    redirect(`/turnos?listo=cambio&turno=${encodeURIComponent(result.value.id)}`);
+  }
   if (result.error === "CONFIRM_LATE") return fail("CONFIRM_LATE", { confirmLate: true });
   revalidatePath("/turnos");
+  revalidatePath("/reservar");
   return fail(result.error);
 }
 

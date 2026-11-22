@@ -26,7 +26,7 @@ def saved(section):
 
 def public_text(b, weeks=5):
     """Texto de la página pública recorriendo las primeras semanas (avisos, servicios, días)."""
-    pg = PUB.new_page(); pg.goto(B + "/turnos", wait_until="networkidle"); pg.wait_for_selector("main:visible h2:has-text('Servicio')")
+    pg = PUB.new_page(); pg.goto(B + "/reservar", wait_until="networkidle"); pg.wait_for_selector("main:visible h2:has-text('Servicio')")
     out = [pg.inner_text("main:visible")]
     for _ in range(weeks):
         nxt = pg.locator("button[aria-label='Semana siguiente']")
@@ -36,7 +36,7 @@ def public_text(b, weeks=5):
 
 def public_labels(b):
     """aria-label de los días de la primera semana pública y cantidad de semanas navegables."""
-    pg = PUB.new_page(); pg.goto(B + "/turnos", wait_until="networkidle"); pg.wait_for_selector("main:visible h2:has-text('Día')")
+    pg = PUB.new_page(); pg.goto(B + "/reservar", wait_until="networkidle"); pg.wait_for_selector("main:visible h2:has-text('Día')")
     labels = pg.eval_on_selector_all("main:visible ul.grid-cols-7 [aria-label]", "els => els.map(e => e.getAttribute('aria-label'))")
     weeks = 1
     while pg.locator("button[aria-label='Semana siguiente']").count() and weeks < 20:
