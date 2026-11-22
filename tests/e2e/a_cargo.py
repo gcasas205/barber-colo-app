@@ -86,8 +86,13 @@ with sync_playwright() as p:
     cancel_all(pg)
     for name in (HIJO, "Tomi", "Tomi", "Tomi"): remove_child(pg, name)
 
-    # RF-1 a RF-4: Mi perfil, agregar y editar.
+    # RF-1 a RF-4: Mi perfil, agregar y editar. Personas a cargo pide el perfil completo: si falta el celular
+    # (base local recién creada), se carga uno.
     pg.goto(B + "/perfil", wait_until="networkidle")
+    if main_(pg).locator("text=Todavía no cargaste").count():
+        main_(pg).locator("input[name=phone]").fill("11 5555-0101")
+        main_(pg).locator("button[type=submit]:has-text('Guardar')").click(); pg.wait_for_url("**/turnos*")
+        pg.goto(B + "/perfil", wait_until="networkidle")
     sec = main_(pg).locator("section[aria-labelledby=titulo-a-cargo]")
     ok(sec.count() == 1, "RF-1: Mi perfil muestra 'Personas a cargo'")
     sec.locator("button:has-text('Agregar persona')").click()
