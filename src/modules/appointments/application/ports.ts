@@ -5,6 +5,8 @@ import type { ActiveStatus, AppointmentStatus } from "../domain/policy";
 export type Appointment = {
   id: string;
   customerId: string;
+  /** Nombre de la persona del turno (spec 004b: puede ser una persona a cargo). */
+  customerName: string;
   serviceId: string;
   serviceName: string;
   start: Date;
@@ -19,6 +21,9 @@ export type Appointment = {
 /** Lo último que hizo Colo con un turno del cliente y el cliente todavía no vio (RF-20). */
 export type BarberNotice = {
   eventId: string;
+  /** Para quién era el turno (spec 004b, RF-14). */
+  customerId: string;
+  customerName: string;
   kind: "cancelled" | "rescheduled";
   serviceName: string;
   fromStart: Date;
@@ -28,7 +33,8 @@ export type BarberNotice = {
 
 /** Un turno en la agenda de Colo (RF-22). */
 export type AgendaItem = Appointment & {
-  customer: { name: string; nickname: string | null; phone: string | null; isGuest: boolean };
+  /** Spec 004b, RF-16: de una persona a cargo, el titular y su celular. */
+  customer: { name: string; nickname: string | null; phone: string | null; isGuest: boolean; holderName: string | null };
   /** Última reserva o reprogramación hecha por el cliente (para "Nuevo"). */
   lastCustomerChangeAt: Date | null;
 };
@@ -70,8 +76,11 @@ export interface AppointmentsTx {
   move(id: string, period: Interval, status: ActiveStatus, customerReschedules: number): Promise<"ok" | "OVERLAP">;
   setStatus(id: string, status: AppointmentStatus): Promise<void>;
   addEvent(e: AppointmentEvent): Promise<void>;
-  unseenBarberNotice(customerId: string): Promise<BarberNotice | null>;
-  markNoticeSeen(eventId: string, customerId: string, at: Date): Promise<void>;
+  /** Lo último que hizo Colo con un turno de estos clientes y no se vio. */
+  unseenBarberNotice(customerIds: string[]): Promise<BarberNotice | null>;
+  markNoticeSeen(eventId: string, customerIds: string[], at: Date): Promise<void>;
+  /** Spec 004b: el titular y sus personas a cargo activas (la cuenta), titular primero. */
+  accountMembers(accountUserId: string): Promise<{ customerId: string; name: string; isHolder: boolean }[]>;
   agenda(range: Interval): Promise<AgendaItem[]>;
   /** Cuándo vio Colo por última vez la agenda de cada día. */
   agendaSeen(userId: string): Promise<Map<LocalDate, Date>>;

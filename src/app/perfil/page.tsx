@@ -3,7 +3,10 @@ import { ChevronLeft, LogOut } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { formatArPhone, getOwnProfile } from "@/modules/customers";
+import { getMyAppointments } from "@/modules/appointments";
+import { DEPENDENTS_LIMIT, formatArPhone, getOwnProfile, listDependents } from "@/modules/customers";
+import { appointmentsDeps } from "@/server/appointments";
+import { formatDayLong, formatMinute, localDateOf, minuteOfDayOf } from "@/shared/kernel";
 import { getActor } from "@/server/auth/actor";
 import { queries } from "@/server/composition";
 import { customersStore } from "@/server/customers";
@@ -12,6 +15,7 @@ import { Plate } from "@/ui/Plate";
 import { DemoBanner } from "../_sesion/DemoBanner";
 import { SessionScreen } from "../_sesion/SessionScreen";
 import { signOut } from "../ingresar/actions";
+import { Dependents, type DependentItem } from "./Dependents";
 import { ProfileForm } from "./ProfileForm";
 
 /**
@@ -33,7 +37,23 @@ async function Profile() {
   const actor = await getActor();
   if (actor.kind === "none") redirect("/");
   if (actor.kind === "barber") redirect("/colo");
-  const [profile, contact] = await Promise.all([getOwnProfile({ store: customersStore() }, actor), queries().contactWhatsapp()]);
+  const now = new Date();
+  const [profile, contact, dependents, mine] = await Promise.all([
+    getOwnProfile({ store: customersStore() }, actor),
+    queries().contactWhatsapp(),
+    listDependents({ store: customersStore() }, actor), // 004b: solo titulares
+    getMyAppointments(appointmentsDeps(), actor, now),
+  ]);
+  const items: DependentItem[] = dependents.map((d) => ({
+    id: d.id,
+    name: d.name.replace(/ \(demo\)$/, ""),
+    birthDay: d.birthday?.day ?? null,
+    birthMonth: d.birthday?.month ?? null,
+  }));
+  // RF-6 de la 004b: el turno futuro de cada persona a cargo, para mostrarlo antes de quitarla.
+  const upcoming = Object.fromEntries(
+    mine.appointments.filter((a) => !a.isSelf).map((a) => [a.customerId, `${formatDayLong(localDateOf(a.start))} a las ${formatMinute(minuteOfDayOf(a.start))}`]),
+  );
   if (!profile && actor.kind !== "guest") redirect("/");
   const demo = actor.kind === "customer" && actor.demo;
   const back = (
@@ -84,6 +104,7 @@ async function Profile() {
           birthMonth: profile?.birthday?.month ?? null,
         }}
       />
+      {actor.customerId && actor.profileComplete ? <Dependents items={items} upcoming={upcoming} limit={DEPENDENTS_LIMIT} /> : null}
       {salir}
     </SessionScreen>
   );

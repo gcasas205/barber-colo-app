@@ -11,7 +11,7 @@ import {
   dismissBarberNotice,
   getDayAgenda,
   markAgendaSeen,
-  getMyAppointment,
+  getMyAppointments,
   rescheduleByBarber,
   rescheduleByCustomer,
 } from "./use-cases";
@@ -37,8 +37,11 @@ function memory() {
     blocks: [] as Interval[],
     seen: new Map<string, Map<string, Date>>(),
     customers: new Map([
-      ["c1", { name: "Lucas", nickname: "el de la moto", phone: "+5491138163491", isGuest: false }],
-      ["c2", { name: "Ana", nickname: null, phone: "+5491100000000", isGuest: true }],
+      ["c1", { name: "Lucas", nickname: "el de la moto", phone: "+5491138163491", isGuest: false, holderName: null as string | null, account: "u1" as string | null }],
+      ["c2", { name: "Ana", nickname: null, phone: "+5491100000000", isGuest: true, holderName: null as string | null, account: null as string | null }],
+      // Spec 004b: Tomi, a cargo de Lucas (cuenta u1); Juana, de otra cuenta.
+      ["c3", { name: "Tomi", nickname: null, phone: null as string | null, isGuest: false, holderName: "Lucas" as string | null, account: "u1" as string | null }],
+      ["c4", { name: "Juana", nickname: null, phone: null as string | null, isGuest: false, holderName: "Otro" as string | null, account: "u9" as string | null }],
     ]),
     config: { stepMinutes: 15, minNoticeMinutes: 30, maxAdvanceDays: 30 },
   };
@@ -63,7 +66,7 @@ function memory() {
           if (state.appts.some((x) => active(x) && overlaps(x, a.period))) return "OVERLAP";
           const id = `a${state.appts.length + 1}`;
           const s = services.find((x) => x.id === a.serviceId)!;
-          state.appts.push({ id, customerId: a.customerId, serviceId: a.serviceId, serviceName: s.name, ...a.period, status: a.status, priceCents: a.priceCents, customerReschedules: 0, bookedAt: a.bookedAt });
+          state.appts.push({ id, customerId: a.customerId, customerName: state.customers.get(a.customerId)!.name, serviceId: a.serviceId, serviceName: s.name, ...a.period, status: a.status, priceCents: a.priceCents, customerReschedules: 0, bookedAt: a.bookedAt });
           return id;
         },
         move: async (id, period, status, n) => {
@@ -73,18 +76,23 @@ function memory() {
         },
         setStatus: async (id, status) => void (state.appts.find((x) => x.id === id)!.status = status),
         addEvent: async (e) => void state.events.push({ ...e, id: String(state.events.length + 1) }),
-        unseenBarberNotice: async (c) => {
-          const e = [...state.events].reverse().find((x) => x.actor === "barber" && !x.seen && state.appts.find((a) => a.id === x.appointmentId)?.customerId === c);
+        unseenBarberNotice: async (ids) => {
+          const e = [...state.events].reverse().find((x) => x.actor === "barber" && !x.seen && ids.includes(state.appts.find((a) => a.id === x.appointmentId)!.customerId));
           if (!e || e.kind === "booked") return null;
-          return { eventId: e.id, kind: e.kind, serviceName: state.appts.find((a) => a.id === e.appointmentId)!.serviceName, fromStart: e.from!.start, toStart: e.to?.start ?? null, reason: e.reason! };
+          const a = state.appts.find((x) => x.id === e.appointmentId)!;
+          return { eventId: e.id, customerId: a.customerId, customerName: a.customerName, kind: e.kind, serviceName: a.serviceName, fromStart: e.from!.start, toStart: e.to?.start ?? null, reason: e.reason! };
         },
+        accountMembers: async (account) =>
+          [...state.customers.entries()].filter(([, c]) => c.account === account).map(([id, c]) => ({ customerId: id, name: c.name, isHolder: !c.holderName })),
         markNoticeSeen: async (id, _c, when) => void (state.events.find((e) => e.id === id)!.seen = when),
         agenda: async (range) =>
           state.appts
             .filter((a) => overlaps(a, range))
             .map((a): AgendaItem => {
               const last = [...state.events].reverse().find((e) => e.appointmentId === a.id && e.actor === "customer" && e.kind !== "cancelled");
-              return { ...a, customer: state.customers.get(a.customerId)!, lastCustomerChangeAt: last?.at ?? null };
+              const { name, nickname, phone, isGuest, holderName } = state.customers.get(a.customerId)!;
+              const holderPhone = holderName ? [...state.customers.values()].find((c) => c.name === holderName)?.phone ?? null : null;
+              return { ...a, customer: { name, nickname, phone: phone ?? holderPhone, isGuest, holderName }, lastCustomerChangeAt: last?.at ?? null };
             }),
         agendaSeen: async (u) => new Map(state.seen.get(u) ?? []) as never,
         setAgendaSeen: async (u, day, when) => void state.seen.set(u, new Map(state.seen.get(u) ?? []).set(day, when)),
@@ -224,19 +232,19 @@ describe("Colo (RF-20 a RF-25)", () => {
     const m = await booked();
     expect(await cancelByBarber(m.deps, colo, m.appt.id, "no", at("09:00"))).toEqual({ ok: false, error: "REASON_LENGTH" });
     expect((await cancelByBarber(m.deps, colo, m.appt.id, "Me enfermé", at("09:00"))).ok).toBe(true);
-    const mine = await getMyAppointment(m.deps, lucas, at("09:05"));
-    expect(mine).toEqual({ appointment: null, notice: expect.objectContaining({ kind: "cancelled", reason: "Me enfermé", fromStart: at("16:00") }) });
+    const mine = await getMyAppointments(m.deps, lucas, at("09:05"));
+    expect(mine).toEqual({ appointments: [], notice: expect.objectContaining({ kind: "cancelled", reason: "Me enfermé", fromStart: at("16:00"), isSelf: true }) });
     await dismissBarberNotice(m.deps, lucas, mine.notice!.eventId, at("09:06"));
-    expect((await getMyAppointment(m.deps, lucas, at("09:07"))).notice).toBeNull();
+    expect((await getMyAppointments(m.deps, lucas, at("09:07"))).notice).toBeNull();
   });
 
   it("caso 15: Colo mueve sin la anticipación mínima, pero solo dentro de una franja", async () => {
     const m = await booked();
     expect(await rescheduleByBarber(m.deps, colo, m.appt.id, at("13:15"), "Cambio", at("08:30"))).toEqual({ ok: false, error: "SLOT_TAKEN" });
     expect((await rescheduleByBarber(m.deps, colo, m.appt.id, at("10:00"), "Cambio de planes", at("09:50"))).ok).toBe(true);
-    const mine = await getMyAppointment(m.deps, lucas, at("09:51"));
+    const mine = await getMyAppointments(m.deps, lucas, at("09:51"));
     expect(mine.notice).toMatchObject({ kind: "rescheduled", toStart: at("10:00") });
-    expect(mine.appointment?.status).toBe("confirmed");
+    expect(mine.appointments[0]?.status).toBe("confirmed");
   });
 
   it("la agenda marca nuevos los cambios del cliente hasta que Colo ve ese día; leer no la marca (precarga)", async () => {
@@ -278,5 +286,57 @@ describe("barberFreeStarts (RF-25)", () => {
     expect(labels).not.toContain("16:00");
     expect(labels).toContain("16:15"); // su propio horario no ocupa
     expect(await barberFreeStarts(m.deps, lucas, m.appt.id, localDate("2026-11-25"), at("09:50"))).toEqual({ ok: false, error: "NOT_ALLOWED" });
+  });
+});
+
+describe("personas a cargo (spec 004b, RF-8 a RF-16)", () => {
+  it("caso 1: el titular reserva para él a las 16:00 y para su hijo a las 16:30; ve los dos", async () => {
+    const m = await booked();
+    const hijo = await book(m.deps, lucas, { serviceId: "1", start: at("16:30"), forCustomerId: "c3" }, morning);
+    expect(hijo.ok && hijo.value).toMatchObject({ customerId: "c3", customerName: "Tomi" });
+    const mine = await getMyAppointments(m.deps, lucas, morning);
+    expect(mine.appointments.map((a) => [a.customerName, a.isSelf, a.start.getTime()])).toEqual([
+      ["Lucas", true, at("16:00").getTime()],
+      ["Tomi", false, at("16:30").getTime()],
+    ]);
+  });
+
+  it("caso 2: un turno futuro por persona (el segundo para el mismo hijo no se crea)", async () => {
+    const m = memory();
+    expect((await book(m.deps, lucas, { serviceId: "1", start: at("16:00"), forCustomerId: "c3" }, morning)).ok).toBe(true);
+    const again = await book(m.deps, lucas, { serviceId: "1", start: at("17:00"), forCustomerId: "c3" }, morning);
+    expect(again).toMatchObject({ ok: false, error: { hasUpcoming: expect.objectContaining({ customerId: "c3" }) } });
+  });
+
+  it("caso 8 y RF-15: no reserva ni toca turnos de otra cuenta; un invitado no reserva para otros", async () => {
+    const m = memory();
+    expect(await book(m.deps, lucas, { serviceId: "1", start: at("16:00"), forCustomerId: "c4" }, morning)).toEqual({ ok: false, error: "NOT_ALLOWED" });
+    expect(await book(m.deps, ana, { serviceId: "1", start: at("16:00"), forCustomerId: "c3" }, morning)).toEqual({ ok: false, error: "NOT_ALLOWED" });
+    const deTomi = await book(m.deps, lucas, { serviceId: "1", start: at("16:00"), forCustomerId: "c3" }, morning);
+    const id = deTomi.ok ? deTomi.value.id : "";
+    expect(await cancelByCustomer(m.deps, ana, id, true, morning)).toEqual({ ok: false, error: "NOT_FOUND" });
+  });
+
+  it("RF-12: el titular cambia de horario y cancela el turno del hijo", async () => {
+    const m = memory();
+    const r = await book(m.deps, lucas, { serviceId: "1", start: at("16:00"), forCustomerId: "c3" }, morning);
+    const id = r.ok ? r.value.id : "";
+    expect((await rescheduleByCustomer(m.deps, lucas, id, at("17:00"), false, at("09:00"))).ok).toBe(true);
+    expect(await cancelByCustomer(m.deps, lucas, id, false, at("09:05"))).toEqual({ ok: true, value: { late: false } });
+  });
+
+  it("caso 7 y RF-14: si Colo cancela el turno del hijo, el titular ve el aviso con su nombre", async () => {
+    const m = memory();
+    const r = await book(m.deps, lucas, { serviceId: "1", start: at("16:00"), forCustomerId: "c3" }, morning);
+    await cancelByBarber(m.deps, colo, r.ok ? r.value.id : "", "Me enfermé", at("09:00"));
+    const mine = await getMyAppointments(m.deps, lucas, at("09:01"));
+    expect(mine.notice).toMatchObject({ customerName: "Tomi", isSelf: false, reason: "Me enfermé" });
+  });
+
+  it("RF-16: en la agenda, el hijo aparece a cargo del titular, con su celular", async () => {
+    const m = memory();
+    await book(m.deps, lucas, { serviceId: "1", start: at("16:00"), forCustomerId: "c3" }, morning);
+    const agenda = await getDayAgenda(m.deps, colo, localDate("2026-11-25"), at("09:00"));
+    expect(agenda.ok && agenda.value.items[0]!.customer).toEqual({ name: "Tomi", nickname: null, phone: "+5491138163491", isGuest: false, holderName: "Lucas" });
   });
 });

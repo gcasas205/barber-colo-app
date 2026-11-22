@@ -21,6 +21,7 @@ npm run build && npx next start -p 3100
 | `csp.py` | CSP con nonce en las pantallas con sesión (RNF-4 de la 002) |
 | `speed_login.py` | Velocidad del ingreso con 4G lento simulado (RNF-6 de la 002) |
 | `turnos.py [URL]` | Spec 004: ingreso como principal, reservar, reprogramar, cancelar, agenda de Colo, choques con Ajustes, aviso al cliente y velocidad. En producción no crea invitados y deja todo cancelado |
+| `a_cargo.py [URL]` | Spec 004b: personas a cargo en Mi perfil, reservar para otro, "Tus turnos", agenda con "A cargo de", aviso de Colo y quitar. Usa "Cliente de prueba 1" y deja todo como estaba |
 | `pestanas.py [URL]` | Pestañas del panel de Colo: la marcada es siempre la de la pantalla, al ir y volver (celular simulado, con y sin 4G lento) |
 | `speed_pestanas.py [URL] [--lento]` | Del toque a la pantalla nueva en las pestañas de Colo (primera visita y vueltas) |
 | `speed_cliente.py [URL]` | Del toque a la pantalla nueva entre Turnos y Mi perfil, con 4G simulado |

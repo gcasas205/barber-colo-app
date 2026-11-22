@@ -5,6 +5,7 @@ import { PhoneConflictError, type CustomerRow, type CustomersStore, type Custome
 import type { PhoneE164 } from "../domain/phone";
 
 const isUniqueViolation = (e: unknown) => (e as { code?: string })?.code === "23505";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function toRow(r: Selectable<AppCustomers>): CustomerRow {
   return {
@@ -125,6 +126,76 @@ function tx(db: Database): CustomersTx {
         isDemo: r.is_demo,
         createdAt: new Date(r.created_at),
       }));
+    },
+    async lockHolder(accountUserId) {
+      const r = await active().selectAll().where("account_user_id", "=", accountUserId).where("role", "=", "holder").forUpdate().executeTakeFirst();
+      return r ? toRow(r) : null;
+    },
+    async listDependents(accountUserId) {
+      const rows = await active()
+        .selectAll()
+        .where("account_user_id", "=", accountUserId)
+        .where("role", "=", "dependent")
+        .orderBy("created_at")
+        .orderBy("id")
+        .execute();
+      return rows.map(toRow);
+    },
+    async createDependent(d) {
+      const r = await db
+        .insertInto("app.customers")
+        .values({
+          role: "dependent",
+          registered_by: "self",
+          account_user_id: d.accountUserId,
+          full_name: d.fullName,
+          birth_day: d.birthday?.day ?? null,
+          birth_month: d.birthday?.month ?? null,
+          is_demo: d.isDemo,
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+      return r.id;
+    },
+    async updateDependent(id, d) {
+      await db
+        .updateTable("app.customers")
+        .set({ full_name: d.fullName, birth_day: d.birthday?.day ?? null, birth_month: d.birthday?.month ?? null, updated_at: sql`now()` })
+        .where("id", "=", id)
+        .where("role", "=", "dependent")
+        .execute();
+    },
+    async lockDependent(accountUserId, id) {
+      if (!UUID.test(id)) return null;
+      const r = await active().selectAll().where("id", "=", id).where("account_user_id", "=", accountUserId).where("role", "=", "dependent").forUpdate().executeTakeFirst();
+      return r ? toRow(r) : null;
+    },
+    async hasUpcomingAppointment(customerId, now) {
+      // Lectura de solo existencia sobre la tabla de Turnos (004b, RF-4): misma transacción, misma conexión.
+      const r = await db
+        .selectFrom("app.appointments")
+        .select("id")
+        .where("customer_id", "=", customerId)
+        .where("status", "in", ["reserved", "confirmed"])
+        .where(sql<boolean>`upper(period) > ${now}`)
+        .limit(1)
+        .executeTakeFirst();
+      return !!r;
+    },
+    async anonymize(id) {
+      // RNF-2 de la 004b: el historial queda, sin datos personales. "(demo)" se mantiene por el check de la base.
+      await db
+        .updateTable("app.customers")
+        .set({
+          full_name: sql`case when is_demo then 'Cliente dado de baja (demo)' else 'Cliente dado de baja' end`,
+          birth_day: null,
+          birth_month: null,
+          nickname: null,
+          anonymized_at: sql`now()`,
+          updated_at: sql`now()`,
+        })
+        .where("id", "=", id)
+        .execute();
     },
     async setNickname(customerId, nickname) {
       const r = await db

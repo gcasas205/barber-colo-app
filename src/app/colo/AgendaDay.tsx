@@ -19,7 +19,8 @@ export type AgendaTurno = {
   end: number;
   status: "reserved" | "confirmed";
   priceCents: number;
-  customer: { name: string; nickname: string | null; phone: string | null; isGuest: boolean };
+  /** `holderName`: spec 004b, la persona es a cargo de ese titular (y `phone` es el del titular). */
+  customer: { name: string; nickname: string | null; phone: string | null; isGuest: boolean; holderName: string | null };
   isNew: boolean;
 };
 export type AgendaBlock = { start: number; end: number; notice: string | null; allDay: boolean };
@@ -70,6 +71,10 @@ export function AgendaDay({
 function TurnoItem({ t, day, onChanged }: { t: AgendaTurno; day: LocalDate; onChanged: (otherDay?: LocalDate) => void }) {
   const [mode, setMode] = useState<"idle" | "cancel" | "move">("idle");
   const who = t.customer.nickname ? `${t.customer.name} (${t.customer.nickname})` : t.customer.name;
+  const holder = t.customer.holderName?.replace(/ \(demo\)$/, "") ?? null;
+  // 004b, RF-16: con una persona a cargo, el WhatsApp es del titular y el saludo va para él.
+  const greet = (holder ?? t.customer.name.replace(/ \(demo\)$/, "")).split(" ")[0];
+  const about = holder ? `el turno de ${t.customer.name.replace(/ \(demo\)$/, "")}` : "tu turno";
   return (
     <Plate className={cx("flex flex-col gap-3 px-5 py-4", t.isNew && "shadow-[inset_0_0_0_3px_var(--espera)]")}>
       <div className="flex items-start gap-4">
@@ -87,6 +92,7 @@ function TurnoItem({ t, day, onChanged }: { t: AgendaTurno; day: LocalDate; onCh
             ) : null}
             {t.customer.isGuest ? <span className="rounded-full bg-chapa px-2 py-0.5 text-[13px] shadow-[inset_0_0_0_2px_var(--linea)]">Invitado</span> : null}
           </p>
+          {holder ? <p className="text-[15px] font-bold text-tinta-suave">A cargo de {holder}</p> : null}
           <p className="text-[15px] text-tinta-suave">
             {t.serviceName} · <span className="cifra">{formatPesos(t.priceCents)}</span>
           </p>
@@ -103,8 +109,8 @@ function TurnoItem({ t, day, onChanged }: { t: AgendaTurno; day: LocalDate; onCh
           </p>
           {t.customer.phone ? (
             <a
-              href={whatsappHref(t.customer.phone, `Hola ${t.customer.name.replace(/ \(demo\)$/, "").split(" ")[0]}, te escribo por tu turno del ${formatDayLong(localDateOf(new Date(t.start)))} a las ${hour(t.start)}.`)}
-              aria-label={`Escribirle por WhatsApp a ${t.customer.name} (${formatArPhone(t.customer.phone)})`}
+              href={whatsappHref(t.customer.phone, `Hola ${greet}, te escribo por ${about} del ${formatDayLong(localDateOf(new Date(t.start)))} a las ${hour(t.start)}.`)}
+              aria-label={`Escribirle por WhatsApp a ${holder ?? t.customer.name} (${formatArPhone(t.customer.phone)})`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex min-h-[44px] items-center gap-1.5 self-start font-bold underline decoration-2 underline-offset-4"

@@ -34,6 +34,21 @@ export interface CustomersTx {
   createDemoHolder(authUserId: string, fullName: string): Promise<string>;
   listCustomers(limit: number, after: ListCursor | null): Promise<CustomerListItem[]>;
   setNickname(customerId: string, nickname: string | null): Promise<boolean>;
+  /** Spec 004b: el titular de la cuenta, con la fila bloqueada (para contar y agregar de a uno). */
+  lockHolder(accountUserId: string): Promise<CustomerRow | null>;
+  /** Personas a cargo activas de la cuenta, por orden de alta. */
+  listDependents(accountUserId: string): Promise<CustomerRow[]>;
+  createDependent(d: { accountUserId: string; fullName: string; birthday: Birthday | null; isDemo: boolean }): Promise<string>;
+  updateDependent(id: string, d: { fullName: string; birthday: Birthday | null }): Promise<void>;
+  /** Saca los datos personales (nombre, cumpleaños, sobrenombre) y la marca como anonimizada (RNF-2). */
+  anonymize(id: string): Promise<void>;
+  /** 004b, RNF-1: la persona a cargo `id` de la cuenta, con la fila bloqueada (la reserva bloquea la misma). */
+  lockDependent(accountUserId: string, id: string): Promise<CustomerRow | null>;
+  /**
+   * 004b, RF-4: ¿tiene un turno activo que todavía no terminó? Va en la misma transacción porque el pool
+   * tiene una sola conexión (ADR-02): pedir otra desde adentro se traba.
+   */
+  hasUpcomingAppointment(customerId: string, now: Date): Promise<boolean>;
 }
 
 export interface CustomersStore {

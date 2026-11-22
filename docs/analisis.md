@@ -262,10 +262,10 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 | 006 | `pwa-notificaciones` | Manifest, instalación, permisos, Web Push con acciones y avisos dentro de la app | 34 + avisos de las demás | ✅ |
 | 007 | `confirmacion` | Recordatorio del día anterior, pedido 1 h antes, ventana de 30 min, SinConfirmar, reservas con poca anticipación y resumen diario | 19–23, 35–39 | ✅ |
 | 008 | `asistencia-faltas` | Marcar asistencia, faltas seguidas, aprobación, bloqueo e historial | 24–28 | ✅ |
-| 009 | `fidelizacion` | Descuento del 4.º corte del mes, del corte 10 y de cumpleaños, suma de descuentos y barras de progreso | 29–33, P-15 | v1.1 |
+| 009 | `fidelizacion` | Descuento del 4.º corte del mes, del corte 10 y de cumpleaños, suma de descuentos y barras de progreso | 29–33, P-15 | ✅ antes de publicar (2026-11-22) |
 | 010 | `sena-online` | Seña con Mercado Pago para clientes con 3 faltas seguidas | — | v2 |
 | P | `publicacion` | **Antes de publicar:** ingreso con Google, cuenta real de Colo (`BARBER_EMAIL`), apagar y borrar la demo, hosting definitivo (D-16) | 01–03 | ✅ |
-| 011 | `estadisticas-crm` | Indicadores por período, ficha 360, salud del cliente y "a quién escribirle hoy" (ver `docs/estadisticas-crm.md`) | P-10 a P-13 | v1.1 |
+| 011 | `estadisticas-crm` | Indicadores por período, ficha 360, salud del cliente y "a quién escribirle hoy" (ver `docs/estadisticas-crm.md`) | P-10 a P-13 | ✅ antes de publicar (2026-11-22) |
 
 > La 001 va primero porque toda la lógica de turnos depende de calcular bien los horarios libres, y es
 > la parte con más riesgo de errores de fechas (como pasaba con la racha en el Diario de Estudio).
@@ -297,6 +297,7 @@ Los valores entre corchetes son **parámetros configurables por el barbero**; el
 | D-09 | Se respeta el precio que vio el cliente al reservar. |
 | D-10 | Servicios con turno: Corte ($ 18.000), Completo — corte, barba y cejas ($ 20.000) — y Claritos ($ 70.000), cada uno con su duración, que define el barbero. Las ceras son un producto, fuera de los turnos. Los beneficios (visitas y descuentos) aplican solo a Corte y Completo. Fuente: pizarra de precios del local, 2026-11-20. |
 | D-11 | **Usuarios de prueba temporales** en el mismo entorno, para probar la app como Colo y como cliente: **Colo (demo)** y dos clientes de prueba, que se eligen con botones en la pantalla de login, sin claves. Son temporales y se quitan antes del lanzamiento. Resguardos: (1) se activan con una variable de entorno; (2) el ingreso de prueba **se apaga solo** en cuanto existe el primer cliente real, para que la cuenta de Colo (demo) nunca vea datos de clientes reales; (3) los datos de prueba se marcan y se borran juntos. Decidido el 2026-11-21; va en la spec 002. **Actualizado (2026-11-21):** los usuarios de prueba **no se apagan solos**; se desactivan a mano cuando Gonzalo decida publicar la app real. |
+| D-19 | **Orden hasta publicar** (2026-11-22): 004b → 005 → 006 → 007 → 008 → 009 → 011 → publicación. La seña con Mercado Pago (010) queda para después de publicar. |
 | D-18 | **El ingreso es la pantalla principal** (2026-11-22, spec 004): para ver los horarios hay que ingresar o entrar como invitado (con un toque). Después, la principal es la de turnos. Nombre y celular se piden recién al reservar, solo si faltan. Colo entra a su agenda del día. |
 | D-17 | **Sin Google por ahora** (2026-11-21): mientras se prueba, se entra con correo y contraseña (solo cuentas de prueba, listadas en la pantalla de ingreso como en Corralap) o como invitado. Google y la cuenta real de Colo van en la spec de publicación. |
 | D-16 | **Hosting definitivo pendiente:** Vercel queda para desarrollo y demo; al publicar la app real se elige otro hosting. Mientras tanto, nada debe depender de servicios propios de Vercel. |

@@ -8,14 +8,30 @@ const MINUTE = 60_000;
 const NOT_ALLOWED = err("NOT_ALLOWED" as const);
 const isActive = (a: Appointment) => a.status === "reserved" || a.status === "confirmed";
 
+type Who = { customerId: string; userId: string; account: string | null };
+
 /** El cliente del actor, si ya tiene sus datos (RF-7: si no, hay que pedirlos antes de reservar). */
-function customerOf(actor: Actor): { customerId: string; userId: string } | "NOT_ALLOWED" | "NEEDS_CONTACT" {
+function customerOf(actor: Actor): Who | "NOT_ALLOWED" | "NEEDS_CONTACT" {
   if (actor.kind === "customer") {
     if (!actor.customerId || !actor.profileComplete) return "NEEDS_CONTACT";
-    return { customerId: actor.customerId, userId: actor.userId };
+    return { customerId: actor.customerId, userId: actor.userId, account: actor.userId };
   }
-  if (actor.kind === "guest") return actor.customerId ? { customerId: actor.customerId, userId: actor.userId } : "NEEDS_CONTACT";
+  if (actor.kind === "guest") return actor.customerId ? { customerId: actor.customerId, userId: actor.userId, account: null } : "NEEDS_CONTACT";
   return "NOT_ALLOWED";
+}
+
+/** Spec 004b: los clientes cuyos turnos maneja el actor (el titular y sus personas a cargo; el invitado, el suyo). */
+async function membersOf(tx: AppointmentsTx, who: Who): Promise<string[]> {
+  if (!who.account) return [who.customerId];
+  const members = (await tx.accountMembers(who.account)).map((m) => m.customerId);
+  return members.includes(who.customerId) ? members : [who.customerId, ...members];
+}
+
+/** Para ver los turnos de la cuenta sin exigir los datos de contacto (un titular sin perfil puede tener hijos). */
+function viewerOf(actor: Actor): Who | null {
+  if (actor.kind === "customer" && actor.customerId) return { customerId: actor.customerId, userId: actor.userId, account: actor.userId };
+  if (actor.kind === "guest" && actor.customerId) return { customerId: actor.customerId, userId: actor.userId, account: null };
+  return null;
 }
 
 /**
@@ -38,19 +54,24 @@ const endOf = (start: Date, minutes: number): Interval => ({ start, end: new Dat
 
 export type BookError = "NOT_ALLOWED" | "NEEDS_CONTACT" | "SERVICE_UNAVAILABLE" | "SLOT_TAKEN" | { hasUpcoming: Appointment };
 
-/** RF-8 a RF-12. */
+/**
+ * RF-8 a RF-12. Spec 004b: el titular puede reservar para una persona a cargo (`forCustomerId`); el límite de
+ * un turno futuro es por persona.
+ */
 export async function book(
   deps: AppointmentsDeps,
   actor: Actor,
-  input: { serviceId: string; start: Date },
+  input: { serviceId: string; start: Date; forCustomerId?: string },
   now: Date,
 ): Promise<Result<Appointment, BookError>> {
   const who = customerOf(actor);
   if (typeof who === "string") return err(who);
   return deps.transaction(async (tx) => {
     await tx.lockScheduleShared();
-    if (!(await tx.lockCustomer(who.customerId))) return NOT_ALLOWED;
-    const upcoming = await tx.upcomingFor(who.customerId, now);
+    const target = input.forCustomerId ?? who.customerId;
+    if (target !== who.customerId && !(await membersOf(tx, who)).includes(target)) return NOT_ALLOWED; // RF-15 de la 004b
+    if (!(await tx.lockCustomer(target))) return NOT_ALLOWED;
+    const upcoming = await tx.upcomingFor(target, now);
     if (upcoming) return err({ hasUpcoming: upcoming }); // RF-10
     const service = await tx.service(input.serviceId);
     if (!service?.active) return err("SERVICE_UNAVAILABLE" as const);
@@ -58,12 +79,14 @@ export async function book(
     if (!ok_) return err("SLOT_TAKEN" as const);
     const period = endOf(input.start, service.durationMinutes);
     const status = initialStatus(input.start, now);
-    const id = await tx.insert({ customerId: who.customerId, serviceId: service.id, period, status, priceCents: service.priceCents, bookedAt: now });
+    const id = await tx.insert({ customerId: target, serviceId: service.id, period, status, priceCents: service.priceCents, bookedAt: now });
     if (id === "OVERLAP") return err("SLOT_TAKEN" as const); // RF-12: la base lo frenó
     await tx.addEvent({ appointmentId: id, at: now, actor: "customer", actorUserId: who.userId, kind: "booked", from: null, to: period, late: false, reason: null });
+    const name = target === who.customerId ? "" : ((await tx.accountMembers(who.account ?? "")).find((m) => m.customerId === target)?.name ?? "");
     return ok({
       id,
-      customerId: who.customerId,
+      customerId: target,
+      customerName: name,
       serviceId: service.id,
       serviceName: service.name,
       ...period,
@@ -75,33 +98,51 @@ export async function book(
   });
 }
 
-/** RF-13, RF-20: "Tu turno" y lo que hizo Colo que el cliente todavía no vio. */
-export async function getMyAppointment(
+/** Un turno de la cuenta, con si es del propio titular o invitado (spec 004b). */
+export type AccountAppointment = Appointment & { isSelf: boolean };
+
+/**
+ * RF-13, RF-20 (y 004b, RF-12 y RF-14): los turnos futuros de cada persona de la cuenta y lo último que hizo
+ * Colo que todavía no se vio.
+ */
+export async function getMyAppointments(
   deps: AppointmentsDeps,
   actor: Actor,
   now: Date,
-): Promise<{ appointment: Appointment | null; notice: BarberNotice | null }> {
-  const who = customerOf(actor);
-  if (typeof who === "string") return { appointment: null, notice: null };
+): Promise<{ appointments: AccountAppointment[]; notice: (BarberNotice & { isSelf: boolean }) | null }> {
+  const who = viewerOf(actor);
+  if (!who) return { appointments: [], notice: null };
   return deps.transaction(async (tx) => {
-    const [appointment, notice] = await Promise.all([tx.upcomingFor(who.customerId, now), tx.unseenBarberNotice(who.customerId)]);
-    return { appointment, notice };
+    const ids = await membersOf(tx, who);
+    const [list, notice] = await Promise.all([Promise.all(ids.map((id) => tx.upcomingFor(id, now))), tx.unseenBarberNotice(ids)]);
+    return {
+      appointments: list
+        .filter((a): a is Appointment => !!a)
+        .map((a) => ({ ...a, isSelf: a.customerId === who.customerId }))
+        .sort((a, b) => a.start.getTime() - b.start.getTime()),
+      notice: notice ? { ...notice, isSelf: notice.customerId === who.customerId } : null,
+    };
   });
 }
 
 /** RF-20: el cliente cierra el aviso. */
 export async function dismissBarberNotice(deps: AppointmentsDeps, actor: Actor, eventId: string, now: Date): Promise<void> {
-  const who = customerOf(actor);
-  if (typeof who === "string") return;
-  await deps.transaction((tx) => tx.markNoticeSeen(eventId, who.customerId, now));
+  const who = viewerOf(actor);
+  if (!who) return;
+  await deps.transaction(async (tx) => tx.markNoticeSeen(eventId, await membersOf(tx, who), now));
+}
+
+/** ¿La persona tiene un turno futuro activo? (spec 004b, RF-6: no se quita a quien lo tiene). */
+export async function hasUpcomingAppointment(deps: AppointmentsDeps, customerId: string, now: Date): Promise<boolean> {
+  return deps.transaction(async (tx) => !!(await tx.upcomingFor(customerId, now)));
 }
 
 type ChangeError = "NOT_ALLOWED" | "NOT_FOUND" | "STARTED" | "CONFIRM_LATE";
 
-/** El turno activo del cliente, con la fila bloqueada. */
-async function ownActive(tx: AppointmentsTx, customerId: string, id: string): Promise<Appointment | null> {
+/** Un turno activo de la cuenta (004b, RF-12 y RF-15), con la fila bloqueada. */
+async function ownActive(tx: AppointmentsTx, who: Who, id: string): Promise<Appointment | null> {
   const a = await tx.get(id);
-  return a && a.customerId === customerId && isActive(a) ? a : null;
+  return a && isActive(a) && (await membersOf(tx, who)).includes(a.customerId) ? a : null;
 }
 
 /** RF-14, RF-15, RF-19. */
@@ -115,7 +156,7 @@ export async function cancelByCustomer(
   const who = customerOf(actor);
   if (typeof who === "string") return NOT_ALLOWED;
   return deps.transaction(async (tx) => {
-    const a = await ownActive(tx, who.customerId, id);
+    const a = await ownActive(tx, who, id);
     if (!a) return err("NOT_FOUND" as const);
     const timing = changeTiming(a, now);
     if (timing === "started") return err("STARTED" as const);
@@ -140,7 +181,7 @@ export async function rescheduleByCustomer(
   if (typeof who === "string") return NOT_ALLOWED;
   return deps.transaction(async (tx) => {
     await tx.lockScheduleShared();
-    const a = await ownActive(tx, who.customerId, id);
+    const a = await ownActive(tx, who, id);
     if (!a) return err("NOT_FOUND" as const);
     const can = customerCanReschedule(a, now);
     if (!can.ok) return can;
