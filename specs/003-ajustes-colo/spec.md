@@ -1,6 +1,6 @@
 # Spec 003 — Ajustes de Colo
 
-Estado: aprobada (2026-11-21), con las resoluciones de `clarificacion.md`
+Estado: implementada (2026-11-21), con las resoluciones de `clarificacion.md`
 
 Origen: `docs/analisis.md` (RN-01, RN-36, RN-38 · RF-04, RF-05, RF-41 a RF-44), spec 001 (RF-12 a RF-14 y
 "Fuera de alcance": regla del paso), spec 002 (rol barbero, D-13 a D-15) y las respuestas de Gonzalo del
