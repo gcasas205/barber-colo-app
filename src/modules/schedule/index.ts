@@ -2,6 +2,8 @@
 export * from "./domain/availability";
 export * from "./domain/schedule";
 export * from "./domain/validate";
+export * from "./domain/settings";
+export * from "./domain/notices";
 export * from "./application/get-availability";
 export * from "./application/get-schedule-snapshot";
 export type * from "./application/ports";

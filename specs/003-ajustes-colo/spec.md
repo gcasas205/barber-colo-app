@@ -1,6 +1,6 @@
 # Spec 003 — Ajustes de Colo
 
-Estado: borrador
+Estado: aprobada (2026-11-21), con las resoluciones de `clarificacion.md`
 
 Origen: `docs/analisis.md` (RN-01, RN-36, RN-38 · RF-04, RF-05, RF-41 a RF-44), spec 001 (RF-12 a RF-14 y
 "Fuera de alcance": regla del paso), spec 002 (rol barbero, D-13 a D-15) y las respuestas de Gonzalo del
@@ -42,7 +42,7 @@ Se usan las de la spec 001 (franja, paso, bloqueo, horario libre, hoy, ventana d
 - **Anticipación mínima:** cuánto tiempo antes del inicio se puede reservar un horario.
 - **Días a futuro:** el último día de la ventana de reserva es hoy + ese número.
 
-**Rangos permitidos** (propuesta, a revisar en la aprobación):
+**Rangos permitidos** (aprobados):
 
 | Parámetro | Valores |
 |---|---|
@@ -76,7 +76,7 @@ Se usan las de la spec 001 (franja, paso, bloqueo, horario libre, hoy, ventana d
 - RF-11. SI un bloqueo de horas no termina después de empezar, un bloqueo de días tiene el último día antes del primero o un bloqueo termina antes del momento en que se carga, ENTONCES EL SISTEMA no lo guarda e indica el problema junto al campo.
 - RF-12. EL SISTEMA muestra los bloqueos vigentes ordenados por inicio, cada uno con sus fechas y horas y su aviso, y permite borrar cualquiera. Al borrarlo, esos horarios vuelven a ofrecerse.
 - RF-13. EL SISTEMA permite que dos bloqueos se superpongan (por ejemplo, un feriado dentro de las vacaciones); el período bloqueado es la unión de los dos.
-- RF-14. CUANDO un visitante ve un día que tiene un bloqueo con aviso, EL SISTEMA muestra el aviso en ese día: "Cerrado: <aviso>" si el bloqueo cubre todo el día, o "<hora> a <hora>: <aviso>" si cubre una parte. Sin aviso, el día solo muestra los horarios que quedan (o "sin lugar").
+- RF-14. CUANDO un visitante ve un día que tiene un bloqueo con aviso, EL SISTEMA muestra el aviso debajo de la semana, con el día: "Cerrado: <aviso>" si el bloqueo cubre todo el día, o "<hora> a <hora>: <aviso>" si cubre una parte. Sin aviso, el día solo muestra los horarios que quedan (o "sin lugar").
 
 **Servicios**
 - RF-15. EL SISTEMA lista a Colo todos los servicios: primero los que se ofrecen, en el orden en que los ven los clientes, y después los sacados, marcados como "No se ofrece".
@@ -93,7 +93,7 @@ Se usan las de la spec 001 (franja, paso, bloqueo, horario libre, hoy, ventana d
 - RF-24. SI un valor de anticipación, días a futuro o WhatsApp está fuera de rango o mal escrito, ENTONCES EL SISTEMA no lo guarda e indica el problema junto al campo.
 
 **General**
-- RF-25. CUANDO Colo guarda un cambio, EL SISTEMA confirma "Guardado" y la página pública lo muestra en la siguiente carga (o en la siguiente revisión de la página abierta, como RF-16 de la 001).
+- RF-25. CUANDO Colo guarda un cambio, EL SISTEMA confirma "Guardado" y la página pública lo muestra en la siguiente carga (una página que ya estaba abierta lo muestra al recargarla).
 - RF-26. SI Colo sale de una sección con cambios sin guardar, ENTONCES EL SISTEMA le avisa antes de perderlos.
 - RF-27. EL SISTEMA registra en cada cambio de ajustes quién lo hizo (Colo o Colo demo) y cuándo, sin mostrarlo en la página pública.
 - RF-28. EL SISTEMA permite que Colo demo cambie todo, igual que Colo, y esos cambios se ven en la página pública (D-15; no hay "restaurar valores").
@@ -146,4 +146,4 @@ Se usan las de la spec 001 (franja, paso, bloqueo, horario libre, hoy, ventana d
 
 ## Dudas abiertas
 
-- (ninguna: las respuestas de Gonzalo del 2026-11-21 cubren alcance, bloqueos, aviso, demo y servicios; los rangos permitidos son una propuesta a revisar en la aprobación)
+- Ninguna. Rangos permitidos aprobados como están (2026-11-21).
