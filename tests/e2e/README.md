@@ -21,6 +21,7 @@ npm run build && npx next start -p 3100
 | `csp.py` | CSP con nonce en las pantallas con sesión (RNF-4 de la 002) |
 | `speed_login.py` | Velocidad del ingreso con 4G lento simulado (RNF-6 de la 002) |
 | `turnos.py [URL]` | Spec 004: ingreso como principal, reservar, reprogramar, cancelar, agenda de Colo, choques con Ajustes, aviso al cliente y velocidad. En producción no crea invitados y deja todo cancelado |
+| `pestanas.py [URL]` | Pestañas del panel de Colo: la marcada es siempre la de la pantalla, al ir y volver (celular simulado, con y sin 4G lento) |
 | `ajustes.py [URL]` | Ajustes de Colo, avisos en la página pública y velocidad (spec 003). Con la URL de producción no crea servicios y deja todo como estaba |
 
 `login.py`, `csp.py` y `speed_login.py` esperan la base sin clientes: antes de correrlos,
