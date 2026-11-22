@@ -8,7 +8,7 @@ import { supabaseServer } from "@/server/auth/supabase";
 import { authEnv } from "@/shared/config/env";
 
 export type LoginState = { error?: string; email?: string };
-export type GuestState = { fields?: Record<string, string>; form?: string; name?: string; phone?: string };
+export type GuestState = { form?: string };
 
 const credentials = z.object({ email: z.email().max(254), password: z.string().min(1).max(200) });
 
@@ -31,13 +31,11 @@ export async function signInWithPassword(_prev: LoginState, form: FormData): Pro
     await supabase.auth.signOut({ scope: "local" });
     return { error: "CREDENTIALS", email };
   }
-  redirect(entered.value.kind === "barber" ? "/colo" : "/perfil");
+  redirect(entered.value.kind === "barber" ? "/colo" : "/turnos"); // spec 004, RF-5
 }
 
-/** RF-15 a RF-18b: entrar como invitado con nombre y teléfono. */
-export async function signInAsGuest(_prev: GuestState, form: FormData): Promise<GuestState> {
-  const name = String(form.get("name") ?? "").slice(0, 200);
-  const phone = String(form.get("phone") ?? "").slice(0, 40);
+/** Spec 004, RF-4: entrar como invitado con un toque. Nombre y celular se piden al reservar. */
+export async function signInAsGuest(): Promise<GuestState> {
   const supabase = await supabaseServer();
   const result = await enterAsGuest(
     {
@@ -48,10 +46,10 @@ export async function signInAsGuest(_prev: GuestState, form: FormData): Promise<
         return data.user.id;
       },
     },
-    { name, phone, ipHash: await ipHash(), now: new Date() },
+    { ipHash: await ipHash(), now: new Date() },
   );
-  if (!result.ok) return { ...result.error, name, phone };
-  redirect("/perfil");
+  if (!result.ok) return result.error;
+  redirect("/turnos");
 }
 
 /** RF-5: salir en este dispositivo. */

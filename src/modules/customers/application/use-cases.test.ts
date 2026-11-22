@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Actor } from "@/modules/identity";
 import { memoryStore } from "./memory-store";
-import { enterAsDemo, enterAsGuest, getOwnProfile, listCustomers, saveProfile, setNickname } from "./use-cases";
+import { enterAsDemo, enterAsGuest, getOwnProfile, listCustomers, saveContact, saveProfile, setNickname } from "./use-cases";
 
 const now = new Date("2026-11-21T21:00:00Z");
 const barber: Actor = { kind: "barber", userId: "colo", demo: true };
@@ -12,8 +12,13 @@ async function demoClient(m = memoryStore(), userId = "u-c1") {
   const actor: Actor = { kind: "customer", userId, customerId: r.value.customerId, profileComplete: false, demo: true };
   return { m, actor, customerId: r.value.customerId };
 }
-const guestEntry = (m: ReturnType<typeof memoryStore>, name: string, phone: string, ip = "ip-1", device = `d-${Math.random()}`) =>
-  enterAsGuest({ store: m.store, createSession: async () => device }, { name, phone, ipHash: ip, now });
+const guestEntry = (m: ReturnType<typeof memoryStore>, ip = "ip-1", device = `d-${Math.random()}`) =>
+  enterAsGuest({ store: m.store, createSession: async () => device }, { ipHash: ip, now });
+/** Invitado que entró con un toque y carga sus datos al reservar (spec 004). */
+async function guestWithContact(m: ReturnType<typeof memoryStore>, name: string, phone: string, device = `d-${Math.random()}`) {
+  const actor: Actor = { kind: "guest", userId: device, customerId: null };
+  return saveContact({ store: m.store }, actor, { name, phone });
+}
 
 describe("enterAsDemo (RF-22, RF-23, RF-25)", () => {
   it("Colo (demo) queda como barbero, sin ficha de cliente", async () => {
@@ -68,7 +73,7 @@ describe("saveProfile (RF-9 a RF-14)", () => {
 
   it("con el teléfono de un invitado, lo une a la cuenta (RF-12)", async () => {
     const m = memoryStore();
-    await guestEntry(m, "Lucas", "1138163491");
+    await guestWithContact(m, "Lucas", "1138163491");
     const { actor, customerId } = await demoClient(m);
     expect(await saveProfile({ store: m.store }, actor, { name: "Lucas", phone: "1138163491", birthday: null })).toEqual({ ok: true, value: { merged: true } });
     const guest = [...m.customers.values()].find((c) => c.role === "guest")!;
@@ -89,55 +94,76 @@ describe("saveProfile (RF-9 a RF-14)", () => {
   });
 });
 
-describe("enterAsGuest (RF-15 a RF-18b)", () => {
-  it("crea un invitado nuevo y asocia el dispositivo", async () => {
+describe("enterAsGuest (spec 004, RF-4: un toque)", () => {
+  it("crea la sesión sin pedir datos ni crear el cliente", async () => {
     const m = memoryStore();
-    const r = await guestEntry(m, "Lucas", "11 3816-3491", "ip-1", "dev-1");
+    let sessions = 0;
+    const r = await enterAsGuest({ store: m.store, createSession: async () => (sessions++, "d") }, { ipHash: "ip", now });
+    expect(r).toEqual({ ok: true, value: undefined });
+    expect(sessions).toBe(1);
+    expect(m.customers.size).toBe(0);
+  });
+
+  it("el sexto intento en una hora desde la misma conexión se rechaza y no crea sesión (RF-18b de la 002)", async () => {
+    const m = memoryStore();
+    for (let i = 0; i < 5; i++) expect((await guestEntry(m, "ip-x")).ok).toBe(true);
+    expect(await guestEntry(m, "ip-x")).toEqual({ ok: false, error: { form: "RATE_LIMITED" } });
+    expect((await guestEntry(m, "ip-y")).ok).toBe(true);
+  });
+});
+
+describe("saveContact (spec 004, RF-7, RF-11)", () => {
+  it("un invitado sin datos crea su cliente y asocia el dispositivo", async () => {
+    const m = memoryStore();
+    const r = await guestWithContact(m, "Lucas", "11 3816-3491", "dev-1");
     expect(r.ok).toBe(true);
     const id = r.ok ? r.value.customerId : "";
     expect(m.customers.get(id)).toMatchObject({ role: "guest", fullName: "Lucas", phone: "+5491138163491" });
     expect(m.devices.get("dev-1")).toBe(id);
   });
 
-  it("con el teléfono de un invitado, es el mismo cliente y no cambia el nombre (RF-17)", async () => {
+  it("con el teléfono de otro invitado, es el mismo cliente y no cambia el nombre (RF-17 de la 002)", async () => {
     const m = memoryStore();
-    const first = await guestEntry(m, "Lucas", "1138163491");
-    const second = await guestEntry(m, "Otro nombre", "011 15 3816-3491", "ip-2", "dev-2");
+    const first = await guestWithContact(m, "Lucas", "1138163491");
+    const second = await guestWithContact(m, "Otro nombre", "011 15 3816-3491", "dev-2");
     expect(second.ok && first.ok && second.value.customerId === first.value.customerId).toBe(true);
     expect([...m.customers.values()][0]!.fullName).toBe("Lucas");
     expect(m.devices.get("dev-2")).toBe(first.ok ? first.value.customerId : "");
   });
 
-  it("con el teléfono de una cuenta, no entra (RF-16)", async () => {
+  it("caso 12: con el teléfono de una cuenta, no se guarda y se pide ingresar con esa cuenta", async () => {
     const { m, actor } = await demoClient();
     await saveProfile({ store: m.store }, actor, { name: "Martín", phone: "1138163491", birthday: null });
-    expect(await guestEntry(m, "Impostor", "1138163491")).toEqual({ ok: false, error: { form: "PHONE_HAS_ACCOUNT" } });
+    expect(await guestWithContact(m, "Impostor", "1138163491")).toEqual({ ok: false, error: { form: "PHONE_HAS_ACCOUNT" } });
   });
 
   it("valida nombre y teléfono, y marca los del exterior", async () => {
     const m = memoryStore();
-    expect(await guestEntry(m, "L", "+598 99 123 456")).toEqual({ ok: false, error: { fields: { name: "NAME_LENGTH", phone: "PHONE_FOREIGN" } } });
+    expect(await guestWithContact(m, "L", "+598 99 123 456")).toEqual({ ok: false, error: { fields: { name: "NAME_LENGTH", phone: "PHONE_FOREIGN" } } });
   });
 
-  it("no crea la sesión si el ingreso se rechaza", async () => {
-    const m = memoryStore();
-    let sessions = 0;
-    await enterAsGuest({ store: m.store, createSession: async () => (sessions++, "d") }, { name: "L", phone: "x", ipHash: "ip", now });
-    expect(sessions).toBe(0);
+  it("un cliente con cuenta completa nombre y teléfono sin perder el cumpleaños", async () => {
+    const { m, actor, customerId } = await demoClient();
+    await saveProfile({ store: m.store }, actor, { name: "Martín", phone: "1138163491", birthday: { day: 3, month: 5 } });
+    const r = await saveContact({ store: m.store }, actor, { name: "Martín G", phone: "1138163492" });
+    expect(r).toEqual({ ok: true, value: { customerId } });
+    expect(m.customers.get(customerId)).toMatchObject({ fullName: "Martín G (demo)", phone: "+5491138163492", birthday: { day: 3, month: 5 } });
   });
 
-  it("el sexto intento en una hora desde la misma conexión se rechaza (RF-18b, caso 15)", async () => {
+  it("un invitado que ya tiene cliente no cambia nada; Colo no reserva para sí", async () => {
     const m = memoryStore();
-    for (let i = 0; i < 5; i++) await guestEntry(m, "Lucas", `11 3816-349${i}`, "ip-x");
-    expect(await guestEntry(m, "Lucas", "11 3816-3499", "ip-x")).toEqual({ ok: false, error: { form: "RATE_LIMITED" } });
-    expect((await guestEntry(m, "Lucas", "11 3816-3499", "ip-y")).ok).toBe(true);
+    const first = await guestWithContact(m, "Lucas", "1138163491");
+    const id = first.ok ? first.value.customerId : "";
+    const again = await saveContact({ store: m.store }, { kind: "guest", userId: "x", customerId: id }, { name: "Otro", phone: "1100000000" });
+    expect(again).toEqual({ ok: true, value: { customerId: id } });
+    expect(await saveContact({ store: m.store }, barber, { name: "Colo", phone: "1138163491" })).toEqual({ ok: false, error: "NOT_ALLOWED" });
   });
 });
 
 describe("lista y sobrenombre de Colo (RF-19 a RF-21)", () => {
   it("solo el barbero ve la lista, de la más reciente a la más antigua, de a 50", async () => {
     const m = memoryStore();
-    for (let i = 0; i < 55; i++) await guestEntry(m, `Cliente ${i}`, `11 4000-${String(1000 + i)}`, `ip-${i}`);
+    for (let i = 0; i < 55; i++) await guestWithContact(m, `Cliente ${i}`, `11 4000-${String(1000 + i)}`);
     const page1 = await listCustomers({ store: m.store }, barber, null);
     expect(page1.ok && page1.value.items).toHaveLength(50);
     expect(page1.ok && page1.value.items[0]!.fullName).toBe("Cliente 54");
@@ -150,7 +176,7 @@ describe("lista y sobrenombre de Colo (RF-19 a RF-21)", () => {
 
   it("los invitados unidos a una cuenta no aparecen aparte", async () => {
     const m = memoryStore();
-    await guestEntry(m, "Lucas", "1138163491");
+    await guestWithContact(m, "Lucas", "1138163491");
     const { actor } = await demoClient(m);
     await saveProfile({ store: m.store }, actor, { name: "Lucas", phone: "1138163491", birthday: null });
     const list = await listCustomers({ store: m.store }, barber, null);
@@ -159,7 +185,7 @@ describe("lista y sobrenombre de Colo (RF-19 a RF-21)", () => {
 
   it("Colo pone, cambia y borra un sobrenombre; nadie más puede", async () => {
     const m = memoryStore();
-    const g = await guestEntry(m, "Lucas", "1138163491");
+    const g = await guestWithContact(m, "Lucas", "1138163491");
     const id = g.ok ? g.value.customerId : "";
     expect(await setNickname({ store: m.store }, barber, id, "  el pelado de la moto ")).toEqual({ ok: true, value: undefined });
     expect(m.customers.get(id)!.nickname).toBe("el pelado de la moto");
@@ -174,7 +200,7 @@ describe("lista y sobrenombre de Colo (RF-19 a RF-21)", () => {
 describe("getOwnProfile", () => {
   it("devuelve el propio perfil sin el sobrenombre (RF-21)", async () => {
     const m = memoryStore();
-    const g = await guestEntry(m, "Lucas", "1138163491", "ip", "dev");
+    const g = await guestWithContact(m, "Lucas", "1138163491", "dev");
     const id = g.ok ? g.value.customerId : "";
     await setNickname({ store: m.store }, barber, id, "el de la moto");
     const profile = await getOwnProfile({ store: m.store }, { kind: "guest", userId: "dev", customerId: id });

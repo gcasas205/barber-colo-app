@@ -29,12 +29,13 @@ export type IdentityFacts = {
   now: Date;
 };
 
-export type NoActorReason = "no_session" | "expired" | "demo_disabled" | "not_allowed" | "guest_unregistered";
+export type NoActorReason = "no_session" | "expired" | "demo_disabled" | "not_allowed";
 
 export type Actor =
   | { kind: "barber"; userId: string; demo: boolean }
   | { kind: "customer"; userId: string; customerId: string | null; profileComplete: boolean; demo: boolean }
-  | { kind: "guest"; userId: string; customerId: string }
+  /** Sin `customerId` hasta que carga nombre y celular al reservar por primera vez (spec 004, RF-4). */
+  | { kind: "guest"; userId: string; customerId: string | null }
   | { kind: "none"; reason: NoActorReason; signOut?: true };
 
 const DAY_MS = 86_400_000;
@@ -72,12 +73,9 @@ function classify(f: IdentityFacts, c: SessionClaims): Actor {
     };
   }
 
-  // Invitado: sesión anónima asociada a un cliente desde este dispositivo (RF-17, RF-18).
-  if (c.isAnonymous) {
-    return f.guestDevice
-      ? { kind: "guest", userId: c.sub, customerId: f.guestDevice.customerId }
-      : { kind: "none", reason: "guest_unregistered" };
-  }
+  // Invitado: sesión anónima, asociada a un cliente desde este dispositivo cuando ya reservó (RF-17, RF-18;
+  // spec 004, RF-4).
+  if (c.isAnonymous) return { kind: "guest", userId: c.sub, customerId: f.guestDevice?.customerId ?? null };
 
   // Google (spec de publicación): barbero solo con el email verificado igual al de Colo (RF-6, RF-7b, RF-7c).
   if (c.provider === "google") {
