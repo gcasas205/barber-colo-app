@@ -64,7 +64,7 @@ export async function updateDependent(
   });
 }
 
-/** RF-5, RF-6: no se quita a quien tiene un turno futuro activo (lo dice Turnos, vía `src/server`). */
+/** RF-5, RF-6: no se quita a quien tiene un turno futuro activo (se mira en la misma transacción). */
 export async function removeDependent(
   deps: Deps,
   actor: Actor,

@@ -39,6 +39,8 @@ const bookSchema = z.object({
   start: z.number().int().positive(),
   name: z.string().max(200).optional(),
   phone: z.string().max(40).optional(),
+  /** Spec 004b: para una persona a cargo de la cuenta (el caso de uso verifica que lo sea). */
+  forCustomerId: z.string().max(40).optional(),
 });
 
 /** RF-7 a RF-12. Si faltan, primero se guardan nombre y celular (clarificación 1) y después se reserva. */
@@ -46,7 +48,7 @@ export async function bookAction(input: unknown): Promise<TurnoResult> {
   let actor = await client();
   const parsed = bookSchema.safeParse(input);
   if (!parsed.success) return fail("TRY_AGAIN");
-  const { serviceId, start, name, phone } = parsed.data;
+  const { serviceId, start, name, phone, forCustomerId } = parsed.data;
 
   const needsContact = actor.kind === "guest" ? !actor.customerId : !actor.customerId || !actor.profileComplete;
   if (needsContact) {
@@ -59,8 +61,8 @@ export async function bookAction(input: unknown): Promise<TurnoResult> {
     actor = actor.kind === "guest" ? { ...actor, customerId: contact.value.customerId } : { ...actor, profileComplete: true };
   }
 
-  const result = await book(appointmentsDeps(), actor, { serviceId, start: new Date(start) }, new Date());
-  if (result.ok) return done({ turno: toTurnoView(result.value) ?? undefined });
+  const result = await book(appointmentsDeps(), actor, { serviceId, start: new Date(start), forCustomerId }, new Date());
+  if (result.ok) return done({ turno: toTurnoView(result.value, result.value.customerId === actor.customerId) ?? undefined });
   revalidatePath("/turnos"); // RF-9: los horarios se actualizan
   if (typeof result.error === "object") return fail("HAS_UPCOMING");
   return fail(result.error);
@@ -82,7 +84,7 @@ export async function rescheduleAction(id: unknown, start: unknown, confirmLate:
   const actor = await client();
   if (typeof id !== "string" || typeof start !== "number" || !Number.isInteger(start)) return fail("TRY_AGAIN");
   const result = await rescheduleByCustomer(appointmentsDeps(), actor, id, new Date(start), confirmLate === true, new Date());
-  if (result.ok) return done({ turno: toTurnoView(result.value) ?? undefined });
+  if (result.ok) return done({ turno: toTurnoView(result.value, result.value.customerId === actor.customerId) ?? undefined });
   if (result.error === "CONFIRM_LATE") return fail("CONFIRM_LATE", { confirmLate: true });
   revalidatePath("/turnos");
   return fail(result.error);

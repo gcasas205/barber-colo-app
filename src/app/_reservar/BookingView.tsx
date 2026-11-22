@@ -17,10 +17,11 @@ import { cx } from "@/ui/cx";
 import { ContactLink } from "./ContactLink";
 
 // En oscuro el esmalte queda cerca del fondo de las chapas: lo elegido suma un borde interior claro.
-const SELECTED =
+/** Estilos de elección (servicio, día, horario; y "para quién" en Turnos). */
+export const SELECTED =
   "bg-esmalte text-sobre-esmalte shadow-[var(--shadow-chapa-control)] dark:ring-2 dark:ring-inset dark:ring-sobre-esmalte-suave";
-const IDLE = "bg-chapa text-tinta shadow-[var(--shadow-chapa-clara)] hover:shadow-[inset_0_0_0_2px_var(--esmalte-200)]";
-const FOCUS = "focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-poste";
+export const IDLE = "bg-chapa text-tinta shadow-[var(--shadow-chapa-clara)] hover:shadow-[inset_0_0_0_2px_var(--esmalte-200)]";
+export const FOCUS = "focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-poste";
 
 /** Lo que puede hacer el visitante. El estado vive en BookingClient (RF-15: la dirección no cambia). */
 export type BookingActions = {

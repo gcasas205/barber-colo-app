@@ -8,7 +8,7 @@ import { FieldError, FormAlert } from "../_sesion/FormBits";
 import { errorText, NEEDS_CONTACT } from "../_sesion/messages";
 import { saveProfileAction, type ProfileState } from "./actions";
 
-const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+export const MONTHS = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
 export type ProfileDefaults = { name: string; phone: string; birthDay: number | null; birthMonth: number | null };
 
