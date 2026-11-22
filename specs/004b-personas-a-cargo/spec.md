@@ -1,6 +1,6 @@
 # Spec 004b — Personas a cargo
 
-Estado: implementada (falta T5, producción)
+Estado: implementada (en producción)
 
 Origen: `docs/dominio.md` (P-16, I-17, I-18), `docs/casos-de-uso.md` (CU-31, CU-02 paso 1), spec 004 y las
 respuestas de Gonzalo del 2026-11-22 (solo clientes con cuenta; no se quita a alguien con un turno pendiente).

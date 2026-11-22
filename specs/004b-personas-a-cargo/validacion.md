@@ -34,4 +34,5 @@ e2e local `tests/e2e/a_cargo.py` (19 comprobaciones), más `turnos.py`, `pestana
 
 ## Veredicto
 
-La spec se cumple en local. Pendiente: T5 (desplegar y verificar en producción con `a_cargo.py <URL>`).
+La spec se cumple. **En producción** (PR #23, 2026-11-22): `a_cargo.py https://barber-colo.vercel.app` 20/20 en verde,
+con una persona a cargo extra cargada a mano en la cuenta de prueba ("Pibe1"): se sigue ofreciendo reservar solo para ella.

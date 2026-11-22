@@ -121,7 +121,14 @@ with sync_playwright() as p:
     m = main_(pg)
     ok(m.locator("h1:text-is('Tus turnos')").count() == 1 and m.locator("article").count() == 2, "RF-10, RF-12: dos turnos de la cuenta a la vez, seguidos")
     ok(m.locator(f"text=Para {HIJO}").count() == 1 and m.locator("text=Para vos").count() == 1, "RF-12: cada turno dice para quién es")
-    ok(m.locator("h2:text-is('Reservá otro turno')").count() == 0, "RF-13: si todos tienen turno, no se ofrece reservar")
+    # La cuenta puede tener otras personas a cargo (en producción las carga quien prueba): con alguien libre se
+    # sigue ofreciendo reservar, solo para quien no tiene turno; si todos tienen, no.
+    free = [x.strip() for x in m.locator("[aria-labelledby=titulo-para-quien] button:not([disabled])").all_inner_texts()]
+    if free:
+        ok(m.locator("h2:text-is('Reservá otro turno')").count() == 1 and "Vos" not in free and HIJO not in free,
+           f"RF-13: con otras personas libres ({', '.join(free)}) se ofrece reservar solo para ellas")
+    else:
+        ok(m.locator("h2:text-is('Reservá otro turno')").count() == 0, "RF-13: si todos tienen turno, no se ofrece reservar")
     pg.screenshot(path=f"{SHOTS}/a-cargo-turnos.png", full_page=True)
 
     # RF-6: no se quita a quien tiene un turno futuro.
