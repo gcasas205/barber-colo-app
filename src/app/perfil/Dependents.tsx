@@ -177,10 +177,10 @@ function DependentRow({
         )
       ) : (
         <div className="flex flex-wrap gap-2">
-          <Button variant="secundario" onClick={() => (setError(null), setMode("edit"))}>
+          <Button variant="secundario" aria-label={`Editar a ${item.name}`} onClick={() => (setError(null), setMode("edit"))}>
             <Pencil aria-hidden size={18} strokeWidth={2.5} /> Editar
           </Button>
-          <Button variant="texto" onClick={() => (setError(null), setMode("remove"))}>
+          <Button variant="texto" aria-label={`Quitar a ${item.name}`} onClick={() => (setError(null), setMode("remove"))}>
             Quitar
           </Button>
         </div>

@@ -116,6 +116,29 @@ describe("personas a cargo contra la base (spec 004b)", () => {
     return { kind: "customer", userId, customerId: rows[0].id, profileComplete: true, demo: false };
   }
 
+  it("RNF-1 y caso 3: con 4 personas, dos altas a la vez dejan 5, nunca 6", async () => {
+    const papa = await holder("Pedro Siete", "+5491170000007");
+    for (const n of ["Uno", "Dos", "Tres", "Cuatro"]) expect((await addDependent({ store: createCustomersStore(db) }, papa, { name: n, birthday: null })).ok).toBe(true);
+    const both = await Promise.all([
+      addDependent({ store: createCustomersStore(db) }, papa, { name: "Cinco", birthday: null }),
+      addDependent({ store: createCustomersStore(other) }, papa, { name: "Seis", birthday: null }),
+    ]);
+    expect(both.filter((r) => r.ok)).toHaveLength(1);
+    expect(both.find((r) => !r.ok)).toEqual({ ok: false, error: "LIMIT" });
+  });
+
+  it("RNF-1 y caso 2: dos turnos para el mismo hijo a la vez: se crea uno", async () => {
+    const papa = await holder("Pablo Ocho", "+5491170000008");
+    const hijo = await addDependent({ store: createCustomersStore(db) }, papa, { name: "Juli", birthday: null });
+    const forCustomerId = hijo.ok ? hijo.value.id : "";
+    const both = await Promise.all([
+      book(appointmentsDeps(db), papa, { serviceId: corte, start: at("16:00"), forCustomerId }, now),
+      book(appointmentsDeps(other), papa, { serviceId: corte, start: at("17:00"), forCustomerId }, now),
+    ]);
+    expect(both.filter((r) => r.ok)).toHaveLength(1);
+    expect(both.find((r) => !r.ok)).toMatchObject({ ok: false, error: { hasUpcoming: expect.anything() } });
+  });
+
   it("casos 1, 3 y 9: reserva para el hijo, la agenda lo muestra a cargo del titular y no se lo quita con turno futuro", async () => {
     const papa = await holder("Lucas Seis", "+5491170000006");
     const store = createCustomersStore(db);
