@@ -101,6 +101,16 @@ describe("Ajustes contra la base (spec 003)", () => {
     expect((await queries(db).listServices()).map((s) => s.name)).toEqual(["Completo", "Claritos", "Barba", "Corte"]);
   });
 
+  it("si el índice de nombres frena un alta (dos pestañas a la vez), devuelve NAME_TAKEN y la transacción sigue", async () => {
+    const input = { name: "Corte", description: "", durationMinutes: 30, priceCents: 100, countsForBenefits: true };
+    const out = await serviceAdminDeps(db).transaction(async (tx) => {
+      const r = await tx.admin.insert(input, 9);
+      await tx.admin.listAll(); // la transacción sigue viva
+      return r;
+    });
+    expect(out).toBe("NAME_TAKEN");
+  });
+
   it("un cliente no cambia nada (caso 15)", async () => {
     const cliente: Actor = { kind: "customer", userId: "x", customerId: null, profileComplete: false, demo: false };
     expect(await changeStep(scheduleAdminDeps(db), cliente, 30)).toEqual({ ok: false, error: "NOT_ALLOWED" });
