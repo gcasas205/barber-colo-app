@@ -11,6 +11,7 @@ import { cx } from "@/ui/cx";
 import { FieldError } from "../../_sesion/FormBits";
 import { addBlockAction, removeBlockAction, type SaveResult } from "./actions";
 import { describeBlock } from "./format";
+import { AffectedList } from "./AffectedList";
 import { SaveBar } from "./SaveBar";
 import { useUnsavedGuard } from "./unsaved";
 
@@ -143,6 +144,7 @@ export function BlocksSection({ blocks, today }: { blocks: BlockItem[]; today: L
           <TextInput maxLength={SETTINGS_LIMITS.noticeLength + 20} aria-describedby={ids.notice} value={draft.notice} onChange={(e) => set({ notice: e.target.value })} />
         </Field>
         <FieldError id={ids.notice}>{errors.notice}</FieldError>
+      <AffectedList items={result && !result.ok ? result.affected : undefined} />
         <SaveBar label="Bloquear" pending={pending && !removing} saved={!!result?.ok} dirty={dirty} canSave error={errors.form} onSave={save} />
       </Plate>
     </div>

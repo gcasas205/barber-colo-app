@@ -1,5 +1,6 @@
 import "server-only";
 import type { ServiceAdminDeps } from "@/modules/pricing";
+import { createAppointmentsStore } from "@/modules/appointments/infrastructure/appointments-store";
 import { createServiceAdmin } from "@/modules/pricing/infrastructure/service-admin";
 import type { ScheduleAdminDeps, SettingsArea } from "@/modules/schedule";
 import { createScheduleAdmin } from "@/modules/schedule/infrastructure/schedule-admin";
@@ -32,6 +33,7 @@ export function scheduleAdminDeps(db: Database = database()): ScheduleAdminDeps 
           audit: settingsAudit(tx),
           activeServices: async () =>
             (await services.listAll()).filter((s) => s.active).map((s) => ({ name: s.name, durationMinutes: s.durationMinutes })),
+          upcomingAppointments: (now) => createAppointmentsStore(tx).upcomingActive(now),
         });
       }),
   };

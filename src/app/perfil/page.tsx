@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { LogOut } from "lucide-react";
+import { ChevronLeft, LogOut } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { formatArPhone, getOwnProfile } from "@/modules/customers";
@@ -30,11 +31,16 @@ export default async function PerfilPage() {
 
 async function Profile() {
   const actor = await getActor();
-  if (actor.kind === "none") redirect("/ingresar");
+  if (actor.kind === "none") redirect("/");
   if (actor.kind === "barber") redirect("/colo");
   const [profile, contact] = await Promise.all([getOwnProfile({ store: customersStore() }, actor), queries().contactWhatsapp()]);
-  if (!profile) redirect("/ingresar");
+  if (!profile && actor.kind !== "guest") redirect("/");
   const demo = actor.kind === "customer" && actor.demo;
+  const back = (
+    <Link href="/turnos" className="inline-flex items-center gap-1 self-start font-bold underline decoration-2 underline-offset-4">
+      <ChevronLeft aria-hidden size={20} strokeWidth={2.5} /> Volver a los turnos
+    </Link>
+  );
   const salir = (
     <form action={signOut}>
       <Button type="submit" variant="texto">
@@ -46,12 +52,17 @@ async function Profile() {
   if (actor.kind === "guest") {
     return (
       <SessionScreen>
-        <h1 className="text-[28px] font-bold leading-tight">Hola, {profile.fullName}</h1>
+        {back}
+        <h1 className="text-[28px] font-bold leading-tight">{profile ? `Hola, ${profile.fullName}` : "Hola"}</h1>
         <Plate className="flex flex-col gap-3 p-5">
           <p className="font-bold">Entraste como invitado</p>
-          <p>
-            Celular: <span className="cifra">{profile.phone ? formatArPhone(profile.phone) : "—"}</span>
-          </p>
+          {profile ? (
+            <p>
+              Celular: <span className="cifra">{profile.phone ? formatArPhone(profile.phone) : "—"}</span>
+            </p>
+          ) : (
+            <p>Tu nombre y tu celular te los pedimos cuando reserves el primer turno.</p>
+          )}
           <p className="text-tinta-suave">Como invitado no acumulás visitas para los descuentos. Podés crear tu cuenta cuando quieras.</p>
         </Plate>
         {salir}
@@ -61,15 +72,16 @@ async function Profile() {
 
   return (
     <SessionScreen banner={demo ? <DemoBanner /> : null}>
-      <h1 className="text-[28px] font-bold leading-tight">{actor.profileComplete ? "Mi perfil" : "Completá tu perfil"}</h1>
+      {back}
+      <h1 className="text-[28px] font-bold leading-tight">Mi perfil</h1>
       <ProfileForm
         complete={actor.profileComplete}
         contact={contact}
         defaults={{
-          name: profile.fullName,
-          phone: profile.phone ? formatArPhone(profile.phone) : "",
-          birthDay: profile.birthday?.day ?? null,
-          birthMonth: profile.birthday?.month ?? null,
+          name: profile?.fullName ?? "",
+          phone: profile?.phone ? formatArPhone(profile.phone) : "",
+          birthDay: profile?.birthday?.day ?? null,
+          birthMonth: profile?.birthday?.month ?? null,
         }}
       />
       {salir}

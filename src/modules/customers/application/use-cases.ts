@@ -66,27 +66,51 @@ export async function saveProfile(
 /** RF-18b: intentos de ingreso como invitado por conexión y por hora. */
 export const GUEST_ATTEMPTS_PER_HOUR = 5;
 
-/** RF-15 a RF-18b: entrar como invitado con nombre y teléfono. */
+/** Spec 004, RF-4: entrar como invitado con un toque. Solo se limita por conexión (RF-18b de la 002). */
 export async function enterAsGuest(
   deps: { store: CustomersStore; createSession: () => Promise<string> },
-  input: { name: string; phone: string; ipHash: string; now: Date },
-): Promise<Result<{ customerId: string }, FormError>> {
+  input: { ipHash: string; now: Date },
+): Promise<Result<void, { form: "RATE_LIMITED" }>> {
+  const allowed = await deps.store.transaction(async (tx) => {
+    const recent = await tx.countGuestAttempts(input.ipHash, new Date(input.now.getTime() - 3_600_000));
+    await tx.recordGuestAttempt(input.ipHash, input.now);
+    return recent < GUEST_ATTEMPTS_PER_HOUR;
+  });
+  if (!allowed) return err({ form: "RATE_LIMITED" });
+  await deps.createSession();
+  return ok(undefined);
+}
+
+/**
+ * Spec 004, RF-7 y RF-11: nombre y celular al reservar, si faltan. Un cliente con cuenta completa su perfil
+ * (sin tocar el cumpleaños); un invitado sin datos crea su cliente, o es el mismo que ya usó ese celular
+ * (RF-17 de la 002), y el dispositivo queda asociado.
+ */
+export async function saveContact(
+  deps: { store: CustomersStore },
+  actor: Actor,
+  input: { name: string; phone: string },
+): Promise<Result<{ customerId: string }, "NOT_ALLOWED" | FormError>> {
+  if (actor.kind === "customer") {
+    if (!actor.customerId) return err("NOT_ALLOWED");
+    const id = actor.customerId;
+    const me = await deps.store.transaction((tx) => tx.getCustomer(id));
+    if (!me) return err("NOT_ALLOWED");
+    const saved = await saveProfile(deps, actor, { ...input, birthday: me.birthday });
+    return saved.ok ? ok({ customerId: id }) : saved;
+  }
+  if (actor.kind !== "guest") return err("NOT_ALLOWED");
+  if (actor.customerId) return ok({ customerId: actor.customerId }); // ya cargó sus datos
+
+  const { fields, name, phone } = validateContact(input);
+  if (Object.keys(fields).length > 0) return err({ fields });
   try {
     return await deps.store.transaction(async (tx) => {
-      // Cada intento cuenta, también los inválidos: así nadie prueba teléfonos sin límite.
-      const recent = await tx.countGuestAttempts(input.ipHash, new Date(input.now.getTime() - 3_600_000));
-      await tx.recordGuestAttempt(input.ipHash, input.now);
-      if (recent >= GUEST_ATTEMPTS_PER_HOUR) return err({ form: "RATE_LIMITED" });
-
-      const { fields, name, phone } = validateContact(input);
-      if (Object.keys(fields).length > 0) return err({ fields });
-
       const owner = await tx.lockPhoneOwner(phone);
       const claim = claimPhone("guest", owned(owner, null));
       if (claim === "taken_by_account") return err({ form: "PHONE_HAS_ACCOUNT" });
       const customerId = claim === "same_guest" ? owner!.id : await tx.createGuest({ fullName: name, phone });
-      // La sesión anónima se crea recién cuando el ingreso es válido.
-      await tx.addGuestDevice(await deps.createSession(), customerId);
+      await tx.addGuestDevice(actor.userId, customerId);
       return ok({ customerId });
     });
   } catch (e) {

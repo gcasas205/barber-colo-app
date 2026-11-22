@@ -15,9 +15,9 @@ def ok(c, m):
 def login(b, account, viewport=(390, 844)):
     ctx = b.new_context(viewport={"width": viewport[0], "height": viewport[1]})
     pg = ctx.new_page()
-    pg.goto(B + "/ingresar", wait_until="networkidle")
+    pg.goto(B + "/", wait_until="networkidle")
     pg.click(f"button:has-text('{account}')"); pg.click("button[type=submit]:has-text('Ingresar')")
-    pg.wait_for_url(lambda u: "/ingresar" not in u, timeout=15000); pg.wait_for_load_state("networkidle")
+    pg.wait_for_url(lambda u: "/turnos" in u or "/colo" in u, timeout=15000); pg.wait_for_load_state("networkidle")
     return ctx, pg
 
 def saved(section):
@@ -26,7 +26,7 @@ def saved(section):
 
 def public_text(b, weeks=5):
     """Texto de la página pública recorriendo las primeras semanas (avisos, servicios, días)."""
-    pg = b.new_page(); pg.goto(B + "/", wait_until="networkidle"); pg.wait_for_selector("main:visible h2:has-text('Servicio')")
+    pg = PUB.new_page(); pg.goto(B + "/turnos", wait_until="networkidle"); pg.wait_for_selector("main:visible h2:has-text('Servicio')")
     out = [pg.inner_text("main:visible")]
     for _ in range(weeks):
         nxt = pg.locator("button[aria-label='Semana siguiente']")
@@ -36,7 +36,7 @@ def public_text(b, weeks=5):
 
 def public_labels(b):
     """aria-label de los días de la primera semana pública y cantidad de semanas navegables."""
-    pg = b.new_page(); pg.goto(B + "/", wait_until="networkidle"); pg.wait_for_selector("main:visible h2:has-text('Día')")
+    pg = PUB.new_page(); pg.goto(B + "/turnos", wait_until="networkidle"); pg.wait_for_selector("main:visible h2:has-text('Día')")
     labels = pg.eval_on_selector_all("main:visible ul.grid-cols-7 [aria-label]", "els => els.map(e => e.getAttribute('aria-label'))")
     weeks = 1
     while pg.locator("button[aria-label='Semana siguiente']").count() and weeks < 20:
@@ -46,7 +46,9 @@ def public_labels(b):
 with sync_playwright() as p:
     b = p.chromium.launch()
 
-    # Caso 15 / RF-2: un cliente no ve Ajustes.
+    # Caso 15 / RF-2: un cliente no ve Ajustes. Desde la spec 004 la página de horarios necesita sesión: el
+    # cliente de prueba 2 (sin turno) la mira para comprobar lo que cambia Colo.
+    PUB, _pub = login(b, "Cliente de prueba 2")
     ctx, c = login(b, "Cliente de prueba 2")
     c.goto(B + "/colo/ajustes", wait_until="networkidle")
     ok("No tenés acceso" in c.inner_text("main:visible") and "Guardar" not in c.inner_text("main:visible"), "RF-2: un cliente que abre Ajustes no ve ningún dato")
@@ -54,7 +56,6 @@ with sync_playwright() as p:
 
     ctx, pg = login(b, "Colo (barbero)", (360, 800))
     errs = []; pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
-    pg.goto(B + "/colo", wait_until="networkidle")
     pg.click("main:visible a:has-text('Ajustes')"); pg.wait_for_selector("main:visible h1:has-text('Ajustes')")
     ok(True, "RF-1: Ajustes se abre desde el panel de Colo")
     pg.screenshot(path=f"{SHOTS}/ajustes-360.png", full_page=True)
@@ -159,7 +160,7 @@ with sync_playwright() as p:
     reservas.locator("label:has-text('Días a futuro') input").fill("29")
     asked = []
     pg.once("dialog", lambda d: (asked.append(d.message), d.dismiss()))
-    pg.click("a:has-text('Panel de Colo')"); pg.wait_for_timeout(500)
+    pg.click("main:visible a:has-text('Clientes')"); pg.wait_for_timeout(500)
     ok(asked and "sin guardar" in asked[0] and pg.url.endswith("/colo/ajustes"), "RF-26: aviso antes de perder cambios sin guardar")
     reservas.locator("label:has-text('Días a futuro') input").fill("30")
     pg.screenshot(path=f"{SHOTS}/ajustes-360-final.png", full_page=True)

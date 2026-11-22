@@ -1,8 +1,10 @@
 import "server-only";
-import { getAvailability, getScheduleSnapshot, type AvailabilityQuery } from "@/modules/schedule";
+import { getAvailability, getScheduleSnapshot, type AvailabilityQuery, type Interval } from "@/modules/schedule";
+import { appointmentOccupations } from "./appointments";
 import { listServices } from "@/modules/pricing";
 import { createServiceCatalog } from "@/modules/pricing/infrastructure/service-repository";
 import {
+  createBlockList,
   createBlockOccupations,
   createScheduleRepository,
 } from "@/modules/schedule/infrastructure/schedule-repository";
@@ -12,11 +14,19 @@ import { database, type Database } from "@/shared/db/client";
 export function queries(db: Database = database()) {
   const catalog = createServiceCatalog(db);
   const schedule = createScheduleRepository(db);
-  const occupations = createBlockOccupations(db);
+  const blocks = createBlockOccupations(db);
+  const appointments = appointmentOccupations(db);
+  // Spec 004: los turnos activos también ocupan (Agenda no conoce a Turnos: se suman acá).
+  const occupations = {
+    occupations: async (range: Interval) => [...(await blocks.occupations(range)), ...(await appointments(range))],
+    notices: blocks.notices,
+  };
   return {
     listServices: () => listServices({ catalog }),
     contactWhatsapp: async () => (await schedule.settings()).contactWhatsapp,
     getAvailability: (query: AvailabilityQuery) => getAvailability({ schedule, occupations }, query),
     getScheduleSnapshot: (now: Date) => getScheduleSnapshot({ schedule, occupations }, now),
+    /** Spec 004, RF-26: solo para la agenda de Colo (la página llama antes a getActor). */
+    blocksOn: createBlockList(db),
   };
 }

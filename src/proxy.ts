@@ -7,7 +7,7 @@ import { sessionCsp } from "./shared/security/csp";
  * 1. CSP con un nonce nuevo en cada pedido (RNF-4). Next lo lee del encabezado del pedido y se lo pone a
  *    sus propios scripts; cualquier otro script, sin ese nonce, no corre.
  * 2. Refresca la sesión de Supabase (ADR-07).
- * Solo corre en esas rutas: la página pública no paga ninguno de los dos costos.
+ * Desde la spec 004 corre en todas las pantallas (la principal es el ingreso).
  */
 export async function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
@@ -51,7 +51,8 @@ export const config = {
   matcher: [
     // Sin los prefetch de next/link: no hace falta CSP ni sesión para eso (documentación de Next).
     {
-      source: "/(ingresar|perfil|colo|auth)(.*)",
+      // Spec 004: todas las pantallas (la principal es el ingreso), menos archivos estáticos y el prototipo.
+      source: "/((?!_next/|prototipo|favicon\\.ico|icon\\.svg|apple-icon\\.png|robots\\.txt).*)",
       missing: [
         { type: "header", key: "next-router-prefetch" },
         { type: "header", key: "purpose", value: "prefetch" },

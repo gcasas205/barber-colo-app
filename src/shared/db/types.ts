@@ -5,6 +5,12 @@
 
 import type { ColumnType } from "kysely";
 
+export type AppActorKind = "barber" | "customer";
+
+export type AppAppointmentEventKind = "booked" | "cancelled" | "rescheduled";
+
+export type AppAppointmentStatus = "cancelled" | "cancelled_late" | "confirmed" | "reserved";
+
 export type AppCustomerRole = "dependent" | "guest" | "holder";
 
 export type AppDemoKind = "barber" | "client_1" | "client_2";
@@ -30,6 +36,38 @@ export type JsonPrimitive = boolean | number | string | null;
 export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export interface AppAgendaViews {
+  auth_user_id: string;
+  day: Timestamp;
+  seen_at: Timestamp;
+}
+
+export interface AppAppointmentEvents {
+  actor: AppActorKind;
+  actor_user_id: string | null;
+  appointment_id: string;
+  at: Generated<Timestamp>;
+  from_period: string | null;
+  id: Generated<Int8>;
+  kind: AppAppointmentEventKind;
+  late: Generated<boolean>;
+  reason: string | null;
+  seen_by_customer_at: Timestamp | null;
+  to_period: string | null;
+}
+
+export interface AppAppointments {
+  booked_at: Generated<Timestamp>;
+  customer_id: string;
+  customer_reschedules: Generated<number>;
+  id: Generated<string>;
+  period: string;
+  price_cents: number;
+  service_id: number;
+  status: AppAppointmentStatus;
+  updated_at: Generated<Timestamp>;
+}
 
 export interface AppCustomers {
   account_user_id: string | null;
@@ -130,6 +168,9 @@ export interface AppWeeklyRanges {
 }
 
 export interface DB {
+  "app.agenda_views": AppAgendaViews;
+  "app.appointment_events": AppAppointmentEvents;
+  "app.appointments": AppAppointments;
   "app.customers": AppCustomers;
   "app.demo_accounts": AppDemoAccounts;
   "app.guest_attempts": AppGuestAttempts;

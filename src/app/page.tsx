@@ -1,69 +1,43 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { Suspense } from "react";
-import { queries } from "@/server/composition";
-import { BrandLoader } from "@/ui/brand/BrandLoader";
-import { BookingClient } from "./_reservar/BookingClient";
-import { NoServices, SoonNotice } from "./_reservar/Notices";
-import { PublicHeader } from "./_reservar/PublicHeader";
-import { LoginLink, SessionLink } from "./_sesion/SessionLink";
-import { SiteFooter } from "./_reservar/SiteFooter";
-
-export const metadata: Metadata = {
-  title: "Horarios libres · El Colo, Barbería y Peluquería",
-  description: "Mirá qué horarios tiene libres Colo para corte, completo y claritos.",
-};
-
-const MAIN = "mx-auto flex w-full max-w-3xl flex-1 flex-col gap-7 px-4 pb-12 pt-6 lg:px-8 lg:pt-10";
+import { getActor } from "@/server/auth/actor";
+import { authEnv } from "@/shared/config/env";
+import { SessionScreen } from "./_sesion/SessionScreen";
+import { GuestForm } from "./ingresar/GuestForm";
+import { LoginForm } from "./ingresar/LoginForm";
+import { PrefetchNext } from "./ingresar/PrefetchNext";
 
 /**
- * Página pública (spec 001, cambio 01). La cabecera sale en el prerenderizado; la foto de la agenda se
- * pide una vez por visita detrás de Suspense, con el loader de El Colo mientras llega (RF-19).
- * Después, todo se calcula en el dispositivo (RF-15).
+ * Spec 004, RF-1 y RF-2: la pantalla principal es el ingreso. Con sesión, cada uno va a lo suyo.
+ * Ruta bloqueante, con la CSP con nonce (RNF-4 de la 002).
  */
-export default function Home() {
-  return (
-    <div className="flex min-h-dvh flex-col">
-      <PublicHeader
-        session={
-          // La sesión se lee en el pedido, en una isla chica: el resto de la cabecera sigue prerenderizado.
-          <Suspense fallback={<LoginLink />}>
-            <SessionLink />
-          </Suspense>
-        }
-      />
-      <Suspense
-        fallback={
-          <main className={MAIN}>
-            <div className="grid flex-1 place-items-center py-16">
-              <BrandLoader label="Buscando horarios…" />
-            </div>
-          </main>
-        }
-      >
-        <Schedule />
-      </Suspense>
-    </div>
-  );
-}
+export const instant = false;
 
-async function Schedule() {
-  await connection(); // "ahora" es el del pedido, nunca el del build
-  const q = queries();
-  const [services, snapshot] = await Promise.all([q.listServices(), q.getScheduleSnapshot(new Date())]);
+export const metadata: Metadata = {
+  title: "El Colo, Barbería y Peluquería",
+  description: "Reservá tu turno con Colo: corte, completo y claritos.",
+};
+
+export default async function Home() {
+  await connection();
+  const actor = await getActor();
+  if (actor.kind === "barber") redirect("/colo");
+  if (actor.kind === "customer" || actor.kind === "guest") redirect("/turnos");
   return (
-    <>
-      <main className={MAIN}>
-        {services.length === 0 ? (
-          <NoServices whatsapp={snapshot.contactWhatsapp} />
-        ) : (
-          <>
-            <SoonNotice whatsapp={snapshot.contactWhatsapp} />
-            <BookingClient services={services} snapshot={snapshot} />
-          </>
-        )}
-      </main>
-      <SiteFooter whatsapp={snapshot.contactWhatsapp} />
-    </>
+    <SessionScreen>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-[28px] font-bold leading-tight">Reservá tu turno</h1>
+        <p className="text-tinta-suave">Ingresá con tu cuenta o entrá como invitado para ver los horarios libres.</p>
+      </div>
+      <PrefetchNext />
+      <LoginForm showDemoUsers={authEnv().DEMO_ENABLED} />
+      <section aria-labelledby="titulo-invitado" className="flex flex-col gap-4 border-t-2 border-linea pt-6">
+        <h2 id="titulo-invitado" className="text-[20px] font-bold">
+          Entrar como invitado
+        </h2>
+        <GuestForm />
+      </section>
+    </SessionScreen>
   );
 }

@@ -2,15 +2,14 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
-import { publicCsp, SESSION_ROUTES } from "./src/shared/security/csp";
+import { publicCsp, STATIC_ROUTES } from "./src/shared/security/csp";
 
 /**
- * CSP fija para la página pública (prerenderizada). Las pantallas con sesión reciben otra, con un nonce
- * por pedido, desde src/proxy.ts (RNF-4 de la 002). Ver src/shared/security/csp.ts.
+ * CSP fija para el prototipo estático. Las pantallas reciben otra, con un nonce por pedido, desde
+ * src/proxy.ts (RNF-4 de la 002; desde la spec 004, todas). Ver src/shared/security/csp.ts.
  */
 const csp = publicCsp(isDev);
-/** Todo lo que no es una pantalla con sesión. */
-const PUBLIC_ROUTES = `/((?!${SESSION_ROUTES.join("|")}).*)`;
+const STATIC_PAGES = `/(${STATIC_ROUTES.join("|")})(.*)`;
 
 const securityHeaders = [
   // Dos años, como pide la lista de precarga de HSTS. Vercel sirve todo por HTTPS.
@@ -37,7 +36,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/(.*)", headers: securityHeaders },
-      { source: PUBLIC_ROUTES, headers: [{ key: "Content-Security-Policy", value: csp }] },
+      { source: STATIC_PAGES, headers: [{ key: "Content-Security-Policy", value: csp }] },
     ];
   },
 };

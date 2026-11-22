@@ -1,6 +1,7 @@
 import type { Client } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { enterAsDemo, enterAsGuest, listCustomers, saveProfile, setNickname } from "@/modules/customers/application/use-cases";
+import { enterAsDemo, enterAsGuest,
+  saveContact, listCustomers, saveProfile, setNickname } from "@/modules/customers/application/use-cases";
 import { createCustomersStore } from "@/modules/customers/infrastructure/customers-store";
 import type { Actor } from "@/modules/identity";
 import { createDatabase, type Database } from "@/shared/db/client";
@@ -15,7 +16,7 @@ let db: Database;
 let store: ReturnType<typeof createCustomersStore>;
 
 async function clean() {
-  await admin.query(`delete from app.phone_changes; delete from app.guest_devices; delete from app.user_activity;
+  await admin.query(`delete from app.appointments; delete from app.agenda_views; delete from app.phone_changes; delete from app.guest_devices; delete from app.user_activity;
     delete from app.demo_accounts; delete from app.customers where linked_to is not null; delete from app.customers; delete from app.guest_attempts;
     delete from auth.users where email is null or email like '%@x.test'`);
 }
@@ -40,7 +41,12 @@ async function demoClient(email = "cliente1@example.com") {
   if (!r.ok || r.value.kind !== "customer") throw new Error("demo");
   return { kind: "customer", userId, customerId: r.value.customerId, profileComplete: false, demo: true } as Actor & { customerId: string };
 }
-const guest = (name: string, phone: string, ip = "ip-1") => enterAsGuest({ store, createSession: anon }, { name, phone, ipHash: ip, now });
+/** Spec 004: el invitado entra con un toque y carga nombre y celular al reservar. */
+async function guest(name: string, phone: string) {
+  const actor: Actor = { kind: "guest", userId: await anon(), customerId: null };
+  return saveContact({ store }, actor, { name, phone });
+}
+const enter = (ip = "ip-1") => enterAsGuest({ store, createSession: anon }, { ipHash: ip, now });
 
 describe("casos de uso de clientes contra la base (como app_server)", () => {
   it("perfil completo con unión de un invitado (RF-12) y registro del cambio de teléfono (RF-14)", async () => {
@@ -81,8 +87,8 @@ describe("casos de uso de clientes contra la base (como app_server)", () => {
     const me = await demoClient();
     await saveProfile({ store }, me, { name: "Martín", phone: "1155556666", birthday: null });
     expect(await guest("Impostor", "1155556666")).toEqual({ ok: false, error: { form: "PHONE_HAS_ACCOUNT" } });
-    for (let i = 0; i < 2; i++) await guest("Lucas", `11 4000-000${i}`);
-    expect(await guest("Lucas", "11 4000-0009")).toEqual({ ok: false, error: { form: "RATE_LIMITED" } });
+    for (let i = 0; i < 5; i++) expect((await enter()).ok).toBe(true);
+    expect(await enter()).toEqual({ ok: false, error: { form: "RATE_LIMITED" } });
     const attempts = await admin.query("select ip_hash from app.guest_attempts limit 1");
     expect(attempts.rows[0].ip_hash).toBe("ip-1"); // solo el hash que manda la app, nunca la IP
   });

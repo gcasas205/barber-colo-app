@@ -14,14 +14,30 @@ import {
   saveContact,
   saveWeeklyRanges,
   validateBookingRules,
+  type AffectedAppointment,
 } from "@/modules/schedule";
 import { getActor } from "@/server/auth/actor";
 import { scheduleAdminDeps, serviceAdminDeps } from "@/server/settings";
-import { parseLocalDate, type IsoWeekday } from "@/shared/kernel";
+import { formatDayLong, formatMinute, localDateOf, minuteOfDayOf, parseLocalDate, type IsoWeekday } from "@/shared/kernel";
 import { settingsError, WEEKDAY_NAMES } from "./messages";
 
+/** Turno que choca con el cambio (spec 004, RF-27), listo para mostrar con su enlace a la agenda. */
+export type AffectedItem = { id: string; day: string; label: string };
+
 /** Resultado para la pantalla: errores ya en palabras, por campo (RNF-4). */
-export type SaveResult = { ok: true } | { ok: false; errors: Record<string, string>; confirmLast?: true };
+export type SaveResult = { ok: true } | { ok: false; errors: Record<string, string>; confirmLast?: true; affected?: AffectedItem[] };
+
+/** Spec 004, RF-27: no se guarda; Colo ve los turnos y va a la agenda de ese día a resolverlos. */
+const blockedBy = (list: AffectedAppointment[]): SaveResult => ({
+  ok: false,
+  errors: { form: list.length === 1 ? "Hay un turno que quedaría afuera. Cancelalo o movelo primero." : `Hay ${list.length} turnos que quedarían afuera. Cancelalos o movelos primero.` },
+  affected: list.map((a) => ({
+    id: a.id,
+    day: localDateOf(a.start),
+    label: `${cap(formatDayLong(localDateOf(a.start)))}, ${formatMinute(minuteOfDayOf(a.start))} · ${a.customerName} · ${a.serviceName}`,
+  })),
+});
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const PATH = "/colo/ajustes";
 const saved = (): SaveResult => {
@@ -35,7 +51,7 @@ const invalid = () => failed({ form: settingsError("TRY_AGAIN") });
 /** RF-2: sin rol de barbero no se guarda nada y se va a la pantalla que corresponde. */
 async function barber(): Promise<Actor> {
   const actor = await getActor();
-  if (actor.kind !== "barber") redirect(actor.kind === "none" ? "/ingresar" : "/");
+  if (actor.kind !== "barber") redirect(actor.kind === "none" ? "/" : "/turnos");
   return actor;
 }
 
@@ -49,9 +65,10 @@ export async function saveRangesAction(input: unknown): Promise<SaveResult> {
   const parsed = rangesSchema.safeParse(input);
   if (!parsed.success) return invalid();
   const ranges = parsed.data.map((r) => ({ ...r, weekday: r.weekday as IsoWeekday }));
-  const result = await saveWeeklyRanges(scheduleAdminDeps(), actor, ranges);
+  const result = await saveWeeklyRanges(scheduleAdminDeps(), actor, ranges, new Date());
   if (result.ok) return saved();
   if (result.error === "NOT_ALLOWED") redirect("/");
+  if ("appointmentsAffected" in result.error) return blockedBy(result.error.appointmentsAffected);
   const errors: Record<string, string> = {};
   for (const e of result.error) {
     const key = "weekday" in e ? `day-${e.weekday}` : "form";
@@ -116,6 +133,7 @@ export async function addBlockAction(input: unknown): Promise<SaveResult> {
   const result = await addBlock(scheduleAdminDeps(), actor, draft, b.notice, new Date());
   if (result.ok) return saved();
   if (result.error === "NOT_ALLOWED") redirect("/");
+  if (typeof result.error === "object") return blockedBy(result.error.appointmentsAffected);
   return failed({ [result.error === "NOTICE_TOO_LONG" ? "notice" : "dates"]: settingsError(result.error) });
 }
 

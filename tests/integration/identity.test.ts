@@ -23,7 +23,7 @@ beforeAll(async () => {
   db = createDatabase(TEST_DATABASE_URL);
 });
 afterAll(async () => {
-  await admin.query("delete from app.demo_accounts; delete from app.user_activity; delete from app.guest_devices; delete from app.customers where role = 'guest'");
+  await admin.query("delete from app.appointments; delete from app.demo_accounts; delete from app.user_activity; delete from app.guest_devices; delete from app.customers where role = 'guest'");
   await db.destroy();
   await admin.end();
 });

@@ -16,7 +16,7 @@ export async function saveNicknameAction(_prev: NicknameState, form: FormData): 
     String(form.get("nickname") ?? "").slice(0, 200),
   );
   if (!result.ok) return { error: result.error === "NICKNAME_LENGTH" ? "NICKNAME_LENGTH" : "TRY_AGAIN" };
-  revalidatePath("/colo");
+  revalidatePath("/colo/clientes");
   return { saved: true };
 }
 

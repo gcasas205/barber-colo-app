@@ -48,5 +48,10 @@ export type ScheduleAdminTx = {
   audit: SettingsAudit;
   /** Servicios que se ofrecen (los da Precios): para validar un cambio de paso (RF-9). */
   activeServices(): Promise<{ name: string; durationMinutes: number }[]>;
+  /** Turnos activos que todavía no terminaron (los da Turnos): spec 004, RF-27. */
+  upcomingAppointments(now: Date): Promise<AffectedAppointment[]>;
 };
+
+/** Turno que quedaría afuera de un cambio de Ajustes (spec 004, RF-27). */
+export type AffectedAppointment = { id: string; start: Date; end: Date; customerName: string; serviceName: string };
 export type ScheduleAdminDeps = { transaction<T>(fn: (tx: ScheduleAdminTx) => Promise<T>): Promise<T> };

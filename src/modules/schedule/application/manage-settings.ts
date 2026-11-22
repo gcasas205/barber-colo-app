@@ -16,7 +16,8 @@ import {
   type RangesError,
   type StepChangeError,
 } from "../domain/settings";
-import type { BlockRecord, ScheduleAdminDeps, ScheduleSettings } from "./ports";
+import { intervalsOutside, intervalsOverlapping } from "../domain/settings";
+import type { AffectedAppointment, BlockRecord, ScheduleAdminDeps, ScheduleSettings } from "./ports";
 
 /** RF-2: solo el barbero (Colo o Colo demo, RF-28) toca los Ajustes. */
 type Barber = Extract<Actor, { kind: "barber" }>;
@@ -39,17 +40,23 @@ export async function getScheduleSettings(
   });
 }
 
+/** Spec 004, RF-27: hay turnos que quedarían afuera; Colo los resuelve antes de guardar. */
+export type AppointmentsAffected = { appointmentsAffected: AffectedAppointment[] };
+
 /** RF-5, RF-6: reemplaza todas las franjas de una vez, validadas con el paso del momento. */
 export async function saveWeeklyRanges(
   deps: ScheduleAdminDeps,
   actor: Actor,
   ranges: WeeklyRange[],
-): Promise<Result<void, "NOT_ALLOWED" | RangesError[]>> {
+  now: Date,
+): Promise<Result<void, "NOT_ALLOWED" | RangesError[] | AppointmentsAffected>> {
   if (!isBarber(actor)) return NOT_ALLOWED;
-  return deps.transaction(async ({ admin, audit }) => {
+  return deps.transaction(async ({ admin, audit, upcomingAppointments }) => {
     const { config } = await admin.lockSettings();
     const valid = validateWeeklyRanges(ranges, config.stepMinutes);
     if (!valid.ok) return valid;
+    const outside = intervalsOutside(await upcomingAppointments(now), ranges);
+    if (outside.length > 0) return err({ appointmentsAffected: outside });
     await admin.replaceWeeklyRanges(ranges);
     await audit.record({ area: "franjas", userId: actor.userId, detail: { ranges } });
     return ok(undefined);
@@ -119,7 +126,7 @@ export async function addBlock(
   draft: BlockDraft,
   rawNotice: string,
   now: Date,
-): Promise<Result<{ id: string }, "NOT_ALLOWED" | BlockError | "NOTICE_TOO_LONG">> {
+): Promise<Result<{ id: string }, "NOT_ALLOWED" | BlockError | "NOTICE_TOO_LONG" | AppointmentsAffected>> {
   if (!isBarber(actor)) return NOT_ALLOWED;
   const notice = validateNotice(rawNotice);
   if (!notice.ok) return notice;
@@ -127,7 +134,10 @@ export async function addBlock(
   if (!block.ok) return block;
   const current = validateNewBlock(block.value, now);
   if (!current.ok) return current;
-  return deps.transaction(async ({ admin, audit }) => {
+  return deps.transaction(async ({ admin, audit, upcomingAppointments }) => {
+    await admin.lockSettings(); // espera a las reservas en curso (spec 004, clarificación 4)
+    const inside = intervalsOverlapping(await upcomingAppointments(now), block.value);
+    if (inside.length > 0) return err({ appointmentsAffected: inside });
     const id = await admin.insertBlock(block.value, notice.value, actor.userId);
     await audit.record({
       area: "bloqueos",

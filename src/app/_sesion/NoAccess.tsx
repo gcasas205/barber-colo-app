@@ -12,8 +12,8 @@ export function NoAccess({ actor }: { actor: Actor }) {
         <h1 className="inline-flex items-center gap-2 text-[24px] font-bold leading-tight">
           <ShieldAlert aria-hidden size={26} strokeWidth={2.5} /> No tenés acceso a esta pantalla
         </h1>
-        <Link href={actor.kind === "none" ? "/ingresar" : "/"} className="font-bold underline decoration-2 underline-offset-4">
-          {actor.kind === "none" ? "Ingresar" : "Volver a los horarios"}
+        <Link href={actor.kind === "none" ? "/" : "/turnos"} className="font-bold underline decoration-2 underline-offset-4">
+          {actor.kind === "none" ? "Ingresar" : "Ir a los turnos"}
         </Link>
       </Plate>
     </SessionScreen>

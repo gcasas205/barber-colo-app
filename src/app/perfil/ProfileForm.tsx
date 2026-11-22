@@ -26,7 +26,7 @@ export function ProfileForm({ defaults, complete, contact }: { defaults: Profile
   return (
     <form action={action} className="flex flex-col gap-5" noValidate>
       {!complete ? (
-        <p className="text-[17px]">Antes de seguir, contanos cómo te llamás y tu celular. Es una sola vez.</p>
+        <p className="text-[17px]">Todavía no cargaste tu nombre y tu celular. Podés hacerlo ahora o cuando reserves.</p>
       ) : null}
       {state.form ? <FormAlert title="No pudimos guardar">{errorText(state.form)}</FormAlert> : null}
       {state.saved ? (
@@ -77,7 +77,7 @@ export function ProfileForm({ defaults, complete, contact }: { defaults: Profile
       <FieldError id="error-cumple">{errorText(f.birthday)}</FieldError>
 
       <Button type="submit" variant="principal" disabled={pending} className="w-full">
-        {pending ? "Guardando…" : complete ? "Guardar cambios" : "Guardar y ver horarios"}
+        {pending ? "Guardando…" : complete ? "Guardar cambios" : "Guardar y ver turnos"}
       </Button>
     </form>
   );

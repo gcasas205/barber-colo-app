@@ -10,11 +10,11 @@ import { useEffect } from "react";
 export function PrefetchNext() {
   const router = useRouter();
   useEffect(() => {
-    router.prefetch("/perfil");
+    router.prefetch("/turnos");
     router.prefetch("/colo");
     // El código de los componentes cliente de esas pantallas no viene con el prefetch de la ruta.
-    void import("../perfil/ProfileForm");
-    void import("../colo/CustomerList");
+    void import("../turnos/TurnosClient");
+    void import("../colo/AgendaDay");
   }, [router]);
   return null;
 }

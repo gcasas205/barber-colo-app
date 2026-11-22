@@ -59,8 +59,8 @@ describe("resolveActor", () => {
       expect(resolveActor({ ...anon, guestDevice: { customerId: "g1" } })).toEqual({ kind: "guest", userId: "u1", customerId: "g1" });
     });
 
-    it("una sesión anónima que no terminó de entrar no es nadie todavía", () => {
-      expect(resolveActor(anon)).toEqual({ kind: "none", reason: "guest_unregistered" });
+    it("spec 004 (RF-4): una sesión anónima sin cliente es un invitado que todavía no cargó sus datos", () => {
+      expect(resolveActor(anon)).toEqual({ kind: "guest", userId: "u1", customerId: null });
     });
   });
 
