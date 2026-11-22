@@ -17,6 +17,18 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
 
 export type Int8 = ColumnType<string, bigint | number | string, bigint | number | string>;
 
+export type Json = JsonValue;
+
+export type JsonArray = JsonValue[];
+
+export type JsonObject = {
+  [x: string]: JsonValue | undefined;
+};
+
+export type JsonPrimitive = boolean | number | string | null;
+
+export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface AppCustomers {
@@ -66,9 +78,13 @@ export interface AppPhoneChanges {
 
 export interface AppScheduleBlocks {
   created_at: Generated<Timestamp>;
+  created_by: string | null;
   id: Generated<Int8>;
+  /**
+   * Aviso público para los clientes (spec 003, RF-14). Null = sin aviso.
+   */
+  notice: string | null;
   period: string;
-  reason: string | null;
 }
 
 export interface AppScheduleSettings {
@@ -93,6 +109,14 @@ export interface AppServices {
   price_cents: number;
 }
 
+export interface AppSettingsChanges {
+  area: string;
+  changed_at: Generated<Timestamp>;
+  changed_by: string;
+  detail: Generated<Json>;
+  id: Generated<Int8>;
+}
+
 export interface AppUserActivity {
   auth_user_id: string;
   last_seen_at: Timestamp;
@@ -114,6 +138,7 @@ export interface DB {
   "app.schedule_blocks": AppScheduleBlocks;
   "app.schedule_settings": AppScheduleSettings;
   "app.services": AppServices;
+  "app.settings_changes": AppSettingsChanges;
   "app.user_activity": AppUserActivity;
   "app.weekly_ranges": AppWeeklyRanges;
 }

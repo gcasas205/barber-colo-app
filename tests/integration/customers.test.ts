@@ -129,8 +129,8 @@ describe("permisos de app_server (RNF-3)", () => {
       expect(await sqlState(asApp, "delete from app.demo_accounts")).toBe("42501");
     }));
 
-  it("sigue sin poder escribir la agenda (spec 001: solo lectura)", () =>
+  it("no puede borrar servicios (spec 003: se sacan, no se borran)", () =>
     inRollback(asApp, async () => {
-      expect(await sqlState(asApp, "update app.services set price_cents = 100")).toBe("42501");
+      expect(await sqlState(asApp, "delete from app.services")).toBe("42501");
     }));
 });

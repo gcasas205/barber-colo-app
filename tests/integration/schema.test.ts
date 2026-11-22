@@ -223,20 +223,36 @@ describe("seguridad (S-3, S-4)", () => {
       ).resolves.toBeDefined();
     });
 
-    it("no puede escribir en la spec 001", () =>
+    it("puede escribir lo que necesitan los Ajustes de la spec 003 (RNF-1)", () =>
       inRollback(asApp, async () => {
-        expect(
-          await sqlState(asApp, "update app.services set price_cents = 1"),
-        ).toBe("42501");
+        expect(await sqlState(asApp, "update app.services set price_cents = 1900000 where name = 'Corte'")).toBeNull();
+        expect(await sqlState(asApp, "update app.schedule_settings set step_minutes = 30")).toBeNull();
         expect(
           await sqlState(
             asApp,
-            "insert into app.schedule_blocks (period) values ('[2026-12-01 10:00-03, 2026-12-01 11:00-03)')",
+            "insert into app.schedule_blocks (period, notice) values ('[2026-12-01 10:00-03, 2026-12-01 11:00-03)', 'Trámite')",
           ),
-        ).toBe("42501");
-        expect(await sqlState(asApp, "delete from app.weekly_ranges")).toBe(
-          "42501",
-        );
+        ).toBeNull();
+        expect(await sqlState(asApp, "delete from app.schedule_blocks")).toBeNull();
+        expect(await sqlState(asApp, "delete from app.weekly_ranges")).toBeNull();
+        expect(await sqlState(asApp, "insert into app.weekly_ranges (weekday, opens_at, closes_at) values (7, '10:00', '13:00')")).toBeNull();
+      }));
+
+    it("no puede borrar servicios ni ajustes, ni cambiar o borrar la auditoría", () =>
+      inRollback(asApp, async () => {
+        expect(await sqlState(asApp, "delete from app.services")).toBe("42501");
+        expect(await sqlState(asApp, "delete from app.schedule_settings")).toBe("42501");
+        expect(await sqlState(asApp, "update app.schedule_blocks set notice = 'x'")).toBe("42501");
+        expect(await sqlState(asApp, "update app.settings_changes set area = 'paso'")).toBe("42501");
+        expect(await sqlState(asApp, "delete from app.settings_changes")).toBe("42501");
+      }));
+
+    it("el aviso de un bloqueo tiene de 1 a 80 caracteres", () =>
+      inRollback(asApp, async () => {
+        const insert = "insert into app.schedule_blocks (period, notice) values ('[2026-12-01 10:00-03, 2026-12-01 11:00-03)', $1)";
+        expect(await sqlState(asApp, insert, ["x".repeat(81)])).toBe("23514");
+        expect(await sqlState(asApp, insert, [""])).toBe("23514");
+        expect(await sqlState(asApp, insert, [null])).toBeNull();
       }));
 
     it("no puede tocar los esquemas de Supabase", () =>
