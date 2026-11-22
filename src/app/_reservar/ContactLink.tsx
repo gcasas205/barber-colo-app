@@ -1,12 +1,12 @@
 import { MessageCircle } from "lucide-react";
 import { cx } from "@/ui/cx";
-import { formatWhatsapp, whatsappHref } from "./whatsapp";
+import { formatWhatsapp, TO_COLO, whatsappHref } from "./whatsapp";
 
 /** Enlace a WhatsApp con forma de botón secundario. Abre en otra pestaña sin pasarle acceso a esta. */
 export function ContactLink({ number, className }: { number: string; className?: string }) {
   return (
     <a
-      href={whatsappHref(number)}
+      href={whatsappHref(number, TO_COLO)}
       target="_blank"
       rel="noopener noreferrer"
       className={cx(

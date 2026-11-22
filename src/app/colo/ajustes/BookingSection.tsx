@@ -36,10 +36,7 @@ export function BookingSection(initial: { minNoticeMinutes: number; maxAdvanceDa
   const options = NOTICE_OPTIONS.includes(values.minNoticeMinutes) ? NOTICE_OPTIONS : [...NOTICE_OPTIONS, values.minNoticeMinutes].sort((a, b) => a - b);
 
   return (
-    <Plate className="flex flex-col gap-4 p-5" aria-labelledby="titulo-reserva-form">
-      <h3 id="titulo-reserva-form" className="text-[18px] font-bold">
-        Reservas y contacto
-      </h3>
+    <Plate className="flex flex-col gap-4 p-5" aria-labelledby="titulo-reservas">
       <Field label="Anticipación mínima" hint="Cuánto antes del turno se puede reservar.">
         <Select aria-describedby={ids.notice} value={values.minNoticeMinutes} onChange={(e) => set({ minNoticeMinutes: Number(e.target.value) })}>
           {options.map((m) => (

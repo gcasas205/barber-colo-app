@@ -8,7 +8,7 @@ with sync_playwright() as p:
     pg = ctx.new_page(); errs = []
     pg.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
     pg.goto(B + "/", wait_until="networkidle")
-    pg.click("button[aria-label^='Tema:']"); pg.click("button[aria-label='Tema oscuro']")
+    pg.click("button[role=switch][aria-label='Tema oscuro']")
     first = {}
     pg2 = ctx.new_page(); pg2.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
     pg2.on("domcontentloaded", lambda: first.update(theme=pg2.evaluate("document.documentElement.dataset.theme")))

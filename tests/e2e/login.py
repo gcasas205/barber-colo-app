@@ -45,11 +45,11 @@ with sync_playwright() as p:
     g.goto(B + "/perfil", wait_until="networkidle")
     ok("Entraste como invitado" in g.inner_text("main:visible"), "RF-15: el invitado entra y ve su cuenta")
 
-    # Tema: menú compacto (RF-17 de la 001)
+    # Tema: interruptor claro / oscuro (RF-17 de la 001, cambio del 2026-11-22)
     t = b.new_context(viewport={"width": 360, "height": 800}).new_page()
     t.goto(B + "/", wait_until="networkidle")
-    t.click("button[aria-label^='Tema:']"); t.click("button[aria-label='Tema oscuro']")
-    ok(t.evaluate("document.documentElement.dataset.theme") == "dark", "tema oscuro desde el menú")
+    t.emulate_media(color_scheme="light"); t.click("button[role=switch][aria-label='Tema oscuro']")
+    ok(t.evaluate("document.documentElement.dataset.theme") == "dark", "tema oscuro desde el interruptor")
     print("errores de consola:", [e for e in errs if "401" not in e][:3])
     b.close()
 

@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
+import { ChevronDown } from "lucide-react";
 import { cx } from "./cx";
 
 const control =
@@ -16,7 +17,8 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 }
 
 export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cx(control, className)} {...rest} />;
+  // Safari centra el valor de fecha y hora y les da otra altura: se alinean como el resto de los campos.
+  return <input className={cx(control, "[&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-left", className)} {...rest} />;
 }
 
 /** Monto en pesos: prefijo "$" y cifras tabulares. */
@@ -31,11 +33,18 @@ export function MoneyInput({ className, ...rest }: InputHTMLAttributes<HTMLInput
   );
 }
 
+/**
+ * Desplegable con el estilo de la app en todos los navegadores: sin `appearance-none`, Safari lo dibuja con
+ * el gris del sistema e ignora el fondo y el borde. La flecha la pone la app.
+ */
 export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={cx(control, "appearance-auto", className)} {...rest}>
-      {children}
-    </select>
+    <span className="relative flex w-full items-center">
+      <select className={cx(control, "cursor-pointer appearance-none pr-11", className)} {...rest}>
+        {children}
+      </select>
+      <ChevronDown aria-hidden size={20} strokeWidth={2.5} className="pointer-events-none absolute right-3.5 text-tinta-suave" />
+    </span>
   );
 }
 

@@ -1,6 +1,6 @@
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
-import { applyTheme, readTheme, themeBootScript, THEME_STORAGE_KEY } from "./theme";
+import { applyTheme, effectiveTheme, readTheme, themeBootScript, THEME_STORAGE_KEY } from "./theme";
 
 function runBoot(stored: string | null, failing = false) {
   const dataset: Record<string, string> = {};
@@ -31,5 +31,14 @@ describe("tema (RF-17)", () => {
       applyTheme(pref, root);
       expect(readTheme(root)).toBe(pref);
     }
+  });
+});
+
+describe("effectiveTheme (interruptor de dos posiciones)", () => {
+  it("sin elección sigue al dispositivo; con elección, manda la elección", () => {
+    expect(effectiveTheme({ dataset: {} }, true)).toBe("dark");
+    expect(effectiveTheme({ dataset: {} }, false)).toBe("light");
+    expect(effectiveTheme({ dataset: { theme: "light" } }, true)).toBe("light");
+    expect(effectiveTheme({ dataset: { theme: "dark" } }, false)).toBe("dark");
   });
 });

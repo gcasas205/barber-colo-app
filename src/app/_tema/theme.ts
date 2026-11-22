@@ -20,3 +20,11 @@ export function saveTheme(pref: ThemePreference): void {
     // Sin almacenamiento, el tema vale solo para esta visita.
   }
 }
+
+/** El tema que se ve: el elegido, o el del dispositivo si no se eligió (interruptor de dos posiciones). */
+export function effectiveTheme(root: { dataset: DOMStringMap }, systemDark: boolean): "light" | "dark" {
+  const pref = readTheme(root);
+  if (pref === "claro") return "light";
+  if (pref === "oscuro") return "dark";
+  return systemDark ? "dark" : "light";
+}

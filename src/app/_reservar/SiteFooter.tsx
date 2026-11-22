@@ -1,5 +1,5 @@
 import { AtSign, MessageCircle } from "lucide-react";
-import { formatWhatsapp, whatsappHref } from "./whatsapp";
+import { formatWhatsapp, TO_COLO, whatsappHref } from "./whatsapp";
 
 /** Instagram de El Colo (de donde salió el logo y el teléfono). */
 export const INSTAGRAM = "elcolo.barbershop";
@@ -15,7 +15,7 @@ export function SiteFooter({ whatsapp }: { whatsapp: string }) {
         <p className="letras-chapa text-[17px] text-sobre-esmalte">El Colo</p>
         <ul className="flex flex-col gap-1 sm:flex-row sm:gap-4">
           <li>
-            <a href={whatsappHref(whatsapp)} target="_blank" rel="noopener noreferrer" className={LINK}>
+            <a href={whatsappHref(whatsapp, TO_COLO)} target="_blank" rel="noopener noreferrer" className={LINK}>
               <MessageCircle aria-hidden size={22} strokeWidth={2.25} />
               <span>
                 WhatsApp <span className="font-normal text-sobre-esmalte-suave">· {formatWhatsapp(whatsapp)}</span>
