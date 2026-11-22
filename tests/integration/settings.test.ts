@@ -48,7 +48,7 @@ const now = new Date("2026-11-21T23:00:00Z");
 describe("Ajustes contra la base (spec 003)", () => {
   it("guarda franjas, paso y contacto, y la foto pública los usa (RF-5, RF-8, RF-23, RF-25)", async () => {
     const deps = scheduleAdminDeps(db);
-    expect((await saveWeeklyRanges(deps, colo, [{ weekday: 7, opensAt: 600, closesAt: 1440 }])).ok).toBe(true);
+    expect((await saveWeeklyRanges(deps, colo, [{ weekday: 7, opensAt: 600, closesAt: 1440 }], now)).ok).toBe(true);
     expect((await changeStep(deps, colo, 30)).ok).toBe(true);
     expect((await saveContact(deps, colo, "+5491100001111")).ok).toBe(true);
     const snapshot = await queries(db).getScheduleSnapshot(now);
@@ -67,7 +67,7 @@ describe("Ajustes contra la base (spec 003)", () => {
     const other = createDatabase(APP_URL);
     const a = Array.from({ length: 4 }, (_, i) => ({ weekday: 1 as const, opensAt: 480 + i * 120, closesAt: 540 + i * 120 }));
     const b = [{ weekday: 2 as const, opensAt: 600, closesAt: 720 }];
-    const results = await Promise.all([saveWeeklyRanges(scheduleAdminDeps(db), colo, a), saveWeeklyRanges(scheduleAdminDeps(other), colo, b)]);
+    const results = await Promise.all([saveWeeklyRanges(scheduleAdminDeps(db), colo, a, now), saveWeeklyRanges(scheduleAdminDeps(other), colo, b, now)]);
     await other.destroy();
     expect(results.every((r) => r.ok)).toBe(true);
     const { rows } = await admin.query("select weekday from app.weekly_ranges");
@@ -109,6 +109,20 @@ describe("Ajustes contra la base (spec 003)", () => {
       return r;
     });
     expect(out).toBe("NAME_TAKEN");
+  });
+
+  it("spec 004, caso 11: un bloqueo sobre un turno reservado no se guarda y lista el turno", async () => {
+    const { rows } = await admin.query("insert into app.customers (role, full_name, phone_e164) values ('guest', 'Turno Choque', '+5491179990000') on conflict do nothing returning id");
+    const customerId = rows[0]?.id ?? (await admin.query("select id from app.customers where phone_e164 = '+5491179990000'")).rows[0].id;
+    await admin.query(`insert into app.appointments (customer_id, service_id, period, status, price_cents)
+      select $1, id, '[2026-12-02 16:00-03, 2026-12-02 16:30-03)', 'reserved', 1800000 from app.services where name = 'Corte'`, [customerId]);
+    try {
+      const r = await addBlock(scheduleAdminDeps(db), colo, { kind: "days", first: localDate("2026-12-02"), last: localDate("2026-12-02") }, "", now);
+      expect(r).toMatchObject({ ok: false, error: { appointmentsAffected: [{ customerName: "Turno Choque", serviceName: "Corte" }] } });
+      expect((await admin.query("select count(*)::int as n from app.schedule_blocks")).rows[0].n).toBe(0);
+    } finally {
+      await admin.query("delete from app.appointments where customer_id = $1", [customerId]);
+    }
   });
 
   it("un cliente no cambia nada (caso 15)", async () => {

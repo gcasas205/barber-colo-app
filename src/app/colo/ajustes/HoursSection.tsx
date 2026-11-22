@@ -11,6 +11,7 @@ import { FieldError } from "../../_sesion/FormBits";
 import { changeStepAction, saveRangesAction, type SaveResult } from "./actions";
 import { timeOptions } from "./format";
 import { WEEKDAY_NAMES } from "./messages";
+import { AffectedList } from "./AffectedList";
 import { SaveBar } from "./SaveBar";
 import { useUnsavedGuard } from "./unsaved";
 
@@ -167,6 +168,7 @@ function RangesForm({ initial, step }: { initial: WeeklyRange[]; step: number })
         </Button>
       </fieldset>
 
+      <AffectedList items={result && !result.ok ? result.affected : undefined} />
       <SaveBar label="Guardar horarios" pending={pending} saved={!!result?.ok} dirty={dirty} error={errors.form} onSave={save} />
     </Plate>
   );

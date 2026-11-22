@@ -53,6 +53,7 @@ export function createAppointmentsStore(db: Database): Omit<
   "lockScheduleShared" | "slotContext" | "service"
 > & {
   activeIntervals(r: Interval, exclude: string | null): Promise<Interval[]>;
+  upcomingActive(now: Date): Promise<{ id: string; start: Date; end: Date; customerName: string; serviceName: string }[]>;
 } {
   const base = () =>
     db
@@ -87,6 +88,18 @@ export function createAppointmentsStore(db: Database): Omit<
         start: new Date(x.start),
         end: new Date(x.end),
       }));
+    },
+
+    /** Spec 004, RF-27: turnos activos que todavía no terminaron, para avisar a Colo en Ajustes. */
+    async upcomingActive(now) {
+      const rows = await base()
+        .innerJoin("app.customers as c", "c.id", "a.customer_id")
+        .select("c.full_name")
+        .where("a.status", "in", ACTIVE)
+        .where(sql<boolean>`upper(a.period) > ${now}`)
+        .orderBy(sql`lower(a.period)`)
+        .execute();
+      return rows.map((r) => ({ id: r.id, start: new Date(r.start), end: new Date(r.end), customerName: r.full_name, serviceName: r.service_name }));
     },
 
     async lockCustomer(customerId) {
