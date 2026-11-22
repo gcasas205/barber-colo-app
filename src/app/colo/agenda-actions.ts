@@ -1,10 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { barberFreeStarts, cancelByBarber, rescheduleByBarber } from "@/modules/appointments";
+import { barberFreeStarts, cancelByBarber, markAgendaSeen, rescheduleByBarber } from "@/modules/appointments";
 import { appointmentsDeps } from "@/server/appointments";
 import { getActor } from "@/server/auth/actor";
 import { parseLocalDate } from "@/shared/kernel";
+import { agendaData } from "./agenda-data";
+import type { AgendaData } from "./AgendaScreen";
 
 export type AgendaResult = { ok: true } | { ok: false; error: string };
 
@@ -16,10 +17,23 @@ const MESSAGES: Record<string, string> = {
   NOT_ALLOWED: "No tenés permiso para hacer esto.",
 };
 const fail = (code: string): AgendaResult => ({ ok: false, error: MESSAGES[code] ?? "No pudimos guardar. Probá de nuevo." });
-const done = (): AgendaResult => {
-  revalidatePath("/colo");
-  return { ok: true };
-};
+/** La agenda vuelve a pedir el día por su cuenta (AgendaScreen): no hace falta rehacer la página. */
+const done = (): AgendaResult => ({ ok: true });
+
+/** Un día de la agenda, para cambiar de día sin recargar la pantalla y para precargar los vecinos. */
+export async function loadAgendaDayAction(day: unknown): Promise<AgendaData | null> {
+  if (typeof day !== "string") return null;
+  const date = parseLocalDate(day);
+  if (!date) return null;
+  return agendaData(await getActor(), date, new Date());
+}
+
+/** RF-23: Colo tiene el día en pantalla. */
+export async function markAgendaSeenAction(day: unknown): Promise<void> {
+  if (typeof day !== "string") return;
+  const date = parseLocalDate(day);
+  if (date) await markAgendaSeen(appointmentsDeps(), await getActor(), date, new Date());
+}
 
 /** RF-24. La autorización está en el caso de uso (solo el barbero). */
 export async function cancelTurnoAction(id: unknown, reason: unknown): Promise<AgendaResult> {

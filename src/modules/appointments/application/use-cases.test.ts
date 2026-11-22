@@ -10,6 +10,7 @@ import {
   cancelByCustomer,
   dismissBarberNotice,
   getDayAgenda,
+  markAgendaSeen,
   getMyAppointment,
   rescheduleByBarber,
   rescheduleByCustomer,
@@ -238,19 +239,24 @@ describe("Colo (RF-20 a RF-25)", () => {
     expect(mine.appointment?.status).toBe("confirmed");
   });
 
-  it("la agenda marca nuevos los cambios del cliente desde la visita anterior a ese día; solo Colo la ve", async () => {
+  it("la agenda marca nuevos los cambios del cliente hasta que Colo ve ese día; leer no la marca (precarga)", async () => {
     const m = await booked();
     const day = localDate("2026-11-25");
     expect(await getDayAgenda(m.deps, lucas, day, at("09:00"))).toEqual({ ok: false, error: "NOT_ALLOWED" });
-    // Abrir otro día no lo marca como visto, pero avisa que hay nuevos ahí.
+    // Desde otro día, avisa que hay nuevos ahí.
     const other = await getDayAgenda(m.deps, colo, localDate("2026-11-24"), at("09:00", "2026-11-24"));
     expect(other.ok && other.value.newElsewhere).toEqual([{ date: "2026-11-25", count: 1 }]);
     const first = await getDayAgenda(m.deps, colo, day, at("09:00"));
     expect(first.ok && first.value.items.map((i) => [i.customer.nickname, i.isNew])).toEqual([["el de la moto", true]]);
-    const again = await getDayAgenda(m.deps, colo, day, at("09:01"));
+    // Leer otra vez (por ejemplo, una precarga) no lo marca como visto.
+    const reread = await getDayAgenda(m.deps, colo, day, at("09:01"));
+    expect(reread.ok && reread.value.items[0]!.isNew).toBe(true);
+    await markAgendaSeen(m.deps, colo, day, at("09:01"));
+    await markAgendaSeen(m.deps, lucas, day, at("09:01")); // un cliente no marca nada
+    const again = await getDayAgenda(m.deps, colo, day, at("09:02"));
     expect(again.ok && again.value.items[0]!.isNew).toBe(false);
-    await rescheduleByCustomer(m.deps, lucas, m.appt.id, at("17:00"), false, at("09:02"));
-    const third = await getDayAgenda(m.deps, colo, day, at("09:03"));
+    await rescheduleByCustomer(m.deps, lucas, m.appt.id, at("17:00"), false, at("09:03"));
+    const third = await getDayAgenda(m.deps, colo, day, at("09:04"));
     expect(third.ok && third.value.items[0]!.isNew).toBe(true);
   });
 

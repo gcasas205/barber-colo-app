@@ -71,7 +71,7 @@ with sync_playwright() as p:
     text = pg.inner_text("main:visible")
     ok("Martín" in text and "Cuenta" in text, "RF-19: Colo ve la lista de clientes")
     ok(pg.locator("text=Modo de prueba").count() > 0, "RF-22b: franja de prueba también en el panel")
-    pg.click("button[aria-label^='Poner sobrenombre a Martín']")
+    pg.click("button[aria-label*='sobrenombre'][aria-label*='Martín']")
     pg.fill("input[name=nickname]:visible", "el cordobés"); pg.click("button:has-text('Guardar')")
     pg.wait_for_selector("h3:has-text('el cordobés')")
     ok(pg.locator("h3:has-text('el cordobés')").inner_text().startswith("el cordobés"), "RF-20: el sobrenombre aparece primero")
