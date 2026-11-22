@@ -4,6 +4,10 @@ import {
   err,
   instantAt,
   isMinuteOfDay,
+  isoWeekday,
+  localDateOf,
+  minuteOfDayOf,
+  MINUTES_PER_DAY,
   ok,
   type IsoWeekday,
   type LocalDate,
@@ -115,3 +119,20 @@ export function validateNotice(raw: string): Result<string | null, "NOTICE_TOO_L
 
 /** RF-23: el WhatsApp de contacto ya normalizado (celular argentino, como el teléfono de la 002). */
 export const isWhatsapp = (e164: string) => /^\+549\d{10}$/.test(e164);
+
+/** RF-27 de la spec 004: turnos que quedarían fuera de las franjas nuevas (no entran completos en una). */
+export function intervalsOutside<T extends Interval>(intervals: T[], ranges: WeeklyRange[]): T[] {
+  return intervals.filter((i) => {
+    const day = localDateOf(i.start);
+    const from = minuteOfDayOf(i.start);
+    // Un turno que termina a la medianoche termina a las 24:00 de su día.
+    const to = localDateOf(i.end) === day ? minuteOfDayOf(i.end) : MINUTES_PER_DAY;
+    const weekday = isoWeekday(day);
+    return !ranges.some((r) => r.weekday === weekday && r.opensAt <= from && to <= r.closesAt);
+  });
+}
+
+/** RF-27 de la spec 004: turnos que se superponen con un bloqueo nuevo. */
+export function intervalsOverlapping<T extends Interval>(intervals: T[], block: Interval): T[] {
+  return intervals.filter((i) => i.start.getTime() < block.end.getTime() && block.start.getTime() < i.end.getTime());
+}

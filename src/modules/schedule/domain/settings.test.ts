@@ -5,6 +5,8 @@ import {
   blockOfDays,
   blockOfHours,
   copyDay,
+  intervalsOutside,
+  intervalsOverlapping,
   isWhatsapp,
   validateNewBlock,
   validateBookingRules,
@@ -159,5 +161,27 @@ describe("isWhatsapp (RF-23)", () => {
     expect(isWhatsapp("+5491138163491")).toBe(true);
     expect(isWhatsapp("+541138163491")).toBe(false);
     expect(isWhatsapp("11 3816-3491")).toBe(false);
+  });
+});
+
+describe("choques con turnos (spec 004, RF-27)", () => {
+  const turno = (iso: string, minutes: number) => ({ start: new Date(iso), end: new Date(new Date(iso).getTime() + minutes * 60_000) });
+  const miercoles = turno("2026-11-25T19:30:00-03:00", 30); // 19:30 a 20:00
+
+  it("un turno que deja de entrar en las franjas nuevas queda afuera", () => {
+    expect(intervalsOutside([miercoles], initial)).toEqual([]);
+    expect(intervalsOutside([miercoles], [r(3, "10:00", "19:45")])).toEqual([miercoles]);
+    expect(intervalsOutside([miercoles], [r(4, "10:00", "20:00")])).toEqual([miercoles]); // otro día
+  });
+
+  it("un turno que termina a la medianoche entra en una franja hasta las 24:00", () => {
+    const tarde = turno("2026-11-25T23:30:00-03:00", 30);
+    expect(intervalsOutside([tarde], [r(3, "20:00", "24:00")])).toEqual([]);
+  });
+
+  it("caso 11: los turnos dentro de un bloqueo; el que termina justo al empezar el bloqueo no", () => {
+    const block = blockOfDays(localDate("2026-11-25"), localDate("2026-11-26"));
+    if (!block.ok) throw new Error();
+    expect(intervalsOverlapping([miercoles, turno("2026-11-24T23:30:00-03:00", 30)], block.value)).toEqual([miercoles]);
   });
 });
