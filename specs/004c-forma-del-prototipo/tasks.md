@@ -6,6 +6,6 @@
   - Hecho cuando: `/reservar` con "¿Para quién es?" segmentado, resumen fijo o en columna, contacto, vuelta a Inicio y cambiar horario; `turnos.py` y `a_cargo.py` ajustados y en verde.
 - [x] **T3. [agente] Inicio del cliente.** RF-5 a RF-8
   - Hecho cuando: tests de render de los casos 1 a 4 en verde; Inicio como el prototipo con datos reales.
-- [ ] **T4. [agente] Perfil en el marco, capturas y validación.** RNF-1 a RNF-4
+- [x] **T4. [agente] Perfil en el marco, capturas y validación.** RNF-1 a RNF-4
   - Hecho cuando: e2e 001 a 004b en verde; capturas 360/1440 claro y oscuro revisadas; `validacion.md`.
 - [ ] **T5. [persona] Despliegue y verificación en producción.**
