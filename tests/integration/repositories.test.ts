@@ -50,7 +50,7 @@ describe("ScheduleRepository", () => {
 describe("OccupationSource de bloqueos", () => {
   it("devuelve los bloqueos que se superponen con el rango, como instantes", async () => {
     await admin.query("delete from app.schedule_blocks");
-    await admin.query(`insert into app.schedule_blocks (period, reason) values
+    await admin.query(`insert into app.schedule_blocks (period, notice) values
       ('[2026-12-01 00:00-03, 2026-12-08 00:00-03)', 'Vacaciones'),
       ('[2026-11-26 10:00-03, 2026-11-26 11:00-03)', 'Trámite'),
       ('[2027-03-01 10:00-03, 2027-03-01 11:00-03)', 'Lejos')`);
@@ -111,7 +111,7 @@ describe("composición completa", () => {
 describe("foto de la agenda desde la base (cambio 01)", () => {
   it("trae configuración, franjas y bloqueos como lapsos, sin el motivo", async () => {
     await admin.query("delete from app.schedule_blocks");
-    await admin.query("insert into app.schedule_blocks (period, reason) values ('[2026-11-26 10:00-03, 2026-11-26 11:00-03)', 'Turno con el médico')");
+    await admin.query("insert into app.schedule_blocks (period, notice) values ('[2026-11-26 10:00-03, 2026-11-26 11:00-03)', 'Turno con el médico')");
     const snapshot = await queries(db).getScheduleSnapshot(instantAt(localDate("2026-11-24"), 9 * 60));
     expect(snapshot.ranges).toHaveLength(12);
     expect(snapshot.config.stepMinutes).toBe(15);

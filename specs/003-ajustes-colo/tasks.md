@@ -6,9 +6,9 @@ Estado: aprobado (2026-11-21) · Plan: [`plan.md`](plan.md)
   - Hecho cuando: tests de los casos límite 1 a 8 y 12 a 14 en verde en las tres zonas.
 - [x] **T2. [agente] Dominio de Precios: validación ampliada y orden.** RF-17, RF-18, RF-20
   - Hecho cuando: tests de los casos 9 y 10 y de los rangos de precio y duración.
-- [ ] **T3. [agente] Migración de escritura y auditoría.** RF-27, RNF-1
+- [x] **T3. [agente] Migración de escritura y auditoría.** RF-27, RNF-1
   - Hecho cuando: `supabase db reset` aplica todo, `db:types` actualizado y tests de integración de grants.
-- [ ] **T4. [agente] Casos de uso, repositorios y armado con transacción.** RF-2, RF-3, RF-5, RF-8 a RF-13, RF-15 a RF-24, RF-27, RF-28
+- [x] **T4. [agente] Casos de uso, repositorios y armado con transacción.** RF-2, RF-3, RF-5, RF-8 a RF-13, RF-15 a RF-24, RF-27, RF-28
   - Hecho cuando: tests con repositorios en memoria y de integración (caso 16, índice de nombres).
 - [ ] **T5. [agente] Avisos de bloqueo en la página pública.** RF-14, RF-25
   - Hecho cuando: test del componente y de la foto con aviso.

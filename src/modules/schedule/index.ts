@@ -6,4 +6,5 @@ export * from "./domain/settings";
 export * from "./domain/notices";
 export * from "./application/get-availability";
 export * from "./application/get-schedule-snapshot";
+export * from "./application/manage-settings";
 export type * from "./application/ports";
