@@ -53,6 +53,21 @@ export type Selection = { day?: LocalDate | null; weekOf?: LocalDate | null };
  * Cálculo puro de lo que muestra la página: día elegido, sus horarios, la semana y la navegación.
  * No lee nada: corre igual en el servidor y en el navegador (RF-15).
  */
+/** Semana de `wanted`, sin salir de la ventana, y las semanas de los extremos. */
+function weeksToShow(window: { first: LocalDate; last: LocalDate }, wanted: LocalDate) {
+  const firstWeek = weekStart(window.first);
+  const lastWeek = weekStart(window.last);
+  let shownWeek = weekStart(wanted);
+  if (compareLocalDate(shownWeek, firstWeek) < 0) shownWeek = firstWeek;
+  if (compareLocalDate(shownWeek, lastWeek) > 0) shownWeek = lastWeek;
+  return { shownWeek, firstWeek, lastWeek };
+}
+
+/** Primer día de la semana con lugar; si no hay, el primero dentro de la ventana. */
+function firstDayOfWeek(week: DayCount[]): LocalDate | undefined {
+  return (week.find((d) => d.inWindow && d.count > 0) ?? week.find((d) => d.inWindow))?.date;
+}
+
 export function computeAvailability(input: AvailabilityInput, selection: Selection, contactWhatsapp: string): Availability {
   const window = bookingWindow(input.now, input.config.maxAdvanceDays);
   const query = { ...selection };
@@ -60,17 +75,11 @@ export function computeAvailability(input: AvailabilityInput, selection: Selecti
   const chosenDay = query.day && within(query.day, window) ? query.day : null;
 
   // Semana que se muestra: la pedida, o la del día elegido, o la del primer día con lugar; sin salir de la ventana.
-  const firstWeek = weekStart(window.first);
-  const lastWeek = weekStart(window.last);
-  let shownWeek = weekStart(query.weekOf ?? chosenDay ?? first ?? window.first);
-  if (compareLocalDate(shownWeek, firstWeek) < 0) shownWeek = firstWeek;
-  if (compareLocalDate(shownWeek, lastWeek) > 0) shownWeek = lastWeek;
+  const { shownWeek, firstWeek, lastWeek } = weeksToShow(window, query.weekOf ?? chosenDay ?? first ?? window.first);
   const week = weekAvailability({ ...input, weekOf: shownWeek });
 
   // Día: el elegido; si se cambió de semana sin elegir día, el primero de esa semana con lugar; si no, el primero con lugar.
-  const fromWeek = query.weekOf
-    ? (week.find((d) => d.inWindow && d.count > 0) ?? week.find((d) => d.inWindow))?.date
-    : undefined;
+  const fromWeek = query.weekOf ? firstDayOfWeek(week) : undefined;
   const day = chosenDay ?? fromWeek ?? first ?? window.first;
   const starts = dayStarts({ ...input, date: day });
 

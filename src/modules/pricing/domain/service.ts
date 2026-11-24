@@ -50,20 +50,36 @@ export function validateService(
   stepMinutes: number,
   otherActiveNames: string[],
 ): Result<void, ServiceError[]> {
-  const errors: ServiceError[] = [];
   const name = normalizeServiceName(draft.name);
-  if (name.length < 1 || draft.name.trim().length > SERVICE_LIMITS.nameLength) errors.push("NAME_LENGTH");
-  if ((draft.description ?? "").trim().length > SERVICE_LIMITS.descriptionLength) errors.push("DESCRIPTION_TOO_LONG");
-  if (!Number.isInteger(draft.priceCents) || draft.priceCents <= 0) errors.push("PRICE_NOT_POSITIVE");
-  else if (draft.priceCents % 100 !== 0) errors.push("PRICE_HAS_CENTS"); // pesos enteros (RF-3)
-  else if (draft.priceCents > SERVICE_LIMITS.maxPriceCents) errors.push("PRICE_TOO_HIGH");
-  if (!Number.isInteger(draft.durationMinutes) || draft.durationMinutes <= 0 || draft.durationMinutes % stepMinutes !== 0) {
-    errors.push("DURATION_NOT_MULTIPLE_OF_STEP");
-  } else if (draft.durationMinutes > SERVICE_LIMITS.maxDurationMinutes) {
-    errors.push("DURATION_OUT_OF_RANGE");
-  }
-  if (otherActiveNames.some((other) => normalizeServiceName(other) === name)) errors.push("NAME_TAKEN");
+  const errors = [
+    ...textErrors(draft),
+    priceError(draft.priceCents),
+    durationError(draft.durationMinutes, stepMinutes),
+    otherActiveNames.some((other) => normalizeServiceName(other) === name) ? "NAME_TAKEN" : null,
+  ].filter((e): e is ServiceError => e !== null);
   return errors.length === 0 ? ok(undefined) : err(errors);
+}
+
+function textErrors(draft: ServiceDraft): ServiceError[] {
+  const name = draft.name.trim();
+  return [
+    ...(name.length < 1 || name.length > SERVICE_LIMITS.nameLength ? (["NAME_LENGTH"] as const) : []),
+    ...((draft.description ?? "").trim().length > SERVICE_LIMITS.descriptionLength ? (["DESCRIPTION_TOO_LONG"] as const) : []),
+  ];
+}
+
+function priceError(priceCents: number): ServiceError | null {
+  if (!Number.isInteger(priceCents) || priceCents <= 0) return "PRICE_NOT_POSITIVE";
+  if (priceCents % 100 !== 0) return "PRICE_HAS_CENTS"; // pesos enteros (RF-3)
+  if (priceCents > SERVICE_LIMITS.maxPriceCents) return "PRICE_TOO_HIGH";
+  return null;
+}
+
+function durationError(durationMinutes: number, stepMinutes: number): ServiceError | null {
+  if (!Number.isInteger(durationMinutes) || durationMinutes <= 0 || durationMinutes % stepMinutes !== 0) {
+    return "DURATION_NOT_MULTIPLE_OF_STEP";
+  }
+  return durationMinutes > SERVICE_LIMITS.maxDurationMinutes ? "DURATION_OUT_OF_RANGE" : null;
 }
 
 /** "Corte de pelo" → "corte-de-pelo"; sin tildes ni símbolos, para usar en la dirección. */

@@ -32,18 +32,27 @@ export type RangesError = ScheduleError | { code: "RANGE_NOT_ON_STEP"; weekday: 
 /** RF-6: las reglas de la 001 (RF-12), más horas múltiplo del paso y como mucho 4 franjas por día. */
 export function validateWeeklyRanges(ranges: WeeklyRange[], stepMinutes: number): Result<void, RangesError[]> {
   const base = validateSchedule(ranges, stepMinutes);
-  const errors: RangesError[] = base.ok ? [] : [...base.error];
-  const offStep = new Set<IsoWeekday>();
-  const perDay = new Map<IsoWeekday, number>();
-  for (const range of ranges) {
-    perDay.set(range.weekday, (perDay.get(range.weekday) ?? 0) + 1);
-    if (range.opensAt % stepMinutes !== 0 || range.closesAt % stepMinutes !== 0) offStep.add(range.weekday);
-  }
-  for (const weekday of offStep) errors.push({ code: "RANGE_NOT_ON_STEP", weekday });
-  for (const [weekday, count] of perDay) {
-    if (count > SETTINGS_LIMITS.rangesPerDay) errors.push({ code: "TOO_MANY_RANGES", weekday });
-  }
+  const errors: RangesError[] = [
+    ...(base.ok ? [] : base.error),
+    ...offStepWeekdays(ranges, stepMinutes).map((weekday): RangesError => ({ code: "RANGE_NOT_ON_STEP", weekday })),
+    ...crowdedWeekdays(ranges).map((weekday): RangesError => ({ code: "TOO_MANY_RANGES", weekday })),
+  ];
   return errors.length === 0 ? ok(undefined) : err(errors);
+}
+
+const isOffStep = (range: WeeklyRange, stepMinutes: number) =>
+  range.opensAt % stepMinutes !== 0 || range.closesAt % stepMinutes !== 0;
+
+/** Días con alguna franja que no cae en el paso, en el orden en que aparecen. */
+function offStepWeekdays(ranges: WeeklyRange[], stepMinutes: number): IsoWeekday[] {
+  return [...new Set(ranges.filter((r) => isOffStep(r, stepMinutes)).map((r) => r.weekday))];
+}
+
+/** Días con más franjas de las permitidas, en el orden en que aparecen. */
+function crowdedWeekdays(ranges: WeeklyRange[]): IsoWeekday[] {
+  const perDay = new Map<IsoWeekday, number>();
+  for (const range of ranges) perDay.set(range.weekday, (perDay.get(range.weekday) ?? 0) + 1);
+  return [...perDay].filter(([, count]) => count > SETTINGS_LIMITS.rangesPerDay).map(([weekday]) => weekday);
 }
 
 /** RF-7: copia las franjas de un día a otros, reemplazando las que tenían. */
@@ -67,9 +76,7 @@ export function validateStepChange(
     return err({ invalidStep: true, services: [], weekdays: [] });
   }
   const services = activeServices.filter((s) => s.durationMinutes % stepMinutes !== 0).map((s) => s.name);
-  const weekdays = [
-    ...new Set(ranges.filter((r) => r.opensAt % stepMinutes !== 0 || r.closesAt % stepMinutes !== 0).map((r) => r.weekday)),
-  ].sort((a, b) => a - b);
+  const weekdays = offStepWeekdays(ranges, stepMinutes).sort((a, b) => a - b);
   return services.length === 0 && weekdays.length === 0 ? ok(undefined) : err({ services, weekdays });
 }
 
