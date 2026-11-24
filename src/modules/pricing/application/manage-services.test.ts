@@ -79,6 +79,7 @@ describe("servicios (RF-15 a RF-21)", () => {
     const { state, deps, offered } = memory();
     expect(await saveService(deps, colo, null, { ...nuevo, name: "  Barba  " })).toEqual({ ok: true, value: { id: "4" } });
     expect(offered()).toEqual(["Corte", "Completo", "Claritos", "Barba"]);
+    expect(state.services[3]!.position).toBe(4);
     expect((await saveService(deps, colo, "1", { ...nuevo, name: "Corte", priceCents: 1_900_000 })).ok).toBe(true);
     expect(state.services[0]!.priceCents).toBe(1_900_000);
     expect(state.audit).toHaveLength(2);

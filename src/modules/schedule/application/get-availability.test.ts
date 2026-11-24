@@ -96,3 +96,31 @@ describe("getAvailability", () => {
     expect(early.previousWeek).toBeNull();
   });
 });
+
+describe("getAvailability: bordes (ub-mode)", () => {
+  it("respeta el primer y el último día de la ventana aunque no sean el primero con lugar", async () => {
+    // Hoy (24) ya no queda nada, pero sigue dentro de la ventana; el 24 de diciembre es el último día.
+    for (const day of ["2026-11-24", "2026-12-24"]) {
+      expect((await getAvailability(deps().deps, { serviceMinutes: 30, now, day: localDate(day) })).day).toBe(day);
+    }
+  });
+
+  it("al cambiar de semana sin elegir día, muestra el primero de esa semana con lugar", async () => {
+    // Semana del 23: el lunes está fuera de la ventana y el martes 24 ya no tiene lugar.
+    expect((await getAvailability(deps().deps, { serviceMinutes: 30, now, weekOf: localDate("2026-11-23") })).day).toBe("2026-11-25");
+  });
+
+  it("si en esa semana no hay lugar, muestra su primer día dentro de la ventana", async () => {
+    const week: Interval = { start: at("2026-11-30", "00:00"), end: at("2026-12-07", "00:00") };
+    const result = await getAvailability(deps([week]).deps, { serviceMinutes: 30, now, weekOf: localDate("2026-12-02") });
+    expect(result.day).toBe("2026-11-30");
+    expect(result.starts).toEqual([]);
+  });
+});
+
+it("un día con un solo horario libre cuenta como día con lugar al cambiar de semana", async () => {
+  const busy: Interval = { start: at("2026-11-25", "00:00"), end: at("2026-11-25", "19:30") };
+  const result = await getAvailability(deps([busy]).deps, { serviceMinutes: 30, now, weekOf: localDate("2026-11-23") });
+  expect(result.day).toBe("2026-11-25");
+  expect(result.starts.map((s) => s.label)).toEqual(["19:30"]);
+});

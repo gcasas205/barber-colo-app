@@ -69,3 +69,9 @@ describe("comparación", () => {
     expect(daysBetween(localDate("2026-12-31"), localDate("2027-01-01"))).toBe(1);
   });
 });
+
+describe("bordes (ub-mode)", () => {
+  it("compara en los dos sentidos", () => {
+    expect(compareLocalDate(localDate("2026-12-01"), localDate("2026-11-21"))).toBeGreaterThan(0);
+  });
+});

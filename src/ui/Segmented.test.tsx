@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { arrowTarget, isTabStop, Segmented } from "./Segmented";
+import { arrowTarget, enabledIndexes, isTabStop, Segmented } from "./Segmented";
 
 describe("Segmented (spec 004c, RF-9)", () => {
   it("grupo de radios: la elegida marcada, la deshabilitada con su motivo", () => {
@@ -57,5 +57,20 @@ describe("Segmented: teclado (patrón de grupo de radios)", () => {
     );
     expect(html).toMatch(/tabindex="-1"[^>]*>.*Corte/);
     expect(html).toMatch(/tabindex="0"[^>]*><span[^>]*>Completo/);
+  });
+});
+
+describe("Segmented: opciones deshabilitadas (ub-mode)", () => {
+  it("las posiciones que se pueden elegir incluyen la primera y saltean las deshabilitadas", () => {
+    expect(enabledIndexes([{ value: "a", label: "A" }, { value: "b", label: "B", disabled: true }, { value: "c", label: "C" }])).toEqual([0, 2]);
+  });
+
+  it("solo la deshabilitada se ve apagada", () => {
+    const html = renderToStaticMarkup(
+      <Segmented label="x" value="a" onChange={() => {}} options={[{ value: "a", label: "A" }, { value: "b", label: "B", disabled: true }]} />,
+    );
+    const [a, b] = [...html.matchAll(/<button[^>]*class="([^"]*)"/g)].map(([, c]) => c!);
+    expect(a).not.toContain("cursor-not-allowed");
+    expect(b).toContain("cursor-not-allowed");
   });
 });

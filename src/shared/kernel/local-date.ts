@@ -23,9 +23,8 @@ export function parseLocalDate(raw: string): LocalDate | null {
   const match = PATTERN.exec(raw);
   if (!match) return null;
   const [, y, m, d] = match.map(Number) as [number, number, number, number];
-  const date = new Date(Date.UTC(y, m - 1, d));
-  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null;
-  return raw as LocalDate;
+  // Si el día no existe (31 de noviembre), Date lo corre al mes siguiente y el texto ya no coincide.
+  return fromUtcMs(Date.UTC(y, m - 1, d)) === raw ? (raw as LocalDate) : null;
 }
 
 /** Como parseLocalDate, pero falla si el texto no es válido. Para constantes y tests. */

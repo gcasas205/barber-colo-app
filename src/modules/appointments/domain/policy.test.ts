@@ -61,3 +61,12 @@ describe("validateBarberReason (RF-24, RF-25)", () => {
     expect(validateBarberReason("x".repeat(201))).toEqual({ ok: false, error: "REASON_LENGTH" });
   });
 });
+
+describe("largo del motivo de Colo (ub-mode)", () => {
+  it("de 3 a 200 caracteres", () => {
+    expect(validateBarberReason("abc")).toEqual({ ok: true, value: "abc" });
+    expect(validateBarberReason("ab").ok).toBe(false);
+    expect(validateBarberReason("a".repeat(200)).ok).toBe(true);
+    expect(validateBarberReason("a".repeat(201)).ok).toBe(false);
+  });
+});

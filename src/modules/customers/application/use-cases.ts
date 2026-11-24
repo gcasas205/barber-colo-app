@@ -1,6 +1,7 @@
 import { DEMO_ACCOUNTS, type Actor } from "@/modules/identity";
 import { err, ok, type Result } from "@/shared/kernel";
 import { normalizeArPhone, type PhoneE164 } from "../domain/phone";
+import { withDemoMark } from "../domain/dependent";
 import { claimPhone } from "../domain/phone-claim";
 import { validateBirthday, validateName, type Birthday } from "../domain/profile";
 import { PhoneConflictError, type CustomerListItem, type CustomerRow, type CustomersStore, type CustomersTx, type ListCursor } from "./ports";
@@ -75,8 +76,7 @@ async function applyProfile(
   // cuenta cuando existan los turnos (spec 004).
   if (claim === "guest_to_merge") await tx.linkGuest(owner!.id, me.id);
   // RF-25: los clientes de prueba conservan la marca "(demo)" aunque cambien el nombre.
-  const fullName = me.isDemo && !name.endsWith("(demo)") ? `${name} (demo)` : name;
-  await tx.updateProfile(me.id, { fullName, phone, birthday });
+  await tx.updateProfile(me.id, { fullName: withDemoMark(name, me.isDemo), phone, birthday });
   if (previousPhone !== phone) await tx.recordPhoneChange({ customerId: me.id, oldPhone: previousPhone, newPhone: phone, changedBy: userId });
   return ok({ merged: claim === "guest_to_merge" });
 }

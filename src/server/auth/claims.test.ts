@@ -30,3 +30,10 @@ describe("readClaims", () => {
     await expect(readClaims({ getClaims: async () => { throw new Error("invalid signature"); } })).resolves.toBeNull();
   });
 });
+
+describe("bordes de los claims (ub-mode)", () => {
+  it("el correo verificado se lee de user_metadata; sin app_metadata no hay proveedor", () => {
+    expect(toSessionClaims({ sub: "u3", email: "a@b.com", user_metadata: { email_verified: true }, app_metadata: { provider: "google" } })).toMatchObject({ emailVerified: true, provider: "google" });
+    expect(toSessionClaims({ sub: "u4", email: "a@b.com" })).toMatchObject({ emailVerified: false, provider: null });
+  });
+});

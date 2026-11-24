@@ -50,3 +50,17 @@ describe("formatArPhone", () => {
     expect(formatArPhone("+5492966123456")).toBe("2966 12-3456");
   });
 });
+
+describe("bordes del celular (ub-mode)", () => {
+  it("con letras no es un número, aunque los dígitos alcancen", () => {
+    expect(normalizeArPhone("11 3816-3491 casa")).toEqual({ ok: false, error: "PHONE_INVALID" });
+  });
+
+  it("54 sin el 9 y sin el +, con 12 dígitos, también es Argentina", () => {
+    expect(normalizeArPhone("54 11 3816-3491")).toEqual({ ok: true, value: "+5491138163491" });
+  });
+});
+
+it("el 15 de un número de Buenos Aires va justo después del 11: en otro lugar no se saca", () => {
+  expect(normalizeArPhone("114151586834")).toEqual({ ok: false, error: "PHONE_INVALID" });
+});

@@ -14,6 +14,11 @@ export function arrowTarget(key: string, current: number, enabled: number[]): nu
   return enabled[(enabled.indexOf(current) + step + enabled.length) % enabled.length]!;
 }
 
+/** Posiciones de las opciones que se pueden elegir. */
+export function enabledIndexes(options: SegmentOption[]): number[] {
+  return options.flatMap((o, i) => (o.disabled ? [] : [i]));
+}
+
 /** Se llega con Tab a la elegida; si no hay ninguna, a la primera habilitada (patrón de grupo de radios). */
 export function isTabStop(i: number, on: boolean, value: string | null, enabled: number[]): boolean {
   return on || (value === null && i === enabled[0]);
@@ -36,7 +41,7 @@ export function Segmented({
   onChange: (value: string) => void;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const enabled = options.map((o, i) => (o.disabled ? -1 : i)).filter((i) => i >= 0);
+  const enabled = enabledIndexes(options);
 
   function onKey(e: KeyboardEvent, i: number) {
     const next = arrowTarget(e.key, i, enabled);

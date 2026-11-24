@@ -245,3 +245,51 @@ describe("bordes de perfil y contacto (ub-mode)", () => {
     expect(await saveContact({ store: m.store }, actor, { name: "A", phone: "1" })).toEqual({ ok: false, error: { fields: { name: "NAME_LENGTH", phone: "PHONE_INVALID" } } });
   });
 });
+
+describe("más bordes de clientes (ub-mode)", () => {
+  it("guardar de nuevo el propio teléfono no choca consigo mismo", async () => {
+    const { m, actor } = await demoClient();
+    await saveProfile({ store: m.store }, actor, { name: "Martín", phone: "1138163491", birthday: null });
+    expect(await saveProfile({ store: m.store }, actor, { name: "Martín P.", phone: "1138163491", birthday: null })).toEqual({ ok: true, value: { merged: false } });
+  });
+
+  it("sin permiso no se valida nada: no hay errores por campo para quien no tiene perfil", async () => {
+    const m = memoryStore();
+    const sinFicha: Actor = { kind: "customer", userId: "u-x", customerId: null, profileComplete: false, demo: false };
+    expect(await saveProfile({ store: m.store }, sinFicha, { name: "A", phone: "1", birthday: null })).toEqual({ ok: false, error: "NOT_ALLOWED" });
+  });
+
+  it("un solo campo con problemas ya frena el guardado", async () => {
+    const { m, actor } = await demoClient();
+    expect(await saveProfile({ store: m.store }, actor, { name: "Martín", phone: "1", birthday: null })).toEqual({ ok: false, error: { fields: { phone: "PHONE_INVALID" } } });
+    const guest: Actor = { kind: "guest", userId: "d-9", customerId: null };
+    expect(await saveContact({ store: m.store }, guest, { name: "A", phone: "1138163491" })).toEqual({ ok: false, error: { fields: { name: "NAME_LENGTH" } } });
+  });
+
+  it("solo las cuentas de prueba llevan la marca (demo), y una sola vez", async () => {
+    const { m, actor, customerId } = await demoClient();
+    await saveProfile({ store: m.store }, actor, { name: "Martín (demo)", phone: "1138163491", birthday: null });
+    expect(m.customers.get(customerId)!.fullName).toBe("Martín (demo)");
+    m.customers.get(customerId)!.isDemo = false;
+    await saveProfile({ store: m.store }, actor, { name: "Martín", phone: "1138163491", birthday: null });
+    expect(m.customers.get(customerId)!.fullName).toBe("Martín");
+  });
+
+  it("con exactamente 50 clientes no hay página siguiente; un sobrenombre de 40 letras entra", async () => {
+    const m = memoryStore();
+    for (let i = 0; i < 50; i++) await guestWithContact(m, `Cliente ${i}`, `11 4000-${String(1000 + i)}`);
+    const page = await listCustomers({ store: m.store }, barber, null);
+    expect(page.ok && page.value.items).toHaveLength(50);
+    expect(page.ok && page.value.next).toBeNull();
+    const id = page.ok ? page.value.items[0]!.id : "";
+    expect(await setNickname({ store: m.store }, barber, id, "ñ".repeat(40))).toEqual({ ok: true, value: undefined });
+  });
+
+  it("el propio perfil: de un cliente con cuenta sí; sin ficha, o con una que no existe, no", async () => {
+    const { m, actor } = await demoClient();
+    expect(await getOwnProfile({ store: m.store }, actor)).toMatchObject({ kind: "customer", isDemo: true });
+    expect(await getOwnProfile({ store: m.store }, { ...actor, customerId: null } as Actor)).toBeNull();
+    expect(await getOwnProfile({ store: m.store }, { kind: "guest", userId: "d", customerId: null })).toBeNull();
+    expect(await getOwnProfile({ store: m.store }, { kind: "guest", userId: "d", customerId: "no-existe" })).toBeNull();
+  });
+});

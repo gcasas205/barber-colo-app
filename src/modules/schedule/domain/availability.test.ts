@@ -201,3 +201,25 @@ describe("nextDayWithRoom y firstDayWithRoom (RF-6, RF-6b)", () => {
     expect(nextDayWithRoom({ ...base, now, after: last })).toBeNull();
   });
 });
+
+describe("bordes de la búsqueda de días (ub-mode)", () => {
+  it("encuentra lugar en el último día de la ventana", () => {
+    const now = at("2026-11-23", "08:00"); // ventana hasta el 2026-12-23
+    const allButLast: Interval = { start: at("2026-11-23", "00:00"), end: at("2026-12-23", "00:00") };
+    expect(firstDayWithRoom({ ...base, now, occupations: [allButLast] })).toBe("2026-12-23");
+  });
+
+  it("un día con un solo horario libre cuenta como día con lugar", () => {
+    const now = at("2026-11-23", "08:00");
+    const busy: Interval[] = [
+      { start: at("2026-11-23", "00:00"), end: at("2026-11-24", "19:30") },
+      { start: at("2026-11-25", "00:00"), end: at("2027-02-01", "00:00") },
+    ];
+    expect(labels("2026-11-24", { ...base, now, occupations: busy })).toEqual(["19:30"]);
+    expect(firstDayWithRoom({ ...base, now, occupations: busy })).toBe("2026-11-24");
+  });
+
+  it("si `after` es anterior a la ventana, busca desde hoy", () => {
+    expect(nextDayWithRoom({ ...base, now: at("2026-11-24", "09:00"), after: localDate("2026-11-01") })).toBe("2026-11-24");
+  });
+});
