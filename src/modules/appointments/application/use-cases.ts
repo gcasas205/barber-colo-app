@@ -1,6 +1,6 @@
 import type { Actor } from "@/modules/identity";
 import { dayStarts, type Interval } from "@/modules/schedule";
-import { addDays, err, instantAt, localDateOf, ok, type LocalDate, type Result } from "@/shared/kernel";
+import { addDays, compareLocalDate, err, instantAt, localDateOf, ok, type LocalDate, type Result } from "@/shared/kernel";
 import { changeTiming, customerCanReschedule, initialStatus, isUpcoming, validateBarberReason } from "../domain/policy";
 import type { AgendaItem, Appointment, AppointmentsDeps, AppointmentsTx, BarberNotice } from "./ports";
 
@@ -248,7 +248,7 @@ function isNewFor(i: AgendaItem, seen: Map<LocalDate, Date>): boolean {
 function countByDay(items: AgendaItem[]): NewElsewhere[] {
   const counts = new Map<LocalDate, number>();
   for (const i of items) counts.set(localDateOf(i.start), (counts.get(localDateOf(i.start)) ?? 0) + 1);
-  return [...counts].sort(([a], [b]) => (a < b ? -1 : 1)).map(([date, count]) => ({ date, count }));
+  return [...counts].sort(([a], [b]) => compareLocalDate(a, b)).map(([date, count]) => ({ date, count }));
 }
 
 /** RF-23: Colo tiene el día en pantalla; desde ahora sus turnos dejan de ser nuevos. */

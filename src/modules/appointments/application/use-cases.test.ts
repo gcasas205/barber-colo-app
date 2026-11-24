@@ -409,3 +409,90 @@ describe("casos de borde (ub-mode)", () => {
     ]);
   });
 });
+
+/** Anota los rangos que se le piden a la base. */
+function recording(deps: AppointmentsDeps) {
+  const asked: { what: string; start: Date; end: Date }[] = [];
+  const wrapped: AppointmentsDeps = {
+    transaction: (fn) =>
+      deps.transaction((tx) =>
+        fn({
+          ...tx,
+          slotContext: async (range, exclude) => (asked.push({ what: "slots", ...range }), tx.slotContext(range, exclude)),
+          agenda: async (range) => (asked.push({ what: "agenda", ...range }), tx.agenda(range)),
+        }),
+      ),
+  };
+  return { deps: wrapped, asked };
+}
+
+describe("lo que se guarda y lo que se le pide a la base (ub-mode)", () => {
+  it("reservar: el turno nace sin cambios y su historial no es tardío; se consulta el día entero, de 00:00 a 00:00", async () => {
+    const m = memory();
+    const { deps, asked } = recording(m.deps);
+    const r = await book(deps, lucas, { serviceId: "1", start: at("16:00") }, morning);
+    expect(r.ok && r.value.customerReschedules).toBe(0);
+    expect(m.state.events.at(-1)).toMatchObject({ kind: "booked", late: false });
+    expect(asked).toEqual([{ what: "slots", start: at("00:00"), end: at("00:00", "2026-11-26") }]);
+  });
+
+  it("los avisos de Colo no son tardíos", async () => {
+    const m = await booked();
+    await rescheduleByBarber(m.deps, colo, m.appt.id, at("17:00"), "Cambio de planes", at("09:00"));
+    expect(m.state.events.at(-1)).toMatchObject({ kind: "rescheduled", actor: "barber", late: false });
+    await cancelByBarber(m.deps, colo, m.appt.id, "Me enfermé", at("09:01"));
+    expect(m.state.events.at(-1)).toMatchObject({ kind: "cancelled", actor: "barber", late: false });
+  });
+
+  it("la agenda pide su día y los próximos 90 días; los horarios libres de Colo, el día entero", async () => {
+    const m = await booked();
+    const { deps, asked } = recording(m.deps);
+    await getDayAgenda(deps, colo, localDate("2026-11-26"), at("09:00"));
+    expect(asked).toEqual([
+      { what: "agenda", start: at("00:00", "2026-11-26"), end: at("00:00", "2026-11-27") },
+      { what: "agenda", start: at("00:00"), end: at("00:00", "2027-02-23") },
+    ]);
+    asked.length = 0;
+    await barberFreeStarts(deps, colo, m.appt.id, localDate("2026-11-27"), at("09:00"));
+    expect(asked).toEqual([{ what: "slots", start: at("00:00", "2026-11-27"), end: at("00:00", "2026-11-28") }]);
+  });
+
+  it("el cliente no reserva ni mueve sin la anticipación mínima ni más allá de la ventana; Colo sí, hasta el horario de ahora", async () => {
+    const m = memory();
+    const early = at("09:45"); // la anticipación es de 30 min: el primero es 10:15
+    expect(await book(m.deps, lucas, { serviceId: "1", start: at("10:00") }, early)).toEqual({ ok: false, error: "SLOT_TAKEN" });
+    expect(await book(m.deps, lucas, { serviceId: "1", start: at("16:00", "2026-12-28") }, early)).toEqual({ ok: false, error: "SLOT_TAKEN" });
+    const r = await book(m.deps, lucas, { serviceId: "1", start: at("16:00") }, early);
+    const id = r.ok ? r.value.id : "";
+    expect(await rescheduleByCustomer(m.deps, lucas, id, at("10:00"), true, early)).toEqual({ ok: false, error: "SLOT_TAKEN" });
+    // Colo mueve a las 10:00 cuando son exactamente las 10:00 (sin anticipación) y lo ve como libre.
+    const starts = await barberFreeStarts(m.deps, colo, id, localDate("2026-11-25"), at("10:00"));
+    expect(starts.ok && starts.value[0]?.label).toBe("10:00");
+    expect((await rescheduleByBarber(m.deps, colo, id, at("10:00"), "Cambio de planes", at("10:00"))).ok).toBe(true);
+  });
+
+  it("reservar con un servicio que no existe no rompe: no está disponible", async () => {
+    expect(await book(memory().deps, lucas, { serviceId: "nada", start: at("16:00") }, morning)).toEqual({ ok: false, error: "SERVICE_UNAVAILABLE" });
+  });
+
+  it("los turnos de la cuenta se ordenan por horario, no por persona; un cliente sin ficha no ve los de la cuenta", async () => {
+    const m = memory();
+    await book(m.deps, lucas, { serviceId: "1", start: at("17:00") }, morning);
+    await book(m.deps, lucas, { serviceId: "1", start: at("16:00"), forCustomerId: "c3" }, morning);
+    expect((await getMyAppointments(m.deps, lucas, morning)).appointments.map((a) => a.customerName)).toEqual(["Tomi", "Lucas"]);
+    expect((await getMyAppointments(m.deps, { ...lucas, customerId: null } as Actor, morning)).appointments).toEqual([]);
+  });
+
+  it("la agenda: un cambio visto en el mismo instante ya no es nuevo, y los de este día no cuentan como de otros días", async () => {
+    const m = await booked(memory(), lucas, at("16:00"), "1", at("08:00"));
+    const day = localDate("2026-11-25");
+    expect((await getDayAgenda(m.deps, colo, day, at("09:00"))).ok && (await getDayAgenda(m.deps, colo, day, at("09:00")))).toMatchObject({ value: { newElsewhere: [] } });
+    await markAgendaSeen(m.deps, colo, day, at("08:00")); // justo cuando reservó
+    const agenda = await getDayAgenda(m.deps, colo, day, at("09:00"));
+    expect(agenda.ok && agenda.value.items[0]!.isNew).toBe(false);
+    // Desde otro día, un turno ya visto tampoco cuenta.
+    const other = await getDayAgenda(m.deps, colo, localDate("2026-11-24"), at("09:00", "2026-11-24"));
+    expect(other.ok && other.value.newElsewhere).toEqual([]);
+  });
+});
+
