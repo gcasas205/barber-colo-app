@@ -31,13 +31,17 @@ export async function saveService(
     const list = await tx.admin.listAll();
     const existing = id ? list.find((s) => s.id === id) : undefined;
     if (id && !existing) return err("NOT_FOUND" as const);
-    // Un servicio sacado no choca con nadie mientras siga sacado (caso 9).
-    const retired = existing?.active === false;
-    const others = offered(list).filter((s) => s.id !== id).map((s) => s.name);
-    const valid = validateService(input, retired ? 1 : step, retired ? [] : others);
+    const rules = draftRules(existing, list, step);
+    const valid = validateService(input, rules.step, rules.otherNames);
     if (!valid.ok) return valid;
     return existing ? editService(tx, actor.userId, existing.id, input) : addService(tx, actor.userId, list, input);
   });
+}
+
+/** Con qué paso y contra qué nombres se valida. Un servicio sacado no choca con nadie mientras siga sacado (caso 9). */
+function draftRules(existing: AdminService | undefined, list: AdminService[], step: number) {
+  if (existing?.active === false) return { step: 1, otherNames: [] };
+  return { step, otherNames: offered(list).filter((s) => s.id !== existing?.id).map((s) => s.name) };
 }
 
 async function editService({ admin, audit }: ServiceAdminTx, userId: string, id: string, input: ServiceInput) {

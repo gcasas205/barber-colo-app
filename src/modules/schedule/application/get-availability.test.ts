@@ -89,5 +89,10 @@ describe("getAvailability", () => {
 
     const clamped = await getAvailability(deps().deps, { serviceMinutes: 30, now, weekOf: localDate("2027-06-01") });
     expect(clamped.week[0]?.date).toBe("2026-12-21");
+
+    // Una semana pedida antes de la ventana muestra la primera.
+    const early = await getAvailability(deps().deps, { serviceMinutes: 30, now, weekOf: localDate("2026-01-01") });
+    expect(early.week[0]?.date).toBe("2026-11-23");
+    expect(early.previousWeek).toBeNull();
   });
 });

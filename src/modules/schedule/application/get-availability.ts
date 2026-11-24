@@ -42,8 +42,9 @@ export type Availability = {
   nextWeek: LocalDate | null;
 };
 
-function within(date: LocalDate, w: { first: LocalDate; last: LocalDate }): boolean {
-  return compareLocalDate(date, w.first) >= 0 && compareLocalDate(date, w.last) <= 0;
+/** El día elegido si está dentro de la ventana; si falta o está afuera, null. */
+function dayInWindow(day: LocalDate | null | undefined, w: { first: LocalDate; last: LocalDate }): LocalDate | null {
+  return day && compareLocalDate(day, w.first) >= 0 && compareLocalDate(day, w.last) <= 0 ? day : null;
 }
 
 /** Lo que elige el visitante. */
@@ -53,14 +54,18 @@ export type Selection = { day?: LocalDate | null; weekOf?: LocalDate | null };
  * Cálculo puro de lo que muestra la página: día elegido, sus horarios, la semana y la navegación.
  * No lee nada: corre igual en el servidor y en el navegador (RF-15).
  */
-/** Semana de `wanted`, sin salir de la ventana, y las semanas de los extremos. */
+/** Semana de `wanted`, sin salir de la ventana, y a qué semana lleva cada flecha (null en los extremos). */
 function weeksToShow(window: { first: LocalDate; last: LocalDate }, wanted: LocalDate) {
   const firstWeek = weekStart(window.first);
   const lastWeek = weekStart(window.last);
   let shownWeek = weekStart(wanted);
   if (compareLocalDate(shownWeek, firstWeek) < 0) shownWeek = firstWeek;
   if (compareLocalDate(shownWeek, lastWeek) > 0) shownWeek = lastWeek;
-  return { shownWeek, firstWeek, lastWeek };
+  return {
+    shownWeek,
+    previousWeek: compareLocalDate(shownWeek, firstWeek) > 0 ? addDays(shownWeek, -7) : null,
+    nextWeek: compareLocalDate(shownWeek, lastWeek) < 0 ? addDays(shownWeek, 7) : null,
+  };
 }
 
 /** Primer día de la semana con lugar; si no hay, el primero dentro de la ventana. */
@@ -72,15 +77,16 @@ export function computeAvailability(input: AvailabilityInput, selection: Selecti
   const window = bookingWindow(input.now, input.config.maxAdvanceDays);
   const query = { ...selection };
   const first = firstDayWithRoom(input);
-  const chosenDay = query.day && within(query.day, window) ? query.day : null;
+  const chosenDay = dayInWindow(query.day, window);
+  const fallback = first ?? window.first;
 
   // Semana que se muestra: la pedida, o la del día elegido, o la del primer día con lugar; sin salir de la ventana.
-  const { shownWeek, firstWeek, lastWeek } = weeksToShow(window, query.weekOf ?? chosenDay ?? first ?? window.first);
+  const { shownWeek, previousWeek, nextWeek } = weeksToShow(window, query.weekOf ?? chosenDay ?? fallback);
   const week = weekAvailability({ ...input, weekOf: shownWeek });
 
   // Día: el elegido; si se cambió de semana sin elegir día, el primero de esa semana con lugar; si no, el primero con lugar.
   const fromWeek = query.weekOf ? firstDayOfWeek(week) : undefined;
-  const day = chosenDay ?? fromWeek ?? first ?? window.first;
+  const day = chosenDay ?? fromWeek ?? fallback;
   const starts = dayStarts({ ...input, date: day });
 
   return {
@@ -91,8 +97,8 @@ export function computeAvailability(input: AvailabilityInput, selection: Selecti
     nextDayWithRoom: starts.length === 0 ? nextDayWithRoom({ ...input, after: day }) : null,
     noRoomInWindow: first === null,
     week,
-    previousWeek: compareLocalDate(shownWeek, firstWeek) > 0 ? addDays(shownWeek, -7) : null,
-    nextWeek: compareLocalDate(shownWeek, lastWeek) < 0 ? addDays(shownWeek, 7) : null,
+    previousWeek,
+    nextWeek,
   };
 }
 
