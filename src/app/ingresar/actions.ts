@@ -54,14 +54,16 @@ export async function signInAsGuest(): Promise<GuestState> {
 
 /** RF-5: salir en este dispositivo. */
 export async function signOut(): Promise<void> {
-  const supabase = await supabaseServer();
-  await supabase.auth.signOut({ scope: "local" });
-  redirect("/");
+  await endSession("local");
 }
 
 /** RF-5b: Colo cierra todas sus sesiones (por ejemplo, si pierde el celular). */
 export async function signOutEverywhere(): Promise<void> {
+  await endSession("global");
+}
+
+async function endSession(scope: "local" | "global"): Promise<never> {
   const supabase = await supabaseServer();
-  await supabase.auth.signOut({ scope: "global" });
+  await supabase.auth.signOut({ scope });
   redirect("/");
 }
