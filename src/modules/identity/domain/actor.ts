@@ -61,17 +61,7 @@ export function resolveActor(f: IdentityFacts): Actor {
 
 function classify(f: IdentityFacts, c: SessionClaims): Actor {
   // Cuentas de prueba: solo con la demo activa (RF-24).
-  if (f.demoAccount) {
-    if (!f.demoEnabled) return { kind: "none", reason: "demo_disabled", signOut: true };
-    if (f.demoAccount.kind === "barber") return { kind: "barber", userId: c.sub, demo: true };
-    return {
-      kind: "customer",
-      userId: c.sub,
-      customerId: f.holder?.customerId ?? f.demoAccount.customerId,
-      profileComplete: f.holder?.profileComplete ?? false,
-      demo: true,
-    };
-  }
+  if (f.demoAccount) return classifyDemo(f, f.demoAccount, c);
 
   // Invitado: sesión anónima, asociada a un cliente desde este dispositivo cuando ya reservó (RF-17, RF-18;
   // spec 004, RF-4).
@@ -80,15 +70,26 @@ function classify(f: IdentityFacts, c: SessionClaims): Actor {
   // Google (spec de publicación): barbero solo con el email verificado igual al de Colo (RF-6, RF-7b, RF-7c).
   if (c.provider === "google") {
     if (c.emailVerified && sameEmail(c.email, f.barberEmail)) return { kind: "barber", userId: c.sub, demo: false };
-    return {
-      kind: "customer",
-      userId: c.sub,
-      customerId: f.holder?.customerId ?? null,
-      profileComplete: f.holder?.profileComplete ?? false,
-      demo: false,
-    };
+    return customer(f, c, null, false);
   }
 
   // Cualquier otra cuenta (correo y contraseña que no es de prueba): sin acceso (RF-1c).
   return { kind: "none", reason: "not_allowed", signOut: true };
+}
+
+function classifyDemo(f: IdentityFacts, account: NonNullable<IdentityFacts["demoAccount"]>, c: SessionClaims): Actor {
+  if (!f.demoEnabled) return { kind: "none", reason: "demo_disabled", signOut: true };
+  if (account.kind === "barber") return { kind: "barber", userId: c.sub, demo: true };
+  return customer(f, c, account.customerId, true);
+}
+
+/** Cliente con cuenta: su ficha de titular si ya la tiene; si no, `fallbackCustomerId`. */
+function customer(f: IdentityFacts, c: SessionClaims, fallbackCustomerId: string | null, demo: boolean): Actor {
+  return {
+    kind: "customer",
+    userId: c.sub,
+    customerId: f.holder?.customerId ?? fallbackCustomerId,
+    profileComplete: f.holder?.profileComplete ?? false,
+    demo,
+  };
 }

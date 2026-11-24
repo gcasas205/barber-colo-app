@@ -185,3 +185,54 @@ describe("choques con turnos (spec 004, RF-27)", () => {
     expect(intervalsOverlapping([miercoles, turno("2026-11-24T23:30:00-03:00", 30)], block.value)).toEqual([miercoles]);
   });
 });
+
+describe("bordes de los ajustes (ub-mode)", () => {
+  const turno = (iso: string, minutes: number) => ({ start: new Date(iso), end: new Date(new Date(iso).getTime() + minutes * 60_000) });
+
+  it("hasta 4 franjas por día se aceptan; la quinta no", () => {
+    const four = [r(1, "08:00", "09:00"), r(1, "10:00", "11:00"), r(1, "12:00", "13:00"), r(1, "14:00", "15:00")];
+    expect(validateWeeklyRanges(four, 15).ok).toBe(true);
+    expect(validateWeeklyRanges([...four, r(1, "16:00", "17:00")], 15)).toEqual({ ok: false, error: [{ code: "TOO_MANY_RANGES", weekday: 1 }] });
+  });
+
+  it("copiar deja las franjas ordenadas por día y por hora", () => {
+    const out = copyDay([r(3, "14:00", "20:00"), r(3, "10:00", "13:00"), r(2, "09:00", "10:00")], 3, [1]);
+    expect(out).toEqual([r(1, "10:00", "13:00"), r(1, "14:00", "20:00"), r(2, "09:00", "10:00"), r(3, "10:00", "13:00"), r(3, "14:00", "20:00")]);
+  });
+
+  it("los días que no quedan alineados con el paso nuevo salen en orden", () => {
+    const result = validateStepChange(30, [r(5, "10:15", "13:00"), r(2, "10:00", "12:45")], []);
+    expect(result).toEqual({ ok: false, error: { services: [], weekdays: [2, 5] } });
+  });
+
+  it.each([7.5, -15, 2895, 20])("rechaza una anticipación mínima de %d minutos", (minNoticeMinutes) => {
+    expect(validateBookingRules({ minNoticeMinutes, maxAdvanceDays: 30 })).toEqual({ ok: false, error: ["MIN_NOTICE_OUT_OF_RANGE"] });
+  });
+
+  it.each([
+    ["el inicio fuera del día", -5, 600],
+    ["el fin fuera del día", 600, 1445],
+    ["el inicio fuera del paso de 5", 601, 700],
+    ["el fin fuera del paso de 5", 600, 702],
+  ])("rechaza un bloqueo de horas con %s", (_, from, to) => {
+    expect(blockOfHours(localDate("2026-11-25"), from, to)).toEqual({ ok: false, error: "HOURS_INVALID" });
+  });
+
+  it("un bloqueo que termina justo ahora ya pasó", () => {
+    const now = new Date("2026-11-25T12:00:00-03:00");
+    expect(validateNewBlock({ start: new Date("2026-11-25T11:00:00-03:00"), end: now }, now)).toEqual({ ok: false, error: "BLOCK_IN_PAST" });
+  });
+
+  it("el aviso puede tener 80 caracteres; con 81 es largo", () => {
+    expect(validateNotice("a".repeat(80))).toEqual({ ok: true, value: "a".repeat(80) });
+    expect(validateNotice("a".repeat(81))).toEqual({ ok: false, error: "NOTICE_TOO_LONG" });
+  });
+
+  it("un turno que empieza justo al abrir entra; uno que empieza justo cuando termina el bloqueo no choca", () => {
+    const apertura = turno("2026-11-25T10:00:00-03:00", 30);
+    expect(intervalsOutside([apertura], [r(3, "10:00", "13:00")])).toEqual([]);
+    const block = blockOfHours(localDate("2026-11-25"), m("09:00"), m("10:00"));
+    if (!block.ok) throw new Error();
+    expect(intervalsOverlapping([apertura], block.value)).toEqual([]);
+  });
+});

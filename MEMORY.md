@@ -39,6 +39,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resumí o eliminá lo 
 - Safari: los `<select>` con `appearance-auto` salen grises del sistema; usar `appearance-none` + flecha propia (`src/ui/Field.tsx`). Para ver WebKit: `python3 -m playwright install webkit`; en local las cookies `secure` no andan sobre http (usar `next dev`).
 - e2e: `has-text` no distingue mayúsculas y busca por partes ("Tu turno" encuentra "Reservá tu turno"): usar `text-is`. Con 4G lento, esperar la hidratación antes de tocar botones que completan formularios.
 - `gh` con GraphQL no anda en esta sesión: usar `env -u GH_TOKEN gh api repos/...` (REST) para PRs y checks.
+- ub-mode (crapper, dryer, mutator en `tools/ub/`, ver AGENTS.md): correr con `src`; mutator archivo por archivo con `--test-command "npx vitest run src/modules/<m>"` (rápido). Si da 100% de golpe, sospechar: la suite puede fallar en su copia con enlaces (por eso readSources sigue enlaces). Fuera del alcance por ahora: pantallas de `src/app` y stores de `infrastructure` (los cubren e2e e integración, que crapper no ve); `memory-store.ts` es un doble de test.
 - TypeScript 7 rompe el lint: typescript-eslint (vía eslint-config-next) todavía no lo soporta. Dependabot ignora los majors de `typescript` y `@types/node`.
 
 ## Próximos pasos

@@ -41,3 +41,14 @@ describe("rutas estáticas", () => {
     expect(STATIC_ROUTES).toEqual(["prototipo"]);
   });
 });
+
+describe("orden y forma de las directivas (ub-mode)", () => {
+  it("default-src va primero, después script-src, y cada directiva una sola vez", () => {
+    for (const csp of [publicCsp(false), sessionCsp("abc", false)]) {
+      const names = csp.split("; ").map((d) => d.split(" ")[0]);
+      expect(names.slice(0, 2)).toEqual(["default-src", "script-src"]);
+      expect(new Set(names).size).toBe(names.length);
+      expect(names).toHaveLength(10);
+    }
+  });
+});

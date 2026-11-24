@@ -25,25 +25,21 @@ function withoutFifteen(n: string): string | null {
 export function normalizeArPhone(raw: string): Result<PhoneE164, PhoneError> {
   const text = raw.trim();
   if (!text || /[a-z]/i.test(text)) return err("PHONE_INVALID");
-  let digits = text.replace(/\D/g, "");
-  const international = text.startsWith("+") || digits.startsWith("00");
-  if (digits.startsWith("00")) digits = digits.slice(2);
-
-  let national: string;
-  if (international) {
-    if (!digits.startsWith("54")) return err("PHONE_FOREIGN");
-    national = digits.slice(2);
-  } else if (digits.startsWith("54") && digits.length >= 12) {
-    national = digits.slice(2); // "54 9 11 …" sin el +
-  } else {
-    national = digits;
-  }
-  // Prefijo de celular en formato internacional (+54 9) o de larga distancia (0).
-  if (digits !== national && national.startsWith("9")) national = national.slice(1);
-  else if (national.startsWith("0")) national = national.slice(1);
-
+  const national = nationalDigits(text);
+  if (national === null) return err("PHONE_FOREIGN");
   const result = isNational10(national) ? national : national.length === 12 ? withoutFifteen(national) : null;
   return result ? ok(`+549${result}` as PhoneE164) : err("PHONE_INVALID");
+}
+
+/** Los dígitos sin el país ni el prefijo de celular (9) o de larga distancia (0); null si es de otro país. */
+function nationalDigits(text: string): string | null {
+  const all = text.replace(/\D/g, "");
+  const international = text.startsWith("+") || all.startsWith("00");
+  const digits = all.startsWith("00") ? all.slice(2) : all;
+  if (international && !digits.startsWith("54")) return null;
+  // Con +, o "54 9 11 …" sin el +: se saca el país y el 9 (o el 0) que sigue. Si no, solo el 0.
+  const withCountry = international || (digits.startsWith("54") && digits.length >= 12);
+  return withCountry ? digits.slice(2).replace(/^[90]/, "") : digits.replace(/^0/, "");
 }
 
 // Códigos de área de 3 dígitos (el resto, salvo 11, son de 4). Solo para mostrar el número.

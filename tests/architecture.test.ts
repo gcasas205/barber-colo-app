@@ -1,3 +1,6 @@
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { checkFile, extractImports, readSources } from "./architecture/rules";
@@ -10,6 +13,23 @@ describe("arquitectura del código actual", () => {
     const sources = readSources(ROOT);
     expect(sources.length).toBeGreaterThan(10);
     expect(sources.flatMap(checkFile)).toEqual([]);
+  });
+});
+
+describe("lectura del código", () => {
+  it("recorre también carpetas que son enlaces simbólicos (mutator prueba en una copia así)", () => {
+    const real = mkdtempSync(path.join(tmpdir(), "arq-real-"));
+    const copy = mkdtempSync(path.join(tmpdir(), "arq-copia-"));
+    try {
+      mkdirSync(path.join(real, "kernel"));
+      writeFileSync(path.join(real, "kernel", "a.ts"), 'import "date-fns";');
+      mkdirSync(path.join(copy, "src"));
+      symlinkSync(path.join(real, "kernel"), path.join(copy, "src", "kernel"));
+      expect(readSources(copy)).toEqual([{ file: "src/kernel/a.ts", imports: ["date-fns"] }]);
+    } finally {
+      rmSync(real, { recursive: true, force: true });
+      rmSync(copy, { recursive: true, force: true });
+    }
   });
 });
 

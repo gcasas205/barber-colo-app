@@ -89,3 +89,14 @@ describe("validateBlock (RF-14)", () => {
     expect(validateBlock({ start, end: at("2026-11-26T12:00:00Z") })).toEqual({ ok: false, error: "BLOCK_EMPTY" });
   });
 });
+
+describe("orden de las franjas (ub-mode)", () => {
+  it("acepta franjas del mismo día que no se tocan aunque vengan desordenadas", () => {
+    expect(validateSchedule([r(1, "14:00", "20:00"), r(1, "10:00", "13:00")], 15).ok).toBe(true);
+  });
+
+  it("detecta la superposición aunque entre las dos franjas venga otro día", () => {
+    const result = validateSchedule([r(1, "10:00", "12:00"), r(2, "09:00", "10:00"), r(1, "11:00", "13:00")], 15);
+    expect(result).toEqual({ ok: false, error: [{ code: "RANGES_OVERLAP", weekday: 1 }] });
+  });
+});

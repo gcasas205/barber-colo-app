@@ -95,9 +95,8 @@ function findDayWithRoom(input: AvailabilityInput, from: LocalDate): LocalDate |
 
 /** Próximo día con lugar después de `after`, dentro de la ventana; null si no hay (RF-6, RF-6b). */
 export function nextDayWithRoom(input: AvailabilityInput & { after: LocalDate }): LocalDate | null {
-  const { first } = bookingWindow(input.now, input.config.maxAdvanceDays);
-  const candidate = addDays(input.after, 1);
-  return findDayWithRoom(input, compareLocalDate(candidate, first) < 0 ? first : candidate);
+  // Si `after` es anterior a hoy, los días previos no tienen horarios (dayStarts devuelve []): no hace falta recortarlo.
+  return findDayWithRoom(input, addDays(input.after, 1));
 }
 
 /** Primer día de la ventana con lugar (puede ser hoy); null si no hay ninguno. */

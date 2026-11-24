@@ -5,6 +5,25 @@ import { cx } from "./cx";
 
 export type SegmentOption = { value: string; label: string; disabled?: boolean; hint?: string };
 
+const ARROW_STEP: Partial<Record<string, 1 | -1>> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+
+/** A qué opción lleva una flecha desde `current`, saltando las deshabilitadas y dando la vuelta; null si la tecla no mueve. */
+export function arrowTarget(key: string, current: number, enabled: number[]): number | null {
+  const step = ARROW_STEP[key];
+  if (!step || enabled.length === 0) return null;
+  return enabled[(enabled.indexOf(current) + step + enabled.length) % enabled.length]!;
+}
+
+/** Posiciones de las opciones que se pueden elegir. */
+export function enabledIndexes(options: SegmentOption[]): number[] {
+  return options.flatMap((o, i) => (o.disabled ? [] : [i]));
+}
+
+/** Se llega con Tab a la elegida; si no hay ninguna, a la primera habilitada (patrón de grupo de radios). */
+export function isTabStop(i: number, on: boolean, value: string | null, enabled: number[]): boolean {
+  return on || (value === null && i === enabled[0]);
+}
+
 /**
  * Opciones lado a lado, una elegida (DESIGN.md: la selección es esmalte). Grupo de radios accesible: flechas
  * para moverse, las deshabilitadas se saltean y muestran su motivo (`hint`). Con más de dos opciones, se
@@ -22,14 +41,12 @@ export function Segmented({
   onChange: (value: string) => void;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const enabled = options.map((o, i) => (o.disabled ? -1 : i)).filter((i) => i >= 0);
+  const enabled = enabledIndexes(options);
 
   function onKey(e: KeyboardEvent, i: number) {
-    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
-    if (!step || enabled.length === 0) return;
+    const next = arrowTarget(e.key, i, enabled);
+    if (next === null) return;
     e.preventDefault();
-    const pos = enabled.indexOf(i);
-    const next = enabled[(pos + step + enabled.length) % enabled.length]!;
     onChange(options[next]!.value);
     refs.current[next]?.focus();
   }
@@ -48,7 +65,7 @@ export function Segmented({
             role="radio"
             aria-checked={on}
             disabled={o.disabled}
-            tabIndex={on || (value === null && i === enabled[0]) ? 0 : -1}
+            tabIndex={isTabStop(i, on, value, enabled) ? 0 : -1}
             onClick={() => onChange(o.value)}
             onKeyDown={(e) => onKey(e, i)}
             className={cx(

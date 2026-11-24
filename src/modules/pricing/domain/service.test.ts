@@ -100,3 +100,23 @@ describe("moveService (RF-18)", () => {
     expect(moveService(order, "z", "up")).toEqual(order);
   });
 });
+
+describe("bordes de servicios (ub-mode)", () => {
+  it("un nombre de una letra vale; 1 centavo no es positivo en pesos: tiene centavos", () => {
+    expect(validateService({ ...corte, name: "X" }, 15, []).ok).toBe(true);
+    expect(validateService({ ...corte, priceCents: 1 }, 15, [])).toEqual({ ok: false, error: ["PRICE_HAS_CENTS"] });
+    expect(validateService({ ...corte, priceCents: 100 }, 15, []).ok).toBe(true);
+  });
+
+  it("una duración igual a un paso de 1 minuto vale", () => {
+    expect(validateService({ ...corte, durationMinutes: 1 }, 1, []).ok).toBe(true);
+  });
+
+  it("el primero no sube y el último no baja; el segundo sí sube", () => {
+    expect(moveService(["a", "b", "c"], "a", "up")).toEqual(["a", "b", "c"]);
+    expect(moveService(["a", "b", "c"], "c", "down")).toEqual(["a", "b", "c"]);
+    expect(moveService(["a", "b", "c"], "a", "down")).toEqual(["b", "a", "c"]);
+    expect(moveService(["a", "b", "c"], "x", "down")).toEqual(["a", "b", "c"]);
+  });
+});
+

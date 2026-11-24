@@ -38,3 +38,14 @@ describe("resolveSession", () => {
     expect(await resolveSession({ identities: { load: () => Promise.reject(new Error("no")), touch: () => Promise.reject(new Error("no")) }, config }, null, now)).toEqual({ kind: "none", reason: "no_session" });
   });
 });
+
+describe("cada cuánto se anota la actividad (ub-mode)", () => {
+  it("justo a la hora todavía no se vuelve a escribir; un minuto después, sí", async () => {
+    const exact = repo({ demoAccount: { kind: "barber", customerId: null }, lastSeenAt: new Date(now.getTime() - 60 * 60_000) });
+    await resolveSession({ identities: exact.identities, config }, colo, now);
+    expect(exact.touched).toEqual([]);
+    const later = repo({ demoAccount: { kind: "barber", customerId: null }, lastSeenAt: new Date(now.getTime() - 61 * 60_000) });
+    await resolveSession({ identities: later.identities, config }, colo, now);
+    expect(later.touched).toEqual([now]);
+  });
+});

@@ -33,3 +33,17 @@ describe("validateBirthday", () => {
     expect(validateBirthday(b)).toEqual({ ok: false, error: "BIRTHDAY_INVALID" });
   });
 });
+
+describe("bordes del cumpleaños (ub-mode)", () => {
+  it.each([
+    [{ day: 1, month: 1 }, true],
+    [{ day: 31, month: 12 }, true],
+    [{ day: 0, month: 5 }, false],
+    [{ day: 1, month: 0 }, false],
+    [{ day: 1, month: 13 }, false],
+    [{ day: 1.5, month: 5 }, false],
+    [{ day: 1, month: 5.5 }, false],
+  ])("%o es válido: %s", (b, valid) => {
+    expect(validateBirthday(b).ok).toBe(valid);
+  });
+});

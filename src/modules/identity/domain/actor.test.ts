@@ -77,6 +77,11 @@ describe("resolveActor", () => {
       expect(resolveActor({ ...colo, lastSeenAt: days(29) }).kind).toBe("barber");
       expect(resolveActor({ ...colo, lastSeenAt: days(31) })).toEqual({ kind: "none", reason: "expired", signOut: true });
     });
+
+    it("el día justo del límite todavía no vence", () => {
+      expect(resolveActor({ ...colo, lastSeenAt: days(30) }).kind).toBe("barber");
+      expect(resolveActor({ ...guest, lastSeenAt: days(60) }).kind).toBe("guest");
+    });
   });
 
   describe("Google (spec de publicación: la regla queda lista y probada)", () => {

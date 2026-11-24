@@ -1,4 +1,4 @@
-import { addDays, formatDayLong, formatMinute, localDateOf, minuteOfDayOf, type LocalDate } from "@/shared/kernel";
+import { addDays, formatDayLong, formatDuration, formatMinute, localDateOf, minuteOfDayOf, type LocalDate } from "@/shared/kernel";
 
 /** Opciones de hora cada `step` minutos, de 00:00 a 24:00 (las franjas pueden cerrar a la medianoche). */
 export function timeOptions(step: number): { value: number; label: string }[] {
@@ -27,9 +27,5 @@ export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** Anticipación mínima en palabras: 0 → "Sin anticipación", 90 → "1 h 30 min". */
 export function noticeLabel(minutes: number): string {
-  if (minutes === 0) return "Sin anticipación";
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (!h) return `${m} min`;
-  return m ? `${h} h ${m} min` : `${h} h`;
+  return minutes === 0 ? "Sin anticipación" : formatDuration(minutes);
 }

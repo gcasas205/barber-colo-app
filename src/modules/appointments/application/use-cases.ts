@@ -1,6 +1,6 @@
 import type { Actor } from "@/modules/identity";
 import { dayStarts, type Interval } from "@/modules/schedule";
-import { addDays, err, instantAt, localDateOf, ok, type LocalDate, type Result } from "@/shared/kernel";
+import { addDays, compareLocalDate, err, instantAt, localDateOf, ok, type LocalDate, type Result } from "@/shared/kernel";
 import { changeTiming, customerCanReschedule, initialStatus, isUpcoming, validateBarberReason } from "../domain/policy";
 import type { AgendaItem, Appointment, AppointmentsDeps, AppointmentsTx, BarberNotice } from "./ports";
 
@@ -52,6 +52,18 @@ async function isOffered(
 
 const endOf = (start: Date, minutes: number): Interval => ({ start, end: new Date(start.getTime() + minutes * MINUTE) });
 
+/** Por qué `who` no puede reservar para `target` (otra cuenta o un turno futuro), o null. Bloquea al cliente. */
+async function bookingBlock(tx: AppointmentsTx, who: Who, target: string, now: Date): Promise<"NOT_ALLOWED" | { hasUpcoming: Appointment } | null> {
+  if (target !== who.customerId && !(await membersOf(tx, who)).includes(target)) return "NOT_ALLOWED"; // RF-15 de la 004b
+  if (!(await tx.lockCustomer(target))) return "NOT_ALLOWED";
+  const upcoming = await tx.upcomingFor(target, now);
+  return upcoming ? { hasUpcoming: upcoming } : null; // RF-10
+}
+
+async function memberName(tx: AppointmentsTx, who: Who, customerId: string): Promise<string> {
+  return (await tx.accountMembers(who.account ?? "")).find((m) => m.customerId === customerId)?.name ?? "";
+}
+
 export type BookError = "NOT_ALLOWED" | "NEEDS_CONTACT" | "SERVICE_UNAVAILABLE" | "SLOT_TAKEN" | { hasUpcoming: Appointment };
 
 /**
@@ -69,10 +81,8 @@ export async function book(
   return deps.transaction(async (tx) => {
     await tx.lockScheduleShared();
     const target = input.forCustomerId ?? who.customerId;
-    if (target !== who.customerId && !(await membersOf(tx, who)).includes(target)) return NOT_ALLOWED; // RF-15 de la 004b
-    if (!(await tx.lockCustomer(target))) return NOT_ALLOWED;
-    const upcoming = await tx.upcomingFor(target, now);
-    if (upcoming) return err({ hasUpcoming: upcoming }); // RF-10
+    const blocked = await bookingBlock(tx, who, target, now);
+    if (blocked) return err(blocked);
     const service = await tx.service(input.serviceId);
     if (!service?.active) return err("SERVICE_UNAVAILABLE" as const);
     const ok_ = await isOffered(tx, { start: input.start, serviceMinutes: service.durationMinutes, now, exclude: null, forBarber: false });
@@ -82,7 +92,7 @@ export async function book(
     const id = await tx.insert({ customerId: target, serviceId: service.id, period, status, priceCents: service.priceCents, bookedAt: now });
     if (id === "OVERLAP") return err("SLOT_TAKEN" as const); // RF-12: la base lo frenó
     await tx.addEvent({ appointmentId: id, at: now, actor: "customer", actorUserId: who.userId, kind: "booked", from: null, to: period, late: false, reason: null });
-    const name = target === who.customerId ? "" : ((await tx.accountMembers(who.account ?? "")).find((m) => m.customerId === target)?.name ?? "");
+    const name = target === who.customerId ? "" : await memberName(tx, who, target);
     return ok({
       id,
       customerId: target,
@@ -221,21 +231,24 @@ export async function getDayAgenda(
       tx.agenda({ start: instantAt(today, 0), end: instantAt(addDays(today, AHEAD_DAYS), 0) }),
       tx.agendaSeen(actor.userId),
     ]);
-    const isNew = (i: AgendaItem) => {
-      const day = localDateOf(i.start);
-      const seenAt = seen.get(day);
-      return isActive(i) && !!i.lastCustomerChangeAt && (!seenAt || i.lastCustomerChangeAt.getTime() > seenAt.getTime());
-    };
-    const counts = new Map<LocalDate, number>();
-    for (const i of upcoming) {
-      const day = localDateOf(i.start);
-      if (day !== date && isNew(i)) counts.set(day, (counts.get(day) ?? 0) + 1);
-    }
+    const isNew = (i: AgendaItem) => isNewFor(i, seen);
     return ok({
       items: items.filter(isActive).map((i) => ({ ...i, isNew: isNew(i) })),
-      newElsewhere: [...counts].sort(([a], [b]) => (a < b ? -1 : 1)).map(([d, count]) => ({ date: d, count })),
+      newElsewhere: countByDay(upcoming.filter((i) => localDateOf(i.start) !== date && isNew(i))),
     });
   });
+}
+
+/** El cliente lo reservó o movió después de la última vez que Colo vio ese día. */
+function isNewFor(i: AgendaItem, seen: Map<LocalDate, Date>): boolean {
+  const seenAt = seen.get(localDateOf(i.start));
+  return isActive(i) && !!i.lastCustomerChangeAt && (!seenAt || i.lastCustomerChangeAt.getTime() > seenAt.getTime());
+}
+
+function countByDay(items: AgendaItem[]): NewElsewhere[] {
+  const counts = new Map<LocalDate, number>();
+  for (const i of items) counts.set(localDateOf(i.start), (counts.get(localDateOf(i.start)) ?? 0) + 1);
+  return [...counts].sort(([a], [b]) => compareLocalDate(a, b)).map(([date, count]) => ({ date, count }));
 }
 
 /** RF-23: Colo tiene el día en pantalla; desde ahora sus turnos dejan de ser nuevos. */

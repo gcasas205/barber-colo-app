@@ -1,9 +1,10 @@
 import { DEMO_ACCOUNTS, type Actor } from "@/modules/identity";
 import { err, ok, type Result } from "@/shared/kernel";
 import { normalizeArPhone, type PhoneE164 } from "../domain/phone";
+import { withDemoMark } from "../domain/dependent";
 import { claimPhone } from "../domain/phone-claim";
 import { validateBirthday, validateName, type Birthday } from "../domain/profile";
-import { PhoneConflictError, type CustomerListItem, type CustomerRow, type CustomersStore, type ListCursor } from "./ports";
+import { PhoneConflictError, type CustomerListItem, type CustomerRow, type CustomersStore, type CustomersTx, type ListCursor } from "./ports";
 
 type Field = "name" | "phone" | "birthday";
 /** Errores por campo, para mostrarlos junto a cada uno (RNF-5), o un error del formulario. */
@@ -21,6 +22,24 @@ function validateContact(input: { name: string; phone: string }) {
   return { fields, name: name.ok ? name.value : "", phone: phone.ok ? phone.value : ("" as PhoneE164) };
 }
 
+/** Como `validateContact`, más el cumpleaños opcional. */
+function validateProfile(input: { name: string; phone: string; birthday: Birthday | null }) {
+  const contact = validateContact(input);
+  const b = input.birthday ? validateBirthday(input.birthday) : null;
+  if (b && !b.ok) contact.fields.birthday = b.error;
+  return { ...contact, birthday: b?.ok ? b.value : null };
+}
+
+/** Si la base frena un teléfono repetido en la carrera (índice único), devuelve `onConflict`. */
+async function onPhoneConflict<T>(run: () => Promise<T>, onConflict: T): Promise<T> {
+  try {
+    return await run();
+  } catch (e) {
+    if (e instanceof PhoneConflictError) return onConflict;
+    throw e;
+  }
+}
+
 /** RF-9 a RF-14: completar o editar el perfil de un cliente con cuenta. */
 export async function saveProfile(
   deps: { store: CustomersStore },
@@ -29,38 +48,37 @@ export async function saveProfile(
 ): Promise<Result<{ merged: boolean }, "NOT_ALLOWED" | FormError>> {
   if (actor.kind !== "customer" || !actor.customerId) return err("NOT_ALLOWED");
   const customerId = actor.customerId;
-  const { fields, name, phone } = validateContact(input);
-  let birthday: Birthday | null = null;
-  if (input.birthday) {
-    const b = validateBirthday(input.birthday);
-    if (b.ok) birthday = b.value;
-    else fields.birthday = b.error;
-  }
+  const { fields, ...profile } = validateProfile(input);
   if (Object.keys(fields).length > 0) return err({ fields });
+  const taken = err({ fields: { phone: "PHONE_TAKEN" } });
+  return onPhoneConflict(
+    () =>
+      deps.store.transaction(async (tx) => {
+        const me = await tx.getCustomer(customerId);
+        if (!me || me.role !== "holder") return err("NOT_ALLOWED" as const);
+        return applyProfile(tx, me, actor.userId, profile);
+      }),
+    taken, // caso 5
+  );
+}
 
-  try {
-    return await deps.store.transaction(async (tx) => {
-      const me = await tx.getCustomer(customerId);
-      if (!me || me.role !== "holder") return err("NOT_ALLOWED" as const);
-      const previousPhone = me.phone; // antes de actualizar: no depender de si `me` es una copia
-      const owner = await tx.lockPhoneOwner(phone);
-      const claim = claimPhone("account", owned(owner, me.id));
-      if (claim === "taken_by_account") return err({ fields: { phone: "PHONE_TAKEN" } });
-      // RF-12: el invitado se une a la cuenta. Sus faltas la siguen; sus turnos futuros pasan a la
-      // cuenta cuando existan los turnos (spec 004).
-      if (claim === "guest_to_merge") await tx.linkGuest(owner!.id, me.id);
-      // RF-25: los clientes de prueba conservan la marca "(demo)" aunque cambien el nombre.
-      const fullName = me.isDemo && !name.endsWith("(demo)") ? `${name} (demo)` : name;
-      await tx.updateProfile(me.id, { fullName, phone, birthday });
-      if (previousPhone !== phone) {
-        await tx.recordPhoneChange({ customerId: me.id, oldPhone: previousPhone, newPhone: phone, changedBy: actor.userId });
-      }
-      return ok({ merged: claim === "guest_to_merge" });
-    });
-  } catch (e) {
-    if (e instanceof PhoneConflictError) return err({ fields: { phone: "PHONE_TAKEN" } }); // caso 5
-    throw e;
-  }
+async function applyProfile(
+  tx: CustomersTx,
+  me: CustomerRow,
+  userId: string,
+  { name, phone, birthday }: { name: string; phone: PhoneE164; birthday: Birthday | null },
+): Promise<Result<{ merged: boolean }, FormError>> {
+  const previousPhone = me.phone; // antes de actualizar: no depender de si `me` es una copia
+  const owner = await tx.lockPhoneOwner(phone);
+  const claim = claimPhone("account", owned(owner, me.id));
+  if (claim === "taken_by_account") return err({ fields: { phone: "PHONE_TAKEN" } });
+  // RF-12: el invitado se une a la cuenta. Sus faltas la siguen; sus turnos futuros pasan a la
+  // cuenta cuando existan los turnos (spec 004).
+  if (claim === "guest_to_merge") await tx.linkGuest(owner!.id, me.id);
+  // RF-25: los clientes de prueba conservan la marca "(demo)" aunque cambien el nombre.
+  await tx.updateProfile(me.id, { fullName: withDemoMark(name, me.isDemo), phone, birthday });
+  if (previousPhone !== phone) await tx.recordPhoneChange({ customerId: me.id, oldPhone: previousPhone, newPhone: phone, changedBy: userId });
+  return ok({ merged: claim === "guest_to_merge" });
 }
 
 /** RF-18b: intentos de ingreso como invitado por conexión y por hora. */
@@ -91,32 +109,46 @@ export async function saveContact(
   actor: Actor,
   input: { name: string; phone: string },
 ): Promise<Result<{ customerId: string }, "NOT_ALLOWED" | FormError>> {
-  if (actor.kind === "customer") {
-    if (!actor.customerId) return err("NOT_ALLOWED");
-    const id = actor.customerId;
-    const me = await deps.store.transaction((tx) => tx.getCustomer(id));
-    if (!me) return err("NOT_ALLOWED");
-    const saved = await saveProfile(deps, actor, { ...input, birthday: me.birthday });
-    return saved.ok ? ok({ customerId: id }) : saved;
-  }
+  if (actor.kind === "customer") return saveHolderContact(deps, actor, input);
   if (actor.kind !== "guest") return err("NOT_ALLOWED");
   if (actor.customerId) return ok({ customerId: actor.customerId }); // ya cargó sus datos
+  return saveGuestContact(deps, actor.userId, input);
+}
 
+/** Cliente con cuenta: es su perfil, sin perder el cumpleaños. */
+async function saveHolderContact(
+  deps: { store: CustomersStore },
+  actor: Extract<Actor, { kind: "customer" }>,
+  input: { name: string; phone: string },
+): Promise<Result<{ customerId: string }, "NOT_ALLOWED" | FormError>> {
+  const id = actor.customerId;
+  const me = id ? await deps.store.transaction((tx) => tx.getCustomer(id)) : null;
+  if (!id || !me) return err("NOT_ALLOWED");
+  const saved = await saveProfile(deps, actor, { ...input, birthday: me.birthday });
+  return saved.ok ? ok({ customerId: id }) : saved;
+}
+
+/** Invitado que carga sus datos por primera vez: su cliente (o el del mismo teléfono) y este dispositivo. */
+async function saveGuestContact(
+  deps: { store: CustomersStore },
+  deviceUserId: string,
+  input: { name: string; phone: string },
+): Promise<Result<{ customerId: string }, FormError>> {
   const { fields, name, phone } = validateContact(input);
   if (Object.keys(fields).length > 0) return err({ fields });
-  try {
-    return await deps.store.transaction(async (tx) => {
-      const owner = await tx.lockPhoneOwner(phone);
-      const claim = claimPhone("guest", owned(owner, null));
-      if (claim === "taken_by_account") return err({ form: "PHONE_HAS_ACCOUNT" });
-      const customerId = claim === "same_guest" ? owner!.id : await tx.createGuest({ fullName: name, phone });
-      await tx.addGuestDevice(actor.userId, customerId);
-      return ok({ customerId });
-    });
-  } catch (e) {
-    if (e instanceof PhoneConflictError) return err({ form: "TRY_AGAIN" });
-    throw e;
-  }
+  const tryAgain = err({ form: "TRY_AGAIN" });
+  return onPhoneConflict(
+    () =>
+      deps.store.transaction(async (tx) => {
+        const owner = await tx.lockPhoneOwner(phone);
+        const claim = claimPhone("guest", owned(owner, null));
+        if (claim === "taken_by_account") return err({ form: "PHONE_HAS_ACCOUNT" });
+        const customerId = claim === "same_guest" ? owner!.id : await tx.createGuest({ fullName: name, phone });
+        await tx.addGuestDevice(deviceUserId, customerId);
+        return ok({ customerId });
+      }),
+    tryAgain,
+  );
 }
 
 /** RF-22, RF-23, RF-25: después de entrar con una cuenta de prueba, se asegura su lugar en la app. */

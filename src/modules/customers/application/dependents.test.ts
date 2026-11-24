@@ -67,3 +67,11 @@ describe("personas a cargo (spec 004b, RF-1 a RF-7)", () => {
     expect(m.customers.get(id)!.fullName).toBe("Tomi (demo)");
   });
 });
+
+it("un cliente sin ficha todavía no tiene personas a cargo ni puede agregarlas", async () => {
+  const m = memoryStore();
+  const sinFicha: Actor = { kind: "customer", userId: "u-c1", customerId: null, profileComplete: false, demo: false };
+  await holder(m); // la cuenta u-c1 existe, pero este actor todavía no tiene su ficha
+  expect(await listDependents({ store: m.store }, sinFicha)).toEqual([]);
+  expect(await addDependent({ store: m.store }, sinFicha, tomi)).toEqual({ ok: false, error: "NOT_ALLOWED" });
+});

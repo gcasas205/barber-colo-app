@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatDuration } from "./duration";
-import { formatMinute, parseMinute } from "./minutes";
+import { formatMinute, isMinuteOfDay, parseMinute } from "./minutes";
 import { formatPesos } from "./money";
 import { err, ok } from "./result";
 
@@ -61,5 +61,26 @@ describe("Result", () => {
     const bad = err("PRICE_NOT_POSITIVE");
     expect(good.ok && good.value).toBe(3);
     expect(!bad.ok && bad.error).toBe("PRICE_NOT_POSITIVE");
+  });
+});
+
+describe("bordes de minutos y duraciones (ub-mode)", () => {
+  it("1 minuto es una duración válida", () => {
+    expect(formatDuration(1)).toBe("1 min");
+  });
+
+  it("lee los bordes del día y de la hora", () => {
+    expect(parseMinute("00:00")).toBe(0);
+    expect(parseMinute("10:59")).toBe(659);
+  });
+
+  it.each([
+    [0, true],
+    [1440, true],
+    [-1, false],
+    [1441, false],
+    [12.5, false],
+  ])("isMinuteOfDay(%d) es %s", (m, expected) => {
+    expect(isMinuteOfDay(m)).toBe(expected);
   });
 });

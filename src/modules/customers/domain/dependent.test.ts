@@ -18,3 +18,10 @@ describe("validateDependent (spec 004b)", () => {
     expect(withDemoMark("Tomás", false)).toBe("Tomás");
   });
 });
+
+describe("errores por separado (ub-mode)", () => {
+  it("un nombre inválido frena aunque el cumpleaños esté bien, y al revés", () => {
+    expect(validateDependent({ name: "A", birthday: { day: 3, month: 5 } })).toEqual({ ok: false, error: { name: "NAME_LENGTH" } });
+    expect(validateDependent({ name: "Tomi", birthday: { day: 31, month: 4 } })).toEqual({ ok: false, error: { birthday: "BIRTHDAY_INVALID" } });
+  });
+});
