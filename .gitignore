@@ -42,3 +42,9 @@ next-env.d.ts
 
 # env de ejemplo (sin secretos) sí se versiona
 !.env.example
+
+# ub-mode tools (crapper, dryer, mutator) y lo que generan
+/tools/ub/
+/tools/_to_delete/
+/.metrics/
+/target/

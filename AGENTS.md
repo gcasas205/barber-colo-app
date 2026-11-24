@@ -16,6 +16,7 @@ App web instalable (PWA) para que los clientes de un barbero reserven, confirmen
 ## Comandos
 - `npm run dev` · `npm run lint` · `npm run typecheck` · `npm test` · `npm run build`
 - `npm run check`: todo junto. Es lo mismo que corre el hook pre-push y GitHub Actions.
+- Calidad (skill `ub-mode`), desde la raíz y siempre con `src` (si no, crapper también mide `.next/`): `tools/ub/crapper/crapper src`, `tools/ub/dryer/dryer src` y `tools/ub/mutator/mutator <archivo o carpeta>`. Límites: CRAP < 10, duplicación < 0.8, sin mutantes sobrevivientes salvo los equivalentes (anotados en el commit). `src/app/prototipo` es material de diseño y no cuenta. Dejan los resultados en `.metrics/` y `target/` (ignorados por git y ESLint). Necesitan Python 3.11 o más nuevo; las herramientas se clonan en `tools/ub/` (ver `.claude/skills/ub-mode`).
 
 ## Reglas de dominio (fácil equivocarse)
 - Fechas: siempre en `America/Argentina/Buenos_Aires` (skill `fechas-locales`). Nada de `toISOString()` para obtener un día.
