@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
 /**
@@ -98,7 +98,8 @@ export function readSources(root: string): SourceFile[] {
   const walk = (dir: string) => {
     for (const entry of readdirSync(path.join(root, dir), { withFileTypes: true })) {
       const rel = path.posix.join(dir, entry.name);
-      if (entry.isDirectory()) walk(rel);
+      const isDir = entry.isDirectory() || (entry.isSymbolicLink() && statSync(path.join(root, rel)).isDirectory());
+      if (isDir) walk(rel);
       else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name))
         files.push({ file: rel, imports: extractImports(readFileSync(path.join(root, rel), "utf8")) });
     }
