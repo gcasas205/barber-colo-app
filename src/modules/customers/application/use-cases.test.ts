@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Actor } from "@/modules/identity";
 import { memoryStore } from "./memory-store";
+import { PhoneConflictError, type CustomersStore } from "./ports";
 import { enterAsDemo, enterAsGuest, getOwnProfile, listCustomers, saveContact, saveProfile, setNickname } from "./use-cases";
 
 const now = new Date("2026-11-21T21:00:00Z");
@@ -207,5 +208,40 @@ describe("getOwnProfile", () => {
     expect(profile).toEqual({ kind: "guest", fullName: "Lucas", phone: "+5491138163491", birthday: null, isDemo: false });
     expect(JSON.stringify(profile)).not.toContain("moto");
     expect(await getOwnProfile({ store: m.store }, barber)).toBeNull();
+  });
+});
+
+describe("bordes de perfil y contacto (ub-mode)", () => {
+  const failing = (error: Error): CustomersStore => ({ transaction: async () => Promise.reject(error) });
+
+  it("si la base frena el teléfono en la carrera, se pide otro; cualquier otro error sigue de largo", async () => {
+    const { actor } = await demoClient();
+    const input = { name: "Martín", phone: "1138163491", birthday: null };
+    expect(await saveProfile({ store: failing(new PhoneConflictError()) }, actor, input)).toEqual({ ok: false, error: { fields: { phone: "PHONE_TAKEN" } } });
+    await expect(saveProfile({ store: failing(new Error("se cayó la base")) }, actor, input)).rejects.toThrow("se cayó la base");
+
+    const guest: Actor = { kind: "guest", userId: "d-1", customerId: null };
+    expect(await saveContact({ store: failing(new PhoneConflictError()) }, guest, input)).toEqual({ ok: false, error: { form: "TRY_AGAIN" } });
+    await expect(saveContact({ store: failing(new Error("se cayó la base")) }, guest, input)).rejects.toThrow("se cayó la base");
+  });
+
+  it("un cliente sin ficha, o con una ficha que no es de titular, no guarda perfil ni contacto", async () => {
+    const m = memoryStore();
+    const sinFicha: Actor = { kind: "customer", userId: "u-x", customerId: null, profileComplete: false, demo: false };
+    const fantasma: Actor = { ...sinFicha, customerId: "no-existe" } as Actor;
+    const input = { name: "Martín", phone: "1138163491" };
+    expect(await saveProfile({ store: m.store }, sinFicha, { ...input, birthday: null })).toEqual({ ok: false, error: "NOT_ALLOWED" });
+    expect(await saveProfile({ store: m.store }, fantasma, { ...input, birthday: null })).toEqual({ ok: false, error: "NOT_ALLOWED" });
+    expect(await saveContact({ store: m.store }, sinFicha, input)).toEqual({ ok: false, error: "NOT_ALLOWED" });
+    expect(await saveContact({ store: m.store }, fantasma, input)).toEqual({ ok: false, error: "NOT_ALLOWED" });
+
+    const g = await guestWithContact(m, "Ana", "1100000000");
+    const comoTitular: Actor = { ...sinFicha, customerId: g.ok ? g.value.customerId : "" } as Actor;
+    expect(await saveProfile({ store: m.store }, comoTitular, { ...input, birthday: null })).toEqual({ ok: false, error: "NOT_ALLOWED" });
+  });
+
+  it("un cliente con cuenta que carga mal sus datos ve los errores por campo", async () => {
+    const { m, actor } = await demoClient();
+    expect(await saveContact({ store: m.store }, actor, { name: "A", phone: "1" })).toEqual({ ok: false, error: { fields: { name: "NAME_LENGTH", phone: "PHONE_INVALID" } } });
   });
 });

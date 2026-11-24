@@ -340,3 +340,72 @@ describe("personas a cargo (spec 004b, RF-8 a RF-16)", () => {
     expect(agenda.ok && agenda.value.items[0]!.customer).toEqual({ name: "Tomi", nickname: null, phone: "+5491138163491", isGuest: false, holderName: "Lucas" });
   });
 });
+
+/** Simula que otro pedido ganó la carrera en la base: reemplaza métodos de la transacción. */
+function raced(deps: AppointmentsDeps, over: Partial<Parameters<Parameters<AppointmentsDeps["transaction"]>[0]>[0]>): AppointmentsDeps {
+  return { transaction: (fn) => deps.transaction((tx) => fn({ ...tx, ...over })) };
+}
+
+describe("casos de borde (ub-mode)", () => {
+  it("el invitado ve y cierra lo suyo; sin cliente asociado, o siendo Colo, no hay turnos que ver", async () => {
+    const m = await booked(memory(), ana);
+    expect((await getMyAppointments(m.deps, ana, morning)).appointments.map((a) => [a.customerName, a.isSelf])).toEqual([["Ana", true]]);
+    await cancelByBarber(m.deps, colo, m.appt.id, "Me enfermé", at("09:00"));
+    const notice = (await getMyAppointments(m.deps, ana, at("09:01"))).notice!;
+    await dismissBarberNotice(m.deps, ana, notice.eventId, at("09:02"));
+    expect((await getMyAppointments(m.deps, ana, at("09:03"))).notice).toBeNull();
+
+    const empty = { appointments: [], notice: null };
+    expect(await getMyAppointments(m.deps, { kind: "guest", userId: "g2", customerId: null }, morning)).toEqual(empty);
+    expect(await getMyAppointments(m.deps, { ...lucas, customerId: null } as Actor, morning)).toEqual(empty);
+    expect(await getMyAppointments(m.deps, colo, morning)).toEqual(empty);
+    await dismissBarberNotice(m.deps, colo, notice.eventId, at("09:04")); // no hace nada
+  });
+
+  it("un titular sin perfil completo todavía ve los turnos de la cuenta", async () => {
+    const m = await booked();
+    const sinPerfil: Actor = { ...lucas, profileComplete: false } as Actor;
+    expect((await getMyAppointments(m.deps, sinPerfil, morning)).appointments).toHaveLength(1);
+    expect(await book(m.deps, sinPerfil, { serviceId: "1", start: at("17:00") }, morning)).toEqual({ ok: false, error: "NEEDS_CONTACT" });
+  });
+
+  it("reservar: si el cliente ya no existe no se reserva; si la base frena el horario, se ocupó", async () => {
+    const m = memory();
+    expect(await book(raced(m.deps, { lockCustomer: async () => false }), lucas, { serviceId: "1", start: at("16:00") }, morning)).toEqual({ ok: false, error: "NOT_ALLOWED" });
+    expect(await book(raced(m.deps, { insert: async () => "OVERLAP" }), lucas, { serviceId: "1", start: at("16:00") }, morning)).toEqual({ ok: false, error: "SLOT_TAKEN" });
+    expect(m.state.appts).toEqual([]);
+  });
+
+  it("reprogramar: si la base frena el horario nuevo, se ocupó (cliente y Colo)", async () => {
+    const m = await booked();
+    const overlap = raced(m.deps, { move: async () => "OVERLAP" });
+    expect(await rescheduleByCustomer(overlap, lucas, m.appt.id, at("17:00"), false, at("09:00"))).toEqual({ ok: false, error: "SLOT_TAKEN" });
+    expect(await rescheduleByBarber(overlap, colo, m.appt.id, at("17:00"), "Cambio de planes", at("09:00"))).toEqual({ ok: false, error: "SLOT_TAKEN" });
+    expect(m.state.appts[0]!.start).toEqual(at("16:00"));
+  });
+
+  it("Colo no mueve ni cancela un turno que no existe, que ya se canceló o que ya terminó", async () => {
+    const m = await booked();
+    expect(await rescheduleByBarber(m.deps, lucas, m.appt.id, at("17:00"), "Cambio de planes", at("09:00"))).toEqual({ ok: false, error: "NOT_ALLOWED" });
+    expect(await rescheduleByBarber(m.deps, colo, m.appt.id, at("17:00"), "no", at("09:00"))).toEqual({ ok: false, error: "REASON_LENGTH" });
+    expect(await rescheduleByBarber(m.deps, colo, "nada", at("17:00"), "Cambio de planes", at("09:00"))).toEqual({ ok: false, error: "NOT_FOUND" });
+    expect(await rescheduleByBarber(m.deps, colo, m.appt.id, at("17:00"), "Cambio de planes", at("16:30"))).toEqual({ ok: false, error: "ENDED" });
+    expect(await cancelByBarber(m.deps, colo, m.appt.id, "Me enfermé", at("16:30"))).toEqual({ ok: false, error: "ENDED" });
+    await cancelByCustomer(m.deps, lucas, m.appt.id, false, at("09:00"));
+    expect(await cancelByBarber(m.deps, colo, m.appt.id, "Me enfermé", at("09:01"))).toEqual({ ok: false, error: "NOT_FOUND" });
+    expect(await rescheduleByBarber(m.deps, colo, m.appt.id, at("17:00"), "Cambio de planes", at("09:01"))).toEqual({ ok: false, error: "NOT_FOUND" });
+    expect(await barberFreeStarts(m.deps, colo, m.appt.id, localDate("2026-11-25"), at("09:01"))).toEqual({ ok: false, error: "NOT_FOUND" });
+  });
+
+  it("la agenda cuenta los nuevos de otros días por día, en orden", async () => {
+    const m = memory();
+    await book(m.deps, ana, { serviceId: "1", start: at("16:00", "2026-11-27") }, morning);
+    await book(m.deps, lucas, { serviceId: "1", start: at("16:00", "2026-11-26") }, morning);
+    await book(m.deps, lucas, { serviceId: "1", start: at("16:30", "2026-11-26"), forCustomerId: "c3" }, morning);
+    const agenda = await getDayAgenda(m.deps, colo, localDate("2026-11-25"), at("09:00"));
+    expect(agenda.ok && agenda.value.newElsewhere).toEqual([
+      { date: "2026-11-26", count: 2 },
+      { date: "2026-11-27", count: 1 },
+    ]);
+  });
+});

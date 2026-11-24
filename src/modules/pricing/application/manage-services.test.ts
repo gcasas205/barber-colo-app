@@ -138,4 +138,38 @@ describe("servicios (RF-15 a RF-21)", () => {
       ["Corte", false],
     ]);
   });
+
+  it("un cliente tampoco puede ordenar ni reactivar", async () => {
+    const { deps } = memory();
+    expect(await moveServiceOrder(deps, cliente, "3", "up")).toEqual({ ok: false, error: "NOT_ALLOWED" });
+    expect(await reactivateService(deps, cliente, "1")).toEqual({ ok: false, error: "NOT_ALLOWED" });
+  });
+
+  it("editar o reactivar un servicio que no existe da NOT_FOUND; reactivar uno que se ofrece no hace nada", async () => {
+    const { state, deps } = memory();
+    expect(await saveService(deps, colo, "99", nuevo)).toEqual({ ok: false, error: "NOT_FOUND" });
+    expect(await reactivateService(deps, colo, "99")).toEqual({ ok: false, error: "NOT_FOUND" });
+    expect(await reactivateService(deps, colo, "1")).toEqual({ ok: true, value: undefined });
+    expect(state.audit).toEqual([]);
+  });
+
+  it("un servicio sacado se edita sin mirar el paso ni los nombres de los que se ofrecen (caso 9)", async () => {
+    const { state, deps } = memory(30);
+    state.services[0]!.active = false;
+    expect((await saveService(deps, colo, "1", { ...nuevo, name: "Completo", durationMinutes: 45 })).ok).toBe(true);
+    expect(state.services[0]!.durationMinutes).toBe(45);
+  });
+
+  it("si otro cambio gana la carrera en la base, devuelve el error de la base", async () => {
+    const { deps } = memory();
+    const raced = (over: Partial<Parameters<Parameters<ServiceAdminDeps["transaction"]>[0]>[0]["admin"]>): ServiceAdminDeps => ({
+      transaction: (fn) => deps.transaction((tx) => fn({ ...tx, admin: { ...tx.admin, ...over } })),
+    });
+    expect(await saveService(raced({ insert: async () => "NAME_TAKEN" }), colo, null, nuevo)).toEqual({ ok: false, error: ["NAME_TAKEN"] });
+    expect(await saveService(raced({ update: async () => "NAME_TAKEN" }), colo, "1", nuevo)).toEqual({ ok: false, error: ["NAME_TAKEN"] });
+    expect(await saveService(raced({ update: async () => "NOT_FOUND" }), colo, "1", nuevo)).toEqual({ ok: false, error: "NOT_FOUND" });
+    await deactivateService(deps, colo, "1", false);
+    expect(await reactivateService(raced({ setActive: async () => "NAME_TAKEN" }), colo, "1")).toEqual({ ok: false, error: ["NAME_TAKEN"] });
+    expect(await reactivateService(raced({ setActive: async () => "NOT_FOUND" }), colo, "1")).toEqual({ ok: false, error: "NOT_FOUND" });
+  });
 });

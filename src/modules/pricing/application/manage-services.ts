@@ -1,7 +1,7 @@
 import type { Actor } from "@/modules/identity";
 import { err, ok, type Result } from "@/shared/kernel";
 import { moveService, validateService, type ServiceError } from "../domain/service";
-import type { AdminService, ServiceAdminDeps, ServiceInput } from "./ports";
+import type { AdminService, ServiceAdminDeps, ServiceAdminTx, ServiceInput } from "./ports";
 
 const NOT_ALLOWED = err("NOT_ALLOWED" as const);
 const clean = (input: ServiceInput): ServiceInput => ({
@@ -26,27 +26,32 @@ export async function saveService(
 ): Promise<Result<{ id: string }, "NOT_ALLOWED" | "NOT_FOUND" | ServiceError[]>> {
   if (actor.kind !== "barber") return NOT_ALLOWED;
   const input = clean(raw);
-  return deps.transaction(async ({ admin, audit, currentStep }) => {
-    const step = await currentStep();
-    const list = await admin.listAll();
+  return deps.transaction(async (tx) => {
+    const step = await tx.currentStep();
+    const list = await tx.admin.listAll();
     const existing = id ? list.find((s) => s.id === id) : undefined;
     if (id && !existing) return err("NOT_FOUND" as const);
     // Un servicio sacado no choca con nadie mientras siga sacado (caso 9).
+    const retired = existing?.active === false;
     const others = offered(list).filter((s) => s.id !== id).map((s) => s.name);
-    const valid = validateService(input, existing && !existing.active ? 1 : step, existing && !existing.active ? [] : others);
+    const valid = validateService(input, retired ? 1 : step, retired ? [] : others);
     if (!valid.ok) return valid;
-
-    if (existing) {
-      const result = await admin.update(existing.id, input);
-      if (result !== "ok") return result === "NAME_TAKEN" ? err(["NAME_TAKEN" as const]) : err("NOT_FOUND" as const);
-      await audit.record({ area: "servicios", userId: actor.userId, detail: { edited: existing.id, ...input } });
-      return ok({ id: existing.id });
-    }
-    const created = await admin.insert(input, offered(list).length + 1);
-    if (created === "NAME_TAKEN") return err(["NAME_TAKEN" as const]);
-    await audit.record({ area: "servicios", userId: actor.userId, detail: { added: created, ...input } });
-    return ok({ id: created });
+    return existing ? editService(tx, actor.userId, existing.id, input) : addService(tx, actor.userId, list, input);
   });
+}
+
+async function editService({ admin, audit }: ServiceAdminTx, userId: string, id: string, input: ServiceInput) {
+  const result = await admin.update(id, input);
+  if (result !== "ok") return result === "NAME_TAKEN" ? err(["NAME_TAKEN" as const]) : err("NOT_FOUND" as const);
+  await audit.record({ area: "servicios", userId, detail: { edited: id, ...input } });
+  return ok({ id });
+}
+
+async function addService({ admin, audit }: ServiceAdminTx, userId: string, list: AdminService[], input: ServiceInput) {
+  const created = await admin.insert(input, offered(list).length + 1);
+  if (created === "NAME_TAKEN") return err(["NAME_TAKEN" as const]);
+  await audit.record({ area: "servicios", userId, detail: { added: created, ...input } });
+  return ok({ id: created });
 }
 
 /** RF-18. */
