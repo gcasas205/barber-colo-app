@@ -17,14 +17,17 @@ let cached: ServerEnv | undefined;
 
 export function serverEnv(source: Record<string, string | undefined> = process.env): ServerEnv {
   if (source === process.env && cached) return cached;
-  const parsed = schema.safeParse(source);
-  if (!parsed.success) {
-    // Solo los nombres de las variables con problemas: nunca sus valores.
-    const names = [...new Set(parsed.error.issues.map((i) => i.path.join(".")))].join(", ");
-    throw new Error(`Faltan o son inválidas estas variables de entorno: ${names}`);
-  }
-  if (source === process.env) cached = parsed.data;
-  return parsed.data;
+  const parsed = parseEnv(schema, source);
+  if (source === process.env) cached = parsed;
+  return parsed;
+}
+
+/** Valida las variables; si fallan, el error nombra solo las variables con problemas, nunca sus valores. */
+function parseEnv<S extends z.ZodType>(s: S, source: Record<string, string | undefined>): z.infer<S> {
+  const parsed = s.safeParse(source);
+  if (parsed.success) return parsed.data;
+  const names = [...new Set(parsed.error.issues.map((i) => i.path.join(".")))].join(", ");
+  throw new Error(`Faltan o son inválidas estas variables de entorno: ${names}`);
 }
 
 /** Variables de la sesión (spec 002). Separadas de serverEnv: la página pública no las necesita. */
@@ -43,10 +46,5 @@ const authSchema = z.object({
 export type AuthEnv = z.infer<typeof authSchema>;
 
 export function authEnv(source: Record<string, string | undefined> = process.env): AuthEnv {
-  const parsed = authSchema.safeParse(source);
-  if (!parsed.success) {
-    const names = [...new Set(parsed.error.issues.map((i) => i.path.join(".")))].join(", ");
-    throw new Error(`Faltan o son inválidas estas variables de entorno: ${names}`);
-  }
-  return parsed.data;
+  return parseEnv(authSchema, source);
 }
